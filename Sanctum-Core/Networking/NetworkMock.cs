@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sanctum_Core.Networking
+namespace Sanctum_Core
 {
     using System;
     using System.ComponentModel;

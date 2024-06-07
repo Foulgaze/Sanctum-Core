@@ -4,12 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sanctum_Core.CardClasses
+namespace Sanctum_Core
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-
     public static class CardParser
     {
         /// <summary>
@@ -19,8 +15,8 @@ namespace Sanctum_Core.CardClasses
         /// <returns>(List of Successfully parsed names, List of Error Lines)</returns>
         public static (List<string>, List<string>) ParseDeckList(string deckList)
         {
-            List<string> cardNames = new List<string>();
-            List<string> problematicLines = new List<string>();
+            List<string> cardNames = new();
+            List<string> problematicLines = new();
 
             foreach (string cardLine in deckList.Split('\n'))
             {
@@ -37,13 +33,12 @@ namespace Sanctum_Core.CardClasses
                     continue;
                 }
 
-                int cardCount;
-                if (!Int32.TryParse(trimmedLine.Substring(0, spaceIndex), out cardCount))
+                if (!int.TryParse(trimmedLine[..spaceIndex], out int cardCount))
                 {
                     problematicLines.Add(cardLine);
                     continue;
                 }
-                string cardName = trimmedLine.Substring(spaceIndex + 1);
+                string cardName = trimmedLine[(spaceIndex + 1)..];
                 cardNames.AddRange(Enumerable.Repeat(cardName, cardCount));
             }
             return (cardNames, problematicLines);

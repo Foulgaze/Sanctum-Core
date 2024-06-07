@@ -1,15 +1,11 @@
-﻿namespace Sanctum_Core.CardClasses
+﻿namespace Sanctum_Core
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Dynamic;
-
     public class Card
     {
         public int Id { get; }
         public CardInfo FrontInfo { get; }
         public CardInfo BackInfo { get; }
-        public CardInfo CurrentInfo => isFlipped.Value ? BackInfo : FrontInfo;
+        public CardInfo CurrentInfo => this.isFlipped.Value ? this.BackInfo : this.FrontInfo;
         public CardContainer CurrentLocation { get; set; }
         public NetworkAttribute<int> power;
         public NetworkAttribute<int> toughness;
@@ -21,11 +17,11 @@
 
         public Card(int id, CardInfo FrontInfo, CardInfo BackInfo, NetworkAttributeFactory networkAttributeFactory)
         {
-            Id = id;
+            this.Id = id;
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
 
-            InitializeAttributes(networkAttributeFactory);
+            this.InitializeAttributes(networkAttributeFactory);
         }
 
         /// <summary>
@@ -34,34 +30,30 @@
         /// <returns><Returns true if the card has a backside/returns>
         public bool HasBackside()
         {
-            return BackInfo != null;
+            return this.BackInfo != null;
         }
 
         private void InitializeAttributes(NetworkAttributeFactory networkAttributeFactory)
         {
-            isFlipped = networkAttributeFactory.AddNetworkAttribute<bool>(Id.ToString(), false);
-            isFlipped.valueChange += UpdateAttributes;
-            power = networkAttributeFactory.AddNetworkAttribute<int>(Id.ToString(), ParsePT(CurrentInfo.power));
-            toughness = networkAttributeFactory.AddNetworkAttribute<int>(Id.ToString(), ParsePT(CurrentInfo.toughness));
-            tapped = networkAttributeFactory.AddNetworkAttribute<bool>(Id.ToString(), false);
+            this.isFlipped = networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
+            this.isFlipped.valueChange += this.UpdateAttributes;
+            this.power = networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.power));
+            this.toughness = networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.toughness));
+            this.tapped = networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
         }
 
 
         private void UpdateAttributes(object sender, EventArgs e) // No need to network because flipped is netwokred
         {
-            power.NonNetworkedSet(ParsePT(CurrentInfo.power));
-            toughness.NonNetworkedSet(ParsePT(CurrentInfo.toughness));
-            name.NonNetworkedSet(CurrentInfo.name);
+            this.power.NonNetworkedSet(this.ParsePT(this.CurrentInfo.power));
+            this.toughness.NonNetworkedSet(this.ParsePT(this.CurrentInfo.toughness));
+            this.name.NonNetworkedSet(this.CurrentInfo.name);
         }
 
         private int ParsePT(string value)
         {
-            int parsedValue;
-            if (!int.TryParse(value, out parsedValue))
-            {
-                return 0;
-            }
-            return parsedValue;
+
+            return !int.TryParse(value, out int parsedValue) ? 0 : parsedValue;
         }
 
     }

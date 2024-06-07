@@ -1,16 +1,12 @@
-﻿namespace Sanctum_Core
-{
-    using Sanctum_Core.CardClasses;
-    using Sanctum_Core.Networking;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Linq;
+﻿using System.ComponentModel;
 
+namespace Sanctum_Core
+{
     public class Playtable
     {
-        private List<Player> _players = new List<Player>();
+        private readonly List<Player> _players = new();
 
-        private NetworkManager _networkManager;
+        private readonly NetworkManager _networkManager;
 
         public NetworkAttribute<int> readyUpNeeded;
 
@@ -18,16 +14,16 @@
 
         public event PropertyChangedEventHandler gameStarted = delegate { };
 
-        private CardFactory cardFactory;
-        private NetworkAttributeFactory networkAttributeFactory;
+        private readonly CardFactory cardFactory;
+        private readonly NetworkAttributeFactory networkAttributeFactory;
 
         public Playtable(bool mock = false)
         {
             this.readyUpNeeded = new NetworkAttribute<int>("0", 4);
             this.cardFactory = new CardFactory();
             this.networkAttributeFactory = new NetworkAttributeFactory();
-            this.networkAttributeFactory.attributeValueChanged += _networkManager.NetworkAttributeChanged;
-            this._networkManager = new NetworkManager(networkAttributeFactory);
+            this.networkAttributeFactory.attributeValueChanged += this._networkManager.NetworkAttributeChanged;
+            this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
 
         }
 
@@ -38,13 +34,13 @@
         /// <param name="uuid"> UUID of player</param>
         public void AddPlayer(string name, string uuid)
         {
-            if (GameStarted)
+            if (this.GameStarted)
             {
                 return;
             }
-            Player player = new Player(uuid, name, 40, networkAttributeFactory, cardFactory);
-            player.ReadiedUp.valueChange += CheckForStartGame;
-            _players.Add(player);
+            Player player = new(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
+            player.ReadiedUp.valueChange += this.CheckForStartGame;
+            this._players.Add(player);
         }
 
         /// <summary>
@@ -54,32 +50,32 @@
         /// <returns>Player or null depending of if uuid exists</returns>
         public Player? GetPlayer(string uuid)
         {
-            return _players.FirstOrDefault(player => player.Uuid == uuid); ;
+            return this._players.FirstOrDefault(player => player.Uuid == uuid); ;
         }
 
         void CheckForStartGame(object obj, PropertyChangedEventArgs args)
         {
-            int readyCount = _players.Count(player => player.ReadiedUp.Value);
-            if (readyCount >= readyUpNeeded.Value)
+            int readyCount = this._players.Count(player => player.ReadiedUp.Value);
+            if (readyCount >= this.readyUpNeeded.Value)
             {
-                StartGame();
+                this.StartGame();
             }
         }
 
         void StartGame()
         {
-            GameStarted = true;
-            SetupDecks();
+            this.GameStarted = true;
+            this.SetupDecks();
             gameStarted(this, new PropertyChangedEventArgs("Started"));
         }
 
         void SetupDecks()
         {
-            foreach (Player player in _players)
+            foreach (Player player in this._players)
             {
                 (List<string> cardNames, _) = CardParser.ParseDeckList(player.DeckListRaw.Value);
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
-                List<Card> cards = cardFactory.LoadCardNames(cardNames, networkAttributeFactory);
+                List<Card> cards = this.cardFactory.LoadCardNames(cardNames, this.networkAttributeFactory);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
             }
         }
@@ -87,12 +83,8 @@
 
         public bool RemovePlayer(string uuid)
         {
-            Player player = GetPlayer(uuid);
-            if (player != null)
-            {
-                return _players.Remove(player);
-            }
-            return false;
+            Player player = this.GetPlayer(uuid);
+            return player != null && this._players.Remove(player);
         }
     }
 }

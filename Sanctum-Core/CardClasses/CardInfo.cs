@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CsvHelper.Configuration.Attributes;
 
-namespace Sanctum_Core.CardClasses
+namespace Sanctum_Core
 {
-    using CsvHelper.Configuration.Attributes;
     public class CardInfo
     {
         [Name("name")]

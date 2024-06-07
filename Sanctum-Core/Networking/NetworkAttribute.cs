@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sanctum_Core.Networking
+namespace Sanctum_Core
 {
-    using System;
-    using System.ComponentModel;
-    using Newtonsoft.Json;
-
     public class NetworkAttribute<T>
     {
         public event PropertyChangedEventHandler networkValueChange = delegate { };
@@ -19,14 +16,11 @@ namespace Sanctum_Core.Networking
         public bool changeHasBeenNetworked;
         public T Value
         {
-            get
-            {
-                return value;
-            }
+            get => this.value;
             set
             {
                 this.changeHasBeenNetworked = true;
-                this.networkValueChange(Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));
+                this.networkValueChange(this.Id, new PropertyChangedEventArgs(this.JsonConvert.SerializeObject(value)));
             }
         }
         public string Id { get; }

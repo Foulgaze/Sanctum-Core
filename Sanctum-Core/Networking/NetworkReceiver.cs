@@ -1,8 +1,7 @@
-﻿namespace Sanctum_Core.Networking
+﻿using System.Net.Sockets;
+
+namespace Sanctum_Core
 {
-    using System.Net.Sockets;
-
-
     public class NetworkReceiver
     {
         // Start is called before the first frame update
@@ -16,7 +15,6 @@
                 byte[] data = new byte[bufferSize];
                 do
                 {
-
                     int dataSize = rwStream.Read(data, 0, data.Length);
                     completeMessage += System.Text.Encoding.UTF8.GetString(data, 0, dataSize);
                 } while (rwStream.DataAvailable); // Read entire stream in case buffer is too small

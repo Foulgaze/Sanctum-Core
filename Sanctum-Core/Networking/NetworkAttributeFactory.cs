@@ -1,36 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sanctum_Core.Networking
+namespace Sanctum_Core
 {
-
-
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using Newtonsoft.Json;
     public class GenericDictionary
     {
-        private Dictionary<string, object> _dict = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> _dict = new();
 
         public void Add<T>(string key, T value)
         {
-            _dict.Add(key, value);
+            this._dict.Add(key, value);
         }
 
         public T GetValue<T>(string key) where T : class
         {
-            return _dict[key] as T;
+            return this._dict[key] as T;
         }
     }
 
     public class NetworkAttributeFactory
     {
         public event PropertyChangedEventHandler attributeValueChanged = delegate { };
-        public GenericDictionary networkAttributes = new GenericDictionary();
+        public GenericDictionary networkAttributes = new();
 
         private int _id = 0;
 
@@ -50,7 +45,7 @@ namespace Sanctum_Core.Networking
             }
             string ID = splitInstruction[0];
             string serializedNewValue = splitInstruction[1];
-            NetworkAttribute<object> attribute = networkAttributes.GetValue<NetworkAttribute<object>>(ID);
+            NetworkAttribute<object> attribute = this.networkAttributes.GetValue<NetworkAttribute<object>>(ID);
             if (attribute == null)
             {
                 // Log Error: Attribute with given ID not found
@@ -65,10 +60,10 @@ namespace Sanctum_Core.Networking
         }
         public NetworkAttribute<T> AddNetworkAttribute<T>(string uuid, T value)
         {
-            string newID = $"{uuid}-{_id++}";
-            NetworkAttribute<T> newAttribute = new NetworkAttribute<T>(newID, value);
-            networkAttributes.Add<T>(newID, value);
-            newAttribute.networkValueChange += AttributeChangedEventHandler;
+            string newID = $"{uuid}-{this._id++}";
+            NetworkAttribute<T> newAttribute = new(newID, value);
+            this.networkAttributes.Add<T>(newID, value);
+            newAttribute.networkValueChange += this.AttributeChangedEventHandler;
             return newAttribute;
         }
 

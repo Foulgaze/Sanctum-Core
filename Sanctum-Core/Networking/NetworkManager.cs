@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sanctum_Core.Networking
+namespace Sanctum_Core
 {
-    using System.Collections;
-    using System.Collections.Generic;
-    using UnityEngine;
-    using System.Net.Sockets;
-    using System;
-    using System.ComponentModel;
-    using Unity.Properties;
-
     public enum NetworkInstruction
     {
         NetworkAttribute, PlayerConnection
@@ -26,10 +20,10 @@ namespace Sanctum_Core.Networking
         private TcpClient client;
         private NetworkStream rwStream;
         private string messageBuffer = "";
-        private int bufferSize = 4096;
-        private NetworkAttributeFactory NetworkAttributeFactory;
-        private NetworkCommandHandler NetworkCommandHandler;
-        private bool mock;
+        private readonly int bufferSize = 4096;
+        private readonly NetworkAttributeFactory NetworkAttributeFactory;
+        private readonly NetworkCommandHandler NetworkCommandHandler;
+        private readonly bool mock;
 
 
 
@@ -37,7 +31,7 @@ namespace Sanctum_Core.Networking
         public NetworkManager(NetworkAttributeFactory networkAttributeFactory, bool mock = false)
         {
             this.NetworkAttributeFactory = networkAttributeFactory;
-            this.NetworkAttributeFactory.attributeValueChanged += NetworkAttributeChanged;
+            this.NetworkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
             this.NetworkCommandHandler = new NetworkCommandHandler();
             this.mock = mock;
         }
@@ -46,24 +40,24 @@ namespace Sanctum_Core.Networking
         {
             try
             {
-                if (!mock)
+                if (!this.mock)
                 {
-                    client = new TcpClient(server, port);
-                    rwStream = client.GetStream();
+                    this.client = new TcpClient(server, port);
+                    this.rwStream = this.client.GetStream();
                 }
                 else
                 {
-                    rwStream = new NetworkMock(null);
+                    this.rwStream = new NetworkMock(null);
                 }
-                SendMessage(NetworkInstruction.PlayerConnection, payload: username);
+                this.SendMessage(NetworkInstruction.PlayerConnection, payload: username);
                 return 0;
             }
-            catch (ArgumentNullException e)
+            catch (ArgumentNullException)
             {
                 // Log Error
                 return 1;
             }
-            catch (SocketException e)
+            catch (SocketException)
             {
                 // Log Error
                 return 2;
@@ -87,20 +81,20 @@ namespace Sanctum_Core.Networking
         public void SendMessage(NetworkInstruction networkInstruction, string payload = "", string serverOpCode = "01") // Sends a message to the server. The send format is {uuid opcode message} The spaces are not present 
         {
             string message = $"{1}|{serverOpCode}|{(int)networkInstruction:D2}|{payload}";
-            byte[] data = System.Text.Encoding.UTF8.GetBytes(AddMessageSize(message));
-            rwStream.Write(data, 0, data.Length);
+            byte[] data = System.Text.Encoding.UTF8.GetBytes(this.AddMessageSize(message));
+            this.rwStream.Write(data, 0, data.Length);
 
         }
 
         public void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
         {
-            SendMessage(NetworkInstruction.NetworkAttribute, $"{(int)sender}|{args.PropertyName}");
+            this.SendMessage(NetworkInstruction.NetworkAttribute, $"{(int)sender}|{args.PropertyName}");
         }
 
         public void UpdateNetworkBuffer()
         {
-            messageBuffer += NetworkReceiver.ReadSocketData(rwStream, bufferSize);
-            messageBuffer = NetworkCommandHandler.ParseSocketData(messageBuffer);
+            this.messageBuffer += NetworkReceiver.ReadSocketData(this.rwStream, this.bufferSize);
+            this.messageBuffer = this.NetworkCommandHandler.ParseSocketData(this.messageBuffer);
         }
     }
 

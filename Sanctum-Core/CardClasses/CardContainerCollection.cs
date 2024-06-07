@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sanctum_Core.CardClasses
+namespace Sanctum_Core
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-
     public class InsertCardData
     {
         public int insertPosition;
@@ -22,21 +19,20 @@ namespace Sanctum_Core.CardClasses
             this.cardID = cardID;
             this.containerInsertPosition = containerInsertPosition;
             this.createNewContainer = createNewContainer;
-
         }
-
     }
+
     public class CardContainerCollection
     {
         CardZone Zone { get; set; }
         public string Owner { get; }
         List<CardContainer> Containers { get; set; } = new List<CardContainer>();
-        private int? maxContainerCount;
-        private int? maxContainerCardCount;
+        private readonly int? maxContainerCount;
+        private readonly int? maxContainerCardCount;
         NetworkAttribute<InsertCardData> insertOrRemoveCard;
         public event PropertyChangedEventHandler containerChanged = delegate { };
 
-        private CardFactory CardFactory;
+        private readonly CardFactory CardFactory;
 
         public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
         {
@@ -45,7 +41,7 @@ namespace Sanctum_Core.CardClasses
             this.Zone = zone;
             this.Owner = owner;
             this.insertOrRemoveCard = networkAttributeManager.AddNetworkAttribute<InsertCardData>(owner, null);
-            this.insertOrRemoveCard.valueChange += NetworkedCardInsert;
+            this.insertOrRemoveCard.valueChange += this.NetworkedCardInsert;
             this.CardFactory = cardFactory;
 
         }
@@ -54,23 +50,23 @@ namespace Sanctum_Core.CardClasses
 
             if (changeShouldBeNetworked)
             {
-                insertOrRemoveCard.Value = new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
+                this.insertOrRemoveCard.Value = new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
                 return;
             }
-            ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer));
+            this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer));
             containerChanged(this, new PropertyChangedEventArgs("Inserted"));
         }
 
         private void NetworkedCardInsert(object sender, PropertyChangedEventArgs args)
         {
-            ProcessCardInsertion((InsertCardData)sender);
+            this.ProcessCardInsertion((InsertCardData)sender);
         }
 
         private bool ProcessCardInsertion(InsertCardData cardChange)
         {
-            cardChange.insertPosition = Mathf.Clamp(cardChange.insertPosition, 0, Containers.Count);
-            CardContainer destinationContainer = DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
-            Card? insertCard = CardFactory.GetCard(cardChange.cardID);
+            cardChange.insertPosition = Math.Clamp(cardChange.insertPosition, 0, this.Containers.Count);
+            CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
+            Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
             if (insertCard == null)
             {
                 return false;
@@ -81,8 +77,8 @@ namespace Sanctum_Core.CardClasses
 
         private CardContainer CreateAndInsertCardContainer(int insertPosition)
         {
-            CardContainer container = new CardContainer(Owner, maxContainerCardCount);
-            Containers.Insert(insertPosition, container);
+            CardContainer container = new(this.maxContainerCardCount);
+            this.Containers.Insert(insertPosition, container);
             return container;
         }
 
@@ -90,16 +86,16 @@ namespace Sanctum_Core.CardClasses
         {
             if (createNewContainer)
             {
-                if (Containers.Count >= maxContainerCount)
+                if (this.Containers.Count >= this.maxContainerCount)
                 {
                     //Probably LOG this
-                    return Containers[0];
+                    return this.Containers[0];
                 }
-                return CreateAndInsertCardContainer(targetContainerIndex);
+                return this.CreateAndInsertCardContainer(targetContainerIndex);
             }
             else
             {
-                return Containers[targetContainerIndex];
+                return this.Containers[targetContainerIndex];
             }
         }
 
@@ -109,7 +105,7 @@ namespace Sanctum_Core.CardClasses
         /// <returns>The name of the card zone.</returns>
         public string GetName()
         {
-            return Enum.GetName(typeof(CardZone), Zone);
+            return Enum.GetName(typeof(CardZone), this.Zone);
         }
     }
 }
