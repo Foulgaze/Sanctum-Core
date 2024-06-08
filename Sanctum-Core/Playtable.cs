@@ -4,11 +4,25 @@ namespace Sanctum_Core
 {
     public class Playtable
     {
+
+        public class PlayerDescription
+        {
+            public string Name { get; set; }
+            public string Uuid { get; set; }
+            public PlayerDescription(string name, string uuid)
+            {
+                this.Name = name;
+                this.Uuid = uuid;
+            }
+        }
+
         private readonly List<Player> _players = new();
 
         private readonly NetworkManager _networkManager;
 
-        public NetworkAttribute<int> readyUpNeeded;
+
+        public readonly NetworkAttribute<int> readyUpNeeded;
+        public readonly NetworkAttribute<PlayerDescription> playerDescription;
 
         public bool GameStarted { get; set; } = false;
 
@@ -16,7 +30,6 @@ namespace Sanctum_Core
 
         private readonly CardFactory cardFactory;
         private readonly NetworkAttributeFactory networkAttributeFactory;
-
         public Playtable(bool mock = false)
         {
             this.readyUpNeeded = new NetworkAttribute<int>("0", 4);
@@ -24,21 +37,29 @@ namespace Sanctum_Core
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this.networkAttributeFactory.attributeValueChanged += this._networkManager.NetworkAttributeChanged;
             this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
+            this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
+            this.playerDescription.valueChange += this.AddPlayer;
 
         }
 
-        /// <summary>
-        /// Adds a player to the table
-        /// </summary>
-        /// <param name="name"> Name of the player</param>
-        /// <param name="uuid"> UUID of player</param>
-        public void AddPlayer(string name, string uuid)
+        public void ConnectToServer(string server, int port)
         {
+            this._networkManager.Connect(server, port);
+        }
+
+        public void NetworkAddPlayer(string name, string uuid)
+        {
+            this.playerDescription.Value = new PlayerDescription(name, uuid);
+        }
+
+        public void AddPlayer(object sender, PropertyChangedEventArgs args)
+        {
+            PlayerDescription playerDescription = (PlayerDescription)sender;
             if (this.GameStarted)
             {
                 return;
             }
-            Player player = new(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
+            Player player = new(playerDescription.Uuid, playerDescription.Name, 40, this.networkAttributeFactory, this.cardFactory);
             player.ReadiedUp.valueChange += this.CheckForStartGame;
             this._players.Add(player);
         }
@@ -50,7 +71,7 @@ namespace Sanctum_Core
         /// <returns>Player or null depending of if uuid exists</returns>
         public Player? GetPlayer(string uuid)
         {
-            return this._players.FirstOrDefault(player => player.Uuid == uuid); ;
+            return this._players.FirstOrDefault(player => player.Uuid == uuid);
         }
 
         void CheckForStartGame(object obj, PropertyChangedEventArgs args)
@@ -73,7 +94,7 @@ namespace Sanctum_Core
         {
             foreach (Player player in this._players)
             {
-                (List<string> cardNames, _) = CardParser.ParseDeckList(player.DeckListRaw.Value);
+                List<string> cardNames = DeckListParser.ParseDeckList(player.DeckListRaw.Value);
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
                 List<Card> cards = this.cardFactory.LoadCardNames(cardNames, this.networkAttributeFactory);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
@@ -83,7 +104,7 @@ namespace Sanctum_Core
 
         public bool RemovePlayer(string uuid)
         {
-            Player player = this.GetPlayer(uuid);
+            Player? player = this.GetPlayer(uuid);
             return player != null && this._players.Remove(player);
         }
     }

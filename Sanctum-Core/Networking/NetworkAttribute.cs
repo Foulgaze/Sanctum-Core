@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
@@ -20,7 +16,7 @@ namespace Sanctum_Core
             set
             {
                 this.changeHasBeenNetworked = true;
-                this.networkValueChange(this.Id, new PropertyChangedEventArgs(this.JsonConvert.SerializeObject(value)));
+                this.networkValueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));
             }
         }
         public string Id { get; }
@@ -36,6 +32,5 @@ namespace Sanctum_Core
             this.changeHasBeenNetworked = false;
             this.valueChange(value, new PropertyChangedEventArgs("NonNetworkChange"));
         }
-
     }
 }

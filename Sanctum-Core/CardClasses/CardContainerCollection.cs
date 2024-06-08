@@ -7,31 +7,31 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
-    public class InsertCardData
-    {
-        public int insertPosition;
-        public int cardID;
-        public int? containerInsertPosition;
-        public bool createNewContainer;
-        public InsertCardData(int insertPosition, int cardID, int? containerInsertPosition, bool createNewContainer)
-        {
-            this.insertPosition = insertPosition;
-            this.cardID = cardID;
-            this.containerInsertPosition = containerInsertPosition;
-            this.createNewContainer = createNewContainer;
-        }
-    }
+    
 
     public class CardContainerCollection
     {
-        CardZone Zone { get; set; }
+        private class InsertCardData
+        {
+            public int insertPosition;
+            public int cardID;
+            public int? containerInsertPosition;
+            public bool createNewContainer;
+            public InsertCardData(int insertPosition, int cardID, int? containerInsertPosition, bool createNewContainer)
+            {
+                this.insertPosition = insertPosition;
+                this.cardID = cardID;
+                this.containerInsertPosition = containerInsertPosition;
+                this.createNewContainer = createNewContainer;
+            }
+        }
+        public CardZone Zone { get; set; }
         public string Owner { get; }
         List<CardContainer> Containers { get; set; } = new List<CardContainer>();
         private readonly int? maxContainerCount;
         private readonly int? maxContainerCardCount;
-        NetworkAttribute<InsertCardData> insertOrRemoveCard;
+        readonly NetworkAttribute<InsertCardData> insertOrRemoveCard;
         public event PropertyChangedEventHandler containerChanged = delegate { };
-
         private readonly CardFactory CardFactory;
 
         public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
@@ -53,13 +53,15 @@ namespace Sanctum_Core
                 this.insertOrRemoveCard.Value = new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
                 return;
             }
-            this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer));
-            containerChanged(this, new PropertyChangedEventArgs("Inserted"));
+            if(this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer)))
+            {
+                containerChanged(this, new PropertyChangedEventArgs("Inserted"));
+            }
         }
 
         private void NetworkedCardInsert(object sender, PropertyChangedEventArgs args)
         {
-            this.ProcessCardInsertion((InsertCardData)sender);
+            _ = this.ProcessCardInsertion((InsertCardData)sender);
         }
 
         private bool ProcessCardInsertion(InsertCardData cardChange)

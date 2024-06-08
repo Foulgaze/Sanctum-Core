@@ -1,16 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
+﻿using System.ComponentModel;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
     public enum NetworkInstruction
     {
-        NetworkAttribute, PlayerConnection
+        Connection, PlayerConnection, NetworkAttribute
     }
 
     public class NetworkManager
@@ -36,32 +31,18 @@ namespace Sanctum_Core
             this.mock = mock;
         }
 
-        public int Connect(string server, string username, int port)
+        public void Connect(string server, int port)
         {
-            try
+            if (!this.mock)
             {
-                if (!this.mock)
-                {
-                    this.client = new TcpClient(server, port);
-                    this.rwStream = this.client.GetStream();
-                }
-                else
-                {
-                    this.rwStream = new NetworkMock(null);
-                }
-                this.SendMessage(NetworkInstruction.PlayerConnection, payload: username);
-                return 0;
+                this.client = new TcpClient(server, port);
+                this.rwStream = this.client.GetStream();
             }
-            catch (ArgumentNullException)
+            else
             {
-                // Log Error
-                return 1;
+                this.rwStream = new NetworkMock(null);
             }
-            catch (SocketException)
-            {
-                // Log Error
-                return 2;
-            }
+            this.SendMessage(NetworkInstruction.Connection);
         }
 
         public string AddMessageSize(string message)
@@ -97,5 +78,4 @@ namespace Sanctum_Core
             this.messageBuffer = this.NetworkCommandHandler.ParseSocketData(this.messageBuffer);
         }
     }
-
 }

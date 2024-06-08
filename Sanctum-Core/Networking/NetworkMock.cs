@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
+using System.Net.Sockets;
 
 namespace Sanctum_Core
 {
-    using System;
-    using System.ComponentModel;
-    using System.Net.Sockets;
-
     public class NetworkMock : NetworkStream
     {
         public event PropertyChangedEventHandler mockSendData = delegate { };
@@ -22,15 +15,17 @@ namespace Sanctum_Core
 
         public override int Read(byte[] buffer, int offset, int size)
         {
-            if (BUFFER.Length == 0)
+            if (this.BUFFER.Length == 0)
+            {
                 return 0;
+            }
 
-            int bytesToRead = Math.Min(size, BUFFER.Length);
+            int bytesToRead = Math.Min(size, this.BUFFER.Length);
 
-            byte[] data = System.Text.Encoding.UTF8.GetBytes(BUFFER);
+            byte[] data = System.Text.Encoding.UTF8.GetBytes(this.BUFFER);
             Array.Copy(data, 0, buffer, offset, bytesToRead);
 
-            BUFFER = BUFFER.Substring(bytesToRead);
+            this.BUFFER = this.BUFFER[bytesToRead..];
 
             return bytesToRead;
         }
@@ -41,9 +36,6 @@ namespace Sanctum_Core
 
         }
 
-        public override bool DataAvailable
-        {
-            get { return BUFFER.Length != 0; }
-        }
+        public override bool DataAvailable => this.BUFFER.Length != 0;
     }
 }

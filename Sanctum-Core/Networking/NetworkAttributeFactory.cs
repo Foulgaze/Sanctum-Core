@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
+using Newtonsoft.Json;
 
 namespace Sanctum_Core
 {
@@ -66,6 +62,5 @@ namespace Sanctum_Core
             newAttribute.networkValueChange += this.AttributeChangedEventHandler;
             return newAttribute;
         }
-
     }
 }

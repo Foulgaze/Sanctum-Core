@@ -63,5 +63,4 @@ namespace Sanctum_Core
 
         }
     }
-
 }

@@ -61,5 +61,4 @@ namespace Sanctum_Core
             cardsChanged(this, new PropertyChangedEventArgs("removed"));
         }
     }
-
 }

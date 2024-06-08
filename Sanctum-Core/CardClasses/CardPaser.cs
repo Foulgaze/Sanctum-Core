@@ -6,17 +6,16 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
-    public static class CardParser
+    public static class DeckListParser
     {
         /// <summary>
         /// Parses a decklist assuming its in MTGArena format. 
         /// </summary>
         /// <param name="deckList">The raw decklist string</param>
         /// <returns>(List of Successfully parsed names, List of Error Lines)</returns>
-        public static (List<string>, List<string>) ParseDeckList(string deckList)
+        public static List<string> ParseDeckList(string deckList)
         {
             List<string> cardNames = new();
-            List<string> problematicLines = new();
 
             foreach (string cardLine in deckList.Split('\n'))
             {
@@ -29,19 +28,19 @@ namespace Sanctum_Core
                 int spaceIndex = trimmedLine.IndexOf(' ');
                 if (spaceIndex == -1)
                 {
-                    problematicLines.Add(trimmedLine);
+                    // Log this
                     continue;
                 }
 
                 if (!int.TryParse(trimmedLine[..spaceIndex], out int cardCount))
                 {
-                    problematicLines.Add(cardLine);
+                    // Log this
                     continue;
                 }
                 string cardName = trimmedLine[(spaceIndex + 1)..];
                 cardNames.AddRange(Enumerable.Repeat(cardName, cardCount));
             }
-            return (cardNames, problematicLines);
+            return cardNames;
         }
 
     }

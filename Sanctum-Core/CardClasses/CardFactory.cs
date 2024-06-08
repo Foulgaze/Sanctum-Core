@@ -64,9 +64,6 @@ namespace Sanctum_Core
             string frontName = fullName[..doubleSlashIndex];
             string backName = fullName[doubleSlashIndex..];
             return (frontName, backName);
-
-
         }
     }
-
 }

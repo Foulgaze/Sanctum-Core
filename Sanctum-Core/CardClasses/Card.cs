@@ -55,6 +55,5 @@
 
             return !int.TryParse(value, out int parsedValue) ? 0 : parsedValue;
         }
-
     }
 }

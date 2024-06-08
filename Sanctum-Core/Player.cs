@@ -50,11 +50,7 @@
         /// <returns>A list of the lines/names that were not able to be parsed</returns>
         public List<string> ValidateDeckList(Func<string, bool> validateCardName)
         {
-            (List<string> cardNames, List<string> errorLines) = CardParser.ParseDeckList(DeckListRaw.Value);
-            if (errorLines.Count > 0)
-            {
-                return errorLines;
-            }
+            List<string> cardNames = DeckListParser.ParseDeckList(DeckListRaw.Value);
             cardNames = cardNames.Where(x => !validateCardName(x)).ToList();
             return cardNames;
         }
