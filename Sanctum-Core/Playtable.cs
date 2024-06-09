@@ -35,11 +35,10 @@ namespace Sanctum_Core
             this.readyUpNeeded = new NetworkAttribute<int>("0", 4);
             this.cardFactory = new CardFactory();
             this.networkAttributeFactory = new NetworkAttributeFactory();
-            this.networkAttributeFactory.attributeValueChanged += this._networkManager.NetworkAttributeChanged;
             this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
             this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
-            this.playerDescription.valueChange += this.AddPlayer;
-
+            this.playerDescription.valueChange += this.NetworkedAddPlayer;
+            this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;
         }
 
         public void ConnectToServer(string server, int port)
@@ -47,12 +46,12 @@ namespace Sanctum_Core
             this._networkManager.Connect(server, port);
         }
 
-        public void NetworkAddPlayer(string name, string uuid)
+        public void AddPlayer(string name, string uuid)
         {
             this.playerDescription.Value = new PlayerDescription(name, uuid);
         }
 
-        public void AddPlayer(object sender, PropertyChangedEventArgs args)
+        public void NetworkedAddPlayer(object sender, PropertyChangedEventArgs args)
         {
             PlayerDescription playerDescription = (PlayerDescription)sender;
             if (this.GameStarted)

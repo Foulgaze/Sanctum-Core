@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Net;
 
 namespace Sanctum_Core
 {
@@ -17,8 +19,8 @@ namespace Sanctum_Core
         private string messageBuffer = "";
         private readonly int bufferSize = 4096;
         private readonly NetworkAttributeFactory NetworkAttributeFactory;
-        private readonly NetworkCommandHandler NetworkCommandHandler;
-        private readonly bool mock;
+        public NetworkCommandHandler NetworkCommandHandler { get;}
+        private readonly bool isMock;
 
 
 
@@ -28,19 +30,23 @@ namespace Sanctum_Core
             this.NetworkAttributeFactory = networkAttributeFactory;
             this.NetworkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
             this.NetworkCommandHandler = new NetworkCommandHandler();
-            this.mock = mock;
+            this.isMock = mock;
         }
 
         public void Connect(string server, int port)
         {
-            if (!this.mock)
+            if (!this.isMock)
             {
                 this.client = new TcpClient(server, port);
                 this.rwStream = this.client.GetStream();
             }
             else
             {
-                this.rwStream = new NetworkMock(null);
+                TcpListener listener = new(IPAddress.Parse(server), port);
+                listener.Start();
+                Socket socket = new(SocketType.Stream, ProtocolType.Tcp);
+                socket.Connect(server, port);
+                this.rwStream = new NetworkMock(socket);
             }
             this.SendMessage(NetworkInstruction.Connection);
         }
@@ -61,7 +67,7 @@ namespace Sanctum_Core
 
         public void SendMessage(NetworkInstruction networkInstruction, string payload = "", string serverOpCode = "01") // Sends a message to the server. The send format is {uuid opcode message} The spaces are not present 
         {
-            string message = $"{1}|{serverOpCode}|{(int)networkInstruction:D2}|{payload}";
+            string message = this.isMock ? $"{1}|{(int)networkInstruction:D2}|{payload}" : $"{1}|{serverOpCode}|{(int)networkInstruction:D2}|{payload}";
             byte[] data = System.Text.Encoding.UTF8.GetBytes(this.AddMessageSize(message));
             this.rwStream.Write(data, 0, data.Length);
 
@@ -69,7 +75,7 @@ namespace Sanctum_Core
 
         public void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
         {
-            this.SendMessage(NetworkInstruction.NetworkAttribute, $"{(int)sender}|{args.PropertyName}");
+            this.SendMessage(NetworkInstruction.NetworkAttribute, $"{(string)sender}|{args.PropertyName}");
         }
 
         public void UpdateNetworkBuffer()
