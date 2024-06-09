@@ -38,7 +38,6 @@ namespace Sanctum_Core
             this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
             this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
             this.playerDescription.valueChange += this.NetworkedAddPlayer;
-            this.networkAttributeFactory.attributeValueChanged += this._networkManager.NetworkAttributeChanged;
             this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;
         }
 
