@@ -15,15 +15,23 @@ namespace Sanctum_Core_Testing
         private readonly List<NetworkMock?> networkMocks = new();
         private readonly List<NetworkManager> networkManagers = new();
         private readonly List<string> networkCommands = new();
+        private int startPort = 10000;
+
         List<Playtable> playtables;
+
+        public void ClearLists()
+        {
+            this.networkMocks.Clear();
+            this.networkManagers.Clear();
+            this.networkCommands.Clear();
+        }
         public List<Playtable> CreatePlaytables(int playerCount)
         {
             this.playtables = new();
-            int startPort = 13497;
             for (int i = 0; i < playerCount; ++i)
             {
                 Playtable newTable = new(true);
-                newTable.ConnectToServer("127.0.0.1", startPort++);
+                newTable.ConnectToServer("127.0.0.1", this.startPort++);
                 NetworkManager manager = (NetworkManager)typeof(Playtable).GetField("_networkManager", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(newTable) ?? throw new Exception("Could not find Network Manager");
                 NetworkStream mock = (NetworkStream)typeof(NetworkManager).GetField("rwStream", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(manager) ?? throw new Exception("Could not find Network Mock");
                 ((NetworkMock)mock).mockSendData += this.HandleAddMessage;

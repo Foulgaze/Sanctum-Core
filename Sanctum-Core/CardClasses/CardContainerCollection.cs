@@ -27,7 +27,7 @@ namespace Sanctum_Core
         }
         public CardZone Zone { get; set; }
         public string Owner { get; }
-        List<CardContainer> Containers { get; set; } = new List<CardContainer>();
+        public List<CardContainer> Containers { get; set; } = new List<CardContainer>();
         private readonly int? maxContainerCount;
         private readonly int? maxContainerCardCount;
         readonly NetworkAttribute<InsertCardData> insertOrRemoveCard;

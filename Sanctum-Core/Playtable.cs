@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using System.Reflection;
+using System.Xml.Linq;
 
 namespace Sanctum_Core
 {
@@ -9,10 +11,12 @@ namespace Sanctum_Core
         {
             public string Name { get; set; }
             public string Uuid { get; set; }
-            public PlayerDescription(string name, string uuid)
+            public bool AddingPlayer { get; set; }
+            public PlayerDescription(string name, string uuid, bool addingPlayer)
             {
                 this.Name = name;
                 this.Uuid = uuid;
+                this.AddingPlayer = addingPlayer;
             }
         }
 
@@ -37,7 +41,7 @@ namespace Sanctum_Core
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
             this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
-            this.playerDescription.valueChange += this.NetworkedAddPlayer;
+            this.playerDescription.valueChange += this.HandlePlayerDescription;
             this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;
         }
 
@@ -46,15 +50,27 @@ namespace Sanctum_Core
             this._networkManager.Connect(server, port);
         }
 
-        public void AddPlayer(string name, string uuid)
+        public void AddOrRemovePlayer(string name, string uuid, bool addPlayer)
         {
-            this.playerDescription.Value = new PlayerDescription(name, uuid);
+            this.playerDescription.Value = new PlayerDescription(name, uuid, addingPlayer: addPlayer);
         }
 
-        public void NetworkedAddPlayer(object sender, PropertyChangedEventArgs args)
+        public void HandlePlayerDescription(object sender, PropertyChangedEventArgs args)
         {
-            PlayerDescription playerDescription = (PlayerDescription)sender;
-            if (this.GameStarted)
+           PlayerDescription playerDescription = (PlayerDescription)sender;
+            if (playerDescription.AddingPlayer)
+            {
+                this.AddPlayer(playerDescription);
+            }
+            else
+            {
+                _ = this.RemovePlayer(playerDescription);
+            }
+        }
+
+        private void AddPlayer(PlayerDescription playerDescription)
+        {
+            if (this.GameStarted || this._players.Where(player => player.Uuid == playerDescription.Uuid).Count() != 0)
             {
                 return;
             }
@@ -101,9 +117,9 @@ namespace Sanctum_Core
         }
 
 
-        public bool RemovePlayer(string uuid)
+        private bool RemovePlayer(PlayerDescription playerDescription)
         {
-            Player? player = this.GetPlayer(uuid);
+            Player? player = this.GetPlayer(playerDescription.Uuid);
             return player != null && this._players.Remove(player);
         }
     }
