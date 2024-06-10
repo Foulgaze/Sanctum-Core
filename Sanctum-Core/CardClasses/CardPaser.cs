@@ -42,6 +42,5 @@ namespace Sanctum_Core
             }
             return cardNames;
         }
-
     }
 }

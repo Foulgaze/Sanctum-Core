@@ -9,8 +9,6 @@
         public NetworkAttribute<int> Health { get; }
         public NetworkAttribute<bool> ReadiedUp { get; set; }
 
-        public bool GameStarted { get; } = false;
-
         private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new();
         public Player(string uuid, string name, int startingHealth, NetworkAttributeFactory networkAttributeFactory, CardFactory cardFactory)
         {
@@ -50,7 +48,7 @@
         /// <returns>A list of the lines/names that were not able to be parsed</returns>
         public List<string> ValidateDeckList(Func<string, bool> validateCardName)
         {
-            List<string> cardNames = DeckListParser.ParseDeckList(DeckListRaw.Value);
+            List<string> cardNames = DeckListParser.ParseDeckList(this.DeckListRaw.Value);
             cardNames = cardNames.Where(x => !validateCardName(x)).ToList();
             return cardNames;
         }
