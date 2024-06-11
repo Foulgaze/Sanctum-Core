@@ -6,6 +6,7 @@ namespace Sanctum_Core
     public abstract class NetworkAttribute
     {
         public string Id { get; }
+        public bool IsReadOnly { get; set; } = false;
         public abstract Type ValueType { get; }
 
         protected NetworkAttribute(string id)
@@ -29,6 +30,10 @@ namespace Sanctum_Core
             get => this.value;
             set
             {
+                if(this.IsReadOnly)
+                {
+                    return;
+                }
                 this.value = value;
                 this.changeHasBeenNetworked = true;
                 this.networkValueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));

@@ -22,4 +22,8 @@
     <ProjectReference Include="..\Sanctum-Core\Sanctum-Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Decklists\" />
+  </ItemGroup>
+
 </Project>
