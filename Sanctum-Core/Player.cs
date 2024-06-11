@@ -41,16 +41,5 @@
         {
             return this.zoneToContainer[zone];
         }
-
-        /// <summary>
-        /// Determines if the current user decklist is valid
-        /// </summary>
-        /// <returns>A list of the lines/names that were not able to be parsed</returns>
-        public List<string> ValidateDeckList(Func<string, bool> validateCardName)
-        {
-            List<string> cardNames = DeckListParser.ParseDeckList(this.DeckListRaw.Value);
-            cardNames = cardNames.Where(x => !validateCardName(x)).ToList();
-            return cardNames;
-        }
     }
 }
