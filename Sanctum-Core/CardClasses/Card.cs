@@ -4,9 +4,9 @@
     {
         public int Id { get; }
         public CardInfo FrontInfo { get; }
-        public CardInfo BackInfo { get; }
+        public CardInfo? BackInfo { get; }
         public CardInfo CurrentInfo => this.isFlipped.Value ? this.BackInfo : this.FrontInfo;
-        public CardContainer CurrentLocation { get; set; }
+        public CardContainerCollection? CurrentLocation { get; set; } = null;
         public NetworkAttribute<int> power;
         public NetworkAttribute<int> toughness;
         public NetworkAttribute<bool> tapped;

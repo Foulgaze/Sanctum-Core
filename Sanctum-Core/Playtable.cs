@@ -37,8 +37,8 @@ namespace Sanctum_Core
         public Playtable(bool mock = false)
         {
             this.readyUpNeeded = new NetworkAttribute<int>("0", 4);
-            this.cardFactory = new CardFactory();
             this.networkAttributeFactory = new NetworkAttributeFactory();
+            this.cardFactory = new CardFactory(this.networkAttributeFactory);
             this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
             this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
             this.playerDescription.valueChange += this.HandlePlayerDescription;
@@ -111,7 +111,7 @@ namespace Sanctum_Core
             {
                 List<string> cardNames = DeckListParser.ParseDeckList(player.DeckListRaw.Value);
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
-                List<Card> cards = this.cardFactory.LoadCardNames(cardNames, this.networkAttributeFactory);
+                List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
             }
         }

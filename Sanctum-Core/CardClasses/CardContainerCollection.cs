@@ -13,11 +13,11 @@ namespace Sanctum_Core
     {
         private class InsertCardData
         {
-            public int insertPosition;
+            public int? insertPosition;
             public int cardID;
             public int? containerInsertPosition;
             public bool createNewContainer;
-            public InsertCardData(int insertPosition, int cardID, int? containerInsertPosition, bool createNewContainer)
+            public InsertCardData(int? insertPosition, int cardID, int? containerInsertPosition, bool createNewContainer)
             {
                 this.insertPosition = insertPosition;
                 this.cardID = cardID;
@@ -29,28 +29,33 @@ namespace Sanctum_Core
         public string Owner { get; }
         public List<CardContainer> Containers { get; set; } = new List<CardContainer>();
         private readonly int? maxContainerCount;
-        private readonly int? maxContainerCardCount;
-        readonly NetworkAttribute<InsertCardData> insertOrRemoveCard;
+        private readonly int? maxCardCountPerContainer;
+        private readonly NetworkAttribute<InsertCardData> insertCardData;
+        public NetworkAttribute<int> removeCardID;
         public event PropertyChangedEventHandler containerChanged = delegate { };
         private readonly CardFactory CardFactory;
 
         public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
         {
-            this.maxContainerCardCount = maxContainerCardCount;
+            this.maxCardCountPerContainer = maxContainerCardCount;
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertOrRemoveCard = networkAttributeManager.AddNetworkAttribute<InsertCardData>(owner, null);
-            this.insertOrRemoveCard.valueChange += this.NetworkedCardInsert;
+            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>(owner, null);
+            this.insertCardData.valueChange += this.NetworkedCardInsert;
+            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>(owner, 0);
+            this.removeCardID.valueChange += this.NetworkRemoveCard;
+
             this.CardFactory = cardFactory;
 
         }
-        public void InsertCardIntoContainer(int insertPosition, bool createNewContainer, Card cardToInsert, int? cardContainerPosition, bool changeShouldBeNetworked)
+        public void InsertCardIntoContainer(int? insertPosition, bool createNewContainer, Card cardToInsert, int? cardContainerPosition, bool changeShouldBeNetworked)
         {
 
             if (changeShouldBeNetworked)
             {
-                this.insertOrRemoveCard.Value = new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
+                InsertCardData newCardData = new(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
+                this.insertCardData.Value = newCardData;
                 return;
             }
             if(this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer)))
@@ -66,39 +71,79 @@ namespace Sanctum_Core
 
         private bool ProcessCardInsertion(InsertCardData cardChange)
         {
-            cardChange.insertPosition = Math.Clamp(cardChange.insertPosition, 0, this.Containers.Count);
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
             Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
             if (insertCard == null)
             {
                 return false;
             }
+            if(insertCard.CurrentLocation != null)
+            {
+                insertCard.CurrentLocation.removeCardID.Value = cardChange.cardID;
+            }
+            insertCard.CurrentLocation = this;
             destinationContainer.AddCardToContainer(insertCard, cardChange.containerInsertPosition);
             return true;
         }
 
+
         private CardContainer CreateAndInsertCardContainer(int insertPosition)
         {
-            CardContainer container = new(this.maxContainerCardCount);
+            if(this.Containers.Count >= this.maxContainerCount)
+            {
+                return this.FindFirstEmptyContainer() ?? throw new Exception("Max container count reached, with all containers full");
+            }
+            CardContainer container = new(this.maxCardCountPerContainer);
             this.Containers.Insert(insertPosition, container);
             return container;
         }
 
-        private CardContainer DetermineDestinationContainer(int targetContainerIndex, bool createNewContainer)
+        private CardContainer? FindFirstEmptyContainer()
         {
-            if (createNewContainer)
+            return this.Containers.LastOrDefault(container => !container.IsFull());
+        }
+
+        private CardContainer DetermineDestinationContainer(int? targetContainerIndex, bool createNewContainer)
+        {
+            int rightwardBound = createNewContainer ? this.Containers.Count : Math.Max(0,this.Containers.Count - 1);
+            int insertPosition = targetContainerIndex.HasValue ? Math.Clamp((int)targetContainerIndex, 0, rightwardBound) : rightwardBound;
+            if (createNewContainer || this.Containers.Count == 0)
             {
-                if (this.Containers.Count >= this.maxContainerCount)
-                {
-                    //Probably LOG this
-                    return this.Containers[0];
-                }
-                return this.CreateAndInsertCardContainer(targetContainerIndex);
+                return this.CreateAndInsertCardContainer(insertPosition);
             }
             else
             {
-                return this.Containers[targetContainerIndex];
+                if (!this.Containers[insertPosition].IsFull())
+                {
+                    return this.Containers[insertPosition];
+                }
+                else
+                {
+                    return this.FindFirstEmptyContainer() ?? this.CreateAndInsertCardContainer(this.Containers.Count);
+                }
             }
+        }
+
+        private void NetworkRemoveCard(object sender, PropertyChangedEventArgs args)
+        {
+            _ = this.RemoveCardFromContainer((int)sender);
+            // log this.
+        }
+
+
+        public bool RemoveCardFromContainer(int cardID)
+        {
+            foreach (CardContainer container in this.Containers)
+            {
+                Card cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
+                if (cardToRemove != null)
+                {
+                    _ = container.Cards.Remove(cardToRemove); // log
+                    containerChanged(null, new PropertyChangedEventArgs("removed"));
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>

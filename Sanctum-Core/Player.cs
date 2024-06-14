@@ -26,7 +26,7 @@
             this.zoneToContainer[CardZone.Graveyard] = new CardContainerCollection(CardZone.Library, this.Uuid, 1, null, networkAttributeFactory, cardFactory);
             this.zoneToContainer[CardZone.Exile] = new CardContainerCollection(CardZone.Library, this.Uuid, 1, null, networkAttributeFactory, cardFactory);
             this.zoneToContainer[CardZone.CommandZone] = new CardContainerCollection(CardZone.Library, this.Uuid, 1, null, networkAttributeFactory, cardFactory);
-            this.zoneToContainer[CardZone.Hand] = new CardContainerCollection(CardZone.Library, this.Uuid, null, 1, networkAttributeFactory, cardFactory);
+            this.zoneToContainer[CardZone.Hand] = new CardContainerCollection(CardZone.Library, this.Uuid,1,null, networkAttributeFactory, cardFactory);
             this.zoneToContainer[CardZone.MainField] = new CardContainerCollection(CardZone.Library, this.Uuid, null, 3, networkAttributeFactory, cardFactory);
             this.zoneToContainer[CardZone.LeftField] = new CardContainerCollection(CardZone.Library, this.Uuid, null, 3, networkAttributeFactory, cardFactory);
             this.zoneToContainer[CardZone.RightField] = new CardContainerCollection(CardZone.Library, this.Uuid, null, 3, networkAttributeFactory, cardFactory);
