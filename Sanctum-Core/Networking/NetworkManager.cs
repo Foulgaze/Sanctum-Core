@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
 
 namespace Sanctum_Core
 {
@@ -12,18 +12,13 @@ namespace Sanctum_Core
 
     public class NetworkManager
     {
-
-
         private TcpClient client;
         private NetworkStream rwStream;
-        private string messageBuffer = "";
+        private readonly StringBuilder messageBuffer = new();
         private readonly int bufferSize = 4096;
         private readonly NetworkAttributeFactory NetworkAttributeFactory;
-        public NetworkCommandHandler NetworkCommandHandler { get;}
+        public NetworkCommandHandler NetworkCommandHandler { get; }
         private readonly bool isMock;
-
-
-
 
         public NetworkManager(NetworkAttributeFactory networkAttributeFactory, bool mock = false)
         {
@@ -65,12 +60,11 @@ namespace Sanctum_Core
             return msgByteSize + message;
         }
 
-        public void SendMessage(NetworkInstruction networkInstruction, string payload = "", string serverOpCode = "01") // Sends a message to the server. The send format is {uuid opcode message} The spaces are not present 
+        public void SendMessage(NetworkInstruction networkInstruction, string payload = "", string serverOpCode = "01")
         {
             string message = this.isMock ? $"{1}|{(int)networkInstruction:D2}|{payload}" : $"{1}|{serverOpCode}|{(int)networkInstruction:D2}|{payload}";
-            byte[] data = System.Text.Encoding.UTF8.GetBytes(this.AddMessageSize(message));
+            byte[] data = Encoding.UTF8.GetBytes(this.AddMessageSize(message));
             this.rwStream.Write(data, 0, data.Length);
-
         }
 
         public void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
@@ -80,8 +74,8 @@ namespace Sanctum_Core
 
         public void UpdateNetworkBuffer()
         {
-            this.messageBuffer += NetworkReceiver.ReadSocketData(this.rwStream, this.bufferSize);
-            this.messageBuffer = this.NetworkCommandHandler.ParseSocketData(this.messageBuffer);
+            _ = this.messageBuffer.Append(NetworkReceiver.ReadSocketData(this.rwStream, this.bufferSize));
+            this.NetworkCommandHandler.ParseSocketData(this.messageBuffer);
         }
     }
 }

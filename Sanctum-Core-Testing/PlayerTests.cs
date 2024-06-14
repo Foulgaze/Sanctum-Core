@@ -25,10 +25,10 @@ namespace Sanctum_Core_Testing
             List<string> uuids = Enumerable.Range(0, tableCount).Select(_ => Guid.NewGuid().ToString()).ToList();
 
             this.playtables = this.networkAdministrator.CreatePlaytables(tableCount);
-            AddPlayers(uuids, this.playtables);
-            List<Player> relevantPlayer = GetRelevantPlayersFromTables(uuids, this.playtables);
+            TestHelperFunctions.AddPlayers(uuids, this.playtables);
+            List<Player> relevantPlayer = TestHelperFunctions.GetRelevantPlayersFromTables(uuids, this.playtables);
             relevantPlayer.ForEach(player => player.DeckListRaw.Value = player.Uuid);
-            GetAllPlayers(this.playtables).ForEach(player => Assert.That(player.Uuid, Is.EqualTo(player.DeckListRaw.Value)));
+            TestHelperFunctions.GetAllPlayers(this.playtables).ForEach(player => Assert.That(player.Uuid, Is.EqualTo(player.DeckListRaw.Value)));
         }
 
         [Test]
@@ -38,10 +38,10 @@ namespace Sanctum_Core_Testing
             List<string> uuids = Enumerable.Range(0, tableCount).Select(_ => Guid.NewGuid().ToString()).ToList();
 
             this.playtables = this.networkAdministrator.CreatePlaytables(tableCount);
-            AddPlayers(uuids, this.playtables);
-            List<Player> relevantPlayer = GetRelevantPlayersFromTables(uuids, this.playtables);
+            TestHelperFunctions.AddPlayers(uuids, this.playtables);
+            List<Player> relevantPlayer = TestHelperFunctions.GetRelevantPlayersFromTables(uuids, this.playtables);
             relevantPlayer.ForEach(player => player.DeckListRaw.Value = player.Uuid);
-            GetAllPlayers(this.playtables).ForEach(player => Assert.That(player.Uuid, Is.EqualTo(player.DeckListRaw.Value)));
+            TestHelperFunctions.GetAllPlayers(this.playtables).ForEach(player => Assert.That(player.Uuid, Is.EqualTo(player.DeckListRaw.Value)));
         }
 
         [Test]
@@ -51,7 +51,7 @@ namespace Sanctum_Core_Testing
             string playerName = "TestPlayer";
             int startingHealth = 20;
             NetworkAttributeFactory networkAttributeFactory = new();
-            CardFactory cardFactory = new();
+            CardFactory cardFactory = new(networkAttributeFactory);
 
             Player player = new(uuid, playerName, startingHealth, networkAttributeFactory, cardFactory);
 
@@ -69,45 +69,11 @@ namespace Sanctum_Core_Testing
             string playerName = "TestPlayer";
             int startingHealth = 20;
             NetworkAttributeFactory networkAttributeFactory = new();
-            CardFactory cardFactory = new();
+            CardFactory cardFactory = new(networkAttributeFactory);
 
             Player player = new(uuid, playerName, startingHealth, networkAttributeFactory, cardFactory);
             player.DeckListRaw.Value = "100 Plains";
             Assert.That(100, Is.EqualTo(DeckListParser.ParseDeckList(player.DeckListRaw.Value).Count));
-        }
-
-
-        public static void AddPlayers(List<string> uuids, List<Playtable> playtables)
-        {
-            for (int i = 0; i < uuids.Count; ++i)
-            {
-                string uuid = uuids[i];
-                Playtable playtable = playtables[i];
-                playtable.AddOrRemovePlayer(uuid, uuid, true);
-            }
-        }
-
-
-        public static List<Player> GetAllPlayers(List<Playtable> playtables)
-        {
-            List<Player> allPlayers = new();
-            foreach (Playtable itertable in playtables)
-            {
-                List<Player> players = (List<Player>)typeof(Playtable).GetField("_players", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(itertable) ?? throw new Exception("Could not find players");
-                allPlayers.AddRange(players);
-            }
-            return allPlayers;
-        }
-        public static List<Player> GetRelevantPlayersFromTables(List<string> uuids, List<Playtable> playtables)
-        {
-            List<Player> relevantPlayers = new();
-            for (int i = 0; i < uuids.Count; ++i)
-            {
-                string uuid = uuids[i];
-                Playtable playtable = playtables[i];
-                relevantPlayers.Add(playtable.GetPlayer(uuid));
-            }
-            return relevantPlayers;
         }
     }
 }

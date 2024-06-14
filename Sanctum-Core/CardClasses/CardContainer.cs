@@ -9,7 +9,7 @@ namespace Sanctum_Core
 {
     public class CardContainer
     {
-        public List<Card> Cards { get; }
+        public List<Card> Cards { get; } = new();
         private readonly int? maxCardCount;
 
         /// <summary>
@@ -44,21 +44,7 @@ namespace Sanctum_Core
 
         public bool IsFull()
         {
-            return this.maxCardCount != null && this.Cards.Count < this.maxCardCount;
-        }
-
-        /// <summary>
-        /// Removes a card from the container.
-        /// </summary>
-        /// <param name="card">The card to remove.</param>
-        /// <param name="networkChange">If set to <c>true</c>, triggers the <see cref="cardsChanged"/> event.</param>
-        public void RemoveCardFromContainer(Card card)
-        {
-            if (!this.Cards.Remove(card))
-            {
-                return;
-            }
-            cardsChanged(this, new PropertyChangedEventArgs("removed"));
+            return this.maxCardCount != null && this.Cards.Count >= this.maxCardCount;
         }
     }
 }

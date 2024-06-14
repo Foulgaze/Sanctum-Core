@@ -26,5 +26,4 @@ namespace Sanctum_Core
             return "";
         }
     }
-
 }

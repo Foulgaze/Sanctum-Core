@@ -10,6 +10,7 @@ namespace Sanctum_Core
     public class NetworkCommandHandler
     {
         public Dictionary<NetworkInstruction, PropertyChangedEventHandler> networkInstructionEvents = new();
+        public static int messageLengthLength = 4;
         public NetworkCommandHandler()
         {
             foreach (NetworkInstruction instruction in Enum.GetValues(typeof(NetworkInstruction)))
@@ -18,31 +19,31 @@ namespace Sanctum_Core
             }
         }
 
-        public string ParseSocketData(string messageBuffer)
+        public void ParseSocketData(StringBuilder messageBuffer)
         {
             while (true)
             {
-                string messageLength = "";
-                int i = 0;
-                while (messageLength.Length != 4)
+                if (messageBuffer.Length < messageLengthLength)
                 {
-                    if (i >= messageBuffer.Length)
-                    {
-                        return messageBuffer;
-                    }
-
-                    messageLength = messageLength + messageBuffer[i++];
+                    return;
                 }
 
-                int messageLengthRemaining = int.Parse(messageLength);
+                string messageLength = messageBuffer.ToString(0, 4);
+
+                if (!int.TryParse(messageLength, out int messageLengthRemaining))
+                {
+                    // Handle parse error if necessary
+                    return;
+                }
+
                 if (messageLengthRemaining > messageBuffer.Length - 4)
                 {
-                    return messageBuffer;
+                    return;
                 }
 
-                string currentCommand = messageBuffer.Substring(i, messageLengthRemaining);
+                string currentCommand = messageBuffer.ToString(messageLengthLength, messageLengthRemaining);
+                _ = messageBuffer.Remove(0, messageLengthLength + messageLengthRemaining);
                 this.ParseCommand(currentCommand);
-                messageBuffer = messageBuffer[(i + messageLengthRemaining)..];
             }
         }
         private void ParseCommand(string completeMessage)
