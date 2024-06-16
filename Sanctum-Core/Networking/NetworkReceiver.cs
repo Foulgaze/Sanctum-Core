@@ -1,11 +1,12 @@
 ﻿using System.Net.Sockets;
+using System.Text;
 
 namespace Sanctum_Core
 {
     public class NetworkReceiver
     {
         // Start is called before the first frame update
-        static public string ReadSocketData(NetworkStream rwStream, int bufferSize)
+        static public void ReadSocketData(NetworkStream rwStream, int bufferSize, StringBuilder buffer)
         {
             if (rwStream != null && rwStream.DataAvailable)
             {
@@ -21,9 +22,9 @@ namespace Sanctum_Core
 
                 // Data format {4 char Command Length | 32 Char UUID|2 Char OpCode | Up to 4060 Char Instruction}
                 // Example [00442bc7f400-c637-462b-b28c-83ce20e74692|00|Foulgaze] A connection message from a new user named Foulgaze, with length 44 bytes
-                return completeMessage;
+
+                _ = buffer.Append(completeMessage);
             }
-            return "";
         }
     }
 }

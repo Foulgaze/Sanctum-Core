@@ -9,6 +9,8 @@ namespace Sanctum_Core
 {
     public class NetworkCommandHandler
     {
+        
+
         public Dictionary<NetworkInstruction, PropertyChangedEventHandler> networkInstructionEvents = new();
         public static int messageLengthLength = 4;
         public NetworkCommandHandler()
@@ -19,13 +21,13 @@ namespace Sanctum_Core
             }
         }
 
-        public void ParseSocketData(StringBuilder messageBuffer)
+        public static string? ParseSocketData(StringBuilder messageBuffer)
         {
             while (true)
             {
                 if (messageBuffer.Length < messageLengthLength)
                 {
-                    return;
+                    return null;
                 }
 
                 string messageLength = messageBuffer.ToString(0, 4);
@@ -33,34 +35,36 @@ namespace Sanctum_Core
                 if (!int.TryParse(messageLength, out int messageLengthRemaining))
                 {
                     // Handle parse error if necessary
-                    return;
+                    throw new Exception("Flawed message sent. Breaking off connection");
                 }
 
                 if (messageLengthRemaining > messageBuffer.Length - 4)
                 {
-                    return;
+                    return null;
                 }
 
                 string currentCommand = messageBuffer.ToString(messageLengthLength, messageLengthRemaining);
                 _ = messageBuffer.Remove(0, messageLengthLength + messageLengthRemaining);
-                this.ParseCommand(currentCommand);
+                return currentCommand;
             }
         }
-        private void ParseCommand(string completeMessage)
+        public static NetworkCommand? ParseCommand(string? command)
         {
+            if (command == null)
+            {
+                return null;
+            }
             // Parsing recieved message into UUID, opCode, and Content
 
-            int breakPos = completeMessage.IndexOf("|");
-            string msgUUID = completeMessage[..breakPos];
-            int opCode = int.Parse(completeMessage.Substring(breakPos + 1, 2));
-            string instruction = completeMessage[(breakPos + 4)..];
-
-            if (!Enum.IsDefined(typeof(NetworkInstruction), opCode))
+            int breakPos = command.IndexOf("|");
+            string msgUUID = command[..breakPos];
+            if(!int.TryParse(command.Substring(breakPos + 1, 2),out int opCode ))
             {
-                // LOG THIS
-                return;
+                return null;
             }
-            this.networkInstructionEvents[(NetworkInstruction)opCode](instruction, new PropertyChangedEventArgs("NetworkEvent"));
+            string instruction = command[(breakPos + 4)..];
+
+            return new NetworkCommand(msgUUID, opCode, instruction);
 
         }
     }

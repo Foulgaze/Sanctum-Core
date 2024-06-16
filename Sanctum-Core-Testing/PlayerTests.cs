@@ -10,12 +10,9 @@ namespace Sanctum_Core_Testing
 {
     internal class PlayerTests
     {
-        private readonly TestNetworkAdministrator networkAdministrator = new();
-        private List<Playtable> playtables;
         [SetUp]
         public void Setup()
         {
-            this.networkAdministrator.ClearLists();
         }
 
         [Test]
@@ -24,7 +21,6 @@ namespace Sanctum_Core_Testing
             int tableCount = 4;
             List<string> uuids = Enumerable.Range(0, tableCount).Select(_ => Guid.NewGuid().ToString()).ToList();
 
-            this.playtables = this.networkAdministrator.CreatePlaytables(tableCount);
             TestHelperFunctions.AddPlayers(uuids, this.playtables);
             List<Player> relevantPlayer = TestHelperFunctions.GetRelevantPlayersFromTables(uuids, this.playtables);
             relevantPlayer.ForEach(player => player.DeckListRaw.Value = player.Uuid);
@@ -37,7 +33,6 @@ namespace Sanctum_Core_Testing
             int tableCount = 4;
             List<string> uuids = Enumerable.Range(0, tableCount).Select(_ => Guid.NewGuid().ToString()).ToList();
 
-            this.playtables = this.networkAdministrator.CreatePlaytables(tableCount);
             TestHelperFunctions.AddPlayers(uuids, this.playtables);
             List<Player> relevantPlayer = TestHelperFunctions.GetRelevantPlayersFromTables(uuids, this.playtables);
             relevantPlayer.ForEach(player => player.DeckListRaw.Value = player.Uuid);
