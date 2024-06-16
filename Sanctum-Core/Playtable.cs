@@ -34,14 +34,13 @@ namespace Sanctum_Core
 
         private readonly CardFactory cardFactory;
         private readonly NetworkAttributeFactory networkAttributeFactory;
-        public Playtable(bool mock = false)
+        public Playtable(int playerCount = 4, bool mock = false)
         {
-            this.readyUpNeeded = new NetworkAttribute<int>("0", 4);
+            this.readyUpNeeded = new NetworkAttribute<int>("0", playerCount);
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
             this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
             this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
-            this.playerDescription.valueChange += this.HandlePlayerDescription;
             this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;
         }
 
@@ -49,32 +48,13 @@ namespace Sanctum_Core
         {
             this._networkManager.Connect(server, port);
         }
-
-        public void AddOrRemovePlayer(string name, string uuid, bool addPlayer)
+        public void AddPlayer(string uuid, string name)
         {
-            this.playerDescription.Value = new PlayerDescription(name, uuid, addingPlayer: addPlayer);
-        }
-
-        public void HandlePlayerDescription(object sender, PropertyChangedEventArgs args)
-        {
-           PlayerDescription playerDescription = (PlayerDescription)sender;
-            if (playerDescription.AddingPlayer)
-            {
-                this.AddPlayer(playerDescription);
-            }
-            else
-            {
-                _ = this.RemovePlayer(playerDescription);
-            }
-        }
-
-        private void AddPlayer(PlayerDescription playerDescription)
-        {
-            if (this.GameStarted || this._players.Where(player => player.Uuid == playerDescription.Uuid).Count() != 0)
+            if (this.GameStarted || this._players.Where(player => player.Uuid == uuid).Count() != 0)
             {
                 return;
             }
-            Player player = new(playerDescription.Uuid, playerDescription.Name, 40, this.networkAttributeFactory, this.cardFactory);
+            Player player = new(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
             player.ReadiedUp.valueChange += this.CheckForStartGame;
             this._players.Add(player);
         }
@@ -117,9 +97,9 @@ namespace Sanctum_Core
         }
 
 
-        private bool RemovePlayer(PlayerDescription playerDescription)
+        public bool RemovePlayer(string uuid)
         {
-            Player? player = this.GetPlayer(playerDescription.Uuid);
+            Player? player = this.GetPlayer(uuid);
             return player != null && this._players.Remove(player);
         }
     }
