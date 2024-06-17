@@ -22,7 +22,7 @@ namespace Sanctum_Core
 
         private readonly List<Player> _players = new();
 
-        private readonly NetworkManager _networkManager;
+        /*private readonly NetworkManager _networkManager = null;*/
 
 
         public readonly NetworkAttribute<int> readyUpNeeded;
@@ -34,20 +34,16 @@ namespace Sanctum_Core
 
         private readonly CardFactory cardFactory;
         private readonly NetworkAttributeFactory networkAttributeFactory;
-        public Playtable(int playerCount = 4, bool mock = false)
+        public Playtable(int playerCount = 4)
         {
             this.readyUpNeeded = new NetworkAttribute<int>("0", playerCount);
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
-            this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);
+            /*this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);*/
             this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
-            this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;
+            /*this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;*/
         }
 
-        public void ConnectToServer(string server, int port)
-        {
-            this._networkManager.Connect(server, port);
-        }
         public void AddPlayer(string uuid, string name)
         {
             if (this.GameStarted || this._players.Where(player => player.Uuid == uuid).Count() != 0)

@@ -6,7 +6,7 @@ namespace Sanctum_Core
     public class NetworkReceiver
     {
         // Start is called before the first frame update
-        static public void ReadSocketData(NetworkStream rwStream, int bufferSize, StringBuilder buffer)
+        public static void ReadSocketData(NetworkStream rwStream, int bufferSize, StringBuilder buffer)
         {
             if (rwStream != null && rwStream.DataAvailable)
             {
