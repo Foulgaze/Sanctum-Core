@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -72,18 +74,15 @@ namespace Sanctum_Core
             {
                 return null;
             }
-            // Parsing recieved message into UUID, opCode, and Content
-            string[] data = command.Split('|');
-            if(data.Length < 2)
+            try
+            {
+                NetworkCommand networkCommand = JsonConvert.DeserializeObject<NetworkCommand>(command);
+                return networkCommand;
+            }
+            catch
             {
                 return null;
             }
-            if (!int.TryParse(data[0],out int opCode ))
-            {
-                return null;
-            }
-            return new NetworkCommand(opCode, string.Join('|', data[1..]));
-
         }
     }
 }

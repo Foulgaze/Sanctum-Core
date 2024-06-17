@@ -16,6 +16,7 @@ namespace Sanctum_Core
         public const int portNumber = 51522; // Change to ENV
         private readonly List<Lobby> _lobbies = new();
         private const int bufferSize = 4096;
+        public const int lobbyCodeLength = 4;
         public Server()
         {
             this._listener = new(IPAddress.Any, portNumber);
@@ -27,8 +28,6 @@ namespace Sanctum_Core
             while (true)
             {
                 TcpClient client = this._listener.AcceptTcpClient();
-                this.HandleClient(client);
-                return;
                 Thread thread = new(() => this.HandleClient(client));
                 thread.Start();
             }
@@ -68,7 +67,7 @@ namespace Sanctum_Core
             string finalString;
             do
             {
-                char[] stringChars = new char[4];
+                char[] stringChars = new char[lobbyCodeLength];
                 Random random = new();
 
                 for (int i = 0; i < stringChars.Length; i++)
@@ -87,10 +86,12 @@ namespace Sanctum_Core
             string[] data = networkCommand.instruction.Split('|');
             if(data.Length != 2)
             {
+                Server.SendMessage(client.GetStream(), NetworkInstruction.InvalidCommand, $"Must include name and lobby code");
                 return; // Log this
             }
             if (!int.TryParse(data[0], out int playerCount))
             {
+                Server.SendMessage(client.GetStream(), NetworkInstruction.InvalidCommand, $"Invalid lobby count");
                 return; // Log this
             }
             Lobby newLobby = new(playerCount, this.GenerateLobbyCode());
@@ -115,6 +116,7 @@ namespace Sanctum_Core
                 return;
             }
             string clientUUID = Guid.NewGuid().ToString();
+            Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, clientUUID);
             lobby.players.Add(new PlayerDescription(data[1],clientUUID , client));
             foreach (PlayerDescription playerDescription in lobby.players)
             {
@@ -138,7 +140,7 @@ namespace Sanctum_Core
 
         public static void SendMessage(NetworkStream stream, NetworkInstruction networkInstruction,string payload)
         {
-            string message = $"{((int)networkInstruction).ToString($"D{NetworkCommandManager.opCodeLength}")}|{payload}";
+            string message = JsonConvert.SerializeObject(new NetworkCommand((int)networkInstruction, payload));
             byte[] data = Encoding.UTF8.GetBytes(Server.AddMessageSize(message));
             stream.Write(data, 0, data.Length);
         }
