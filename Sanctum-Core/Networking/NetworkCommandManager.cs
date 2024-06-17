@@ -1,27 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
-    public class NetworkCommandHandler
+    public static class NetworkCommandManager
     {
         
 
-        public Dictionary<NetworkInstruction, PropertyChangedEventHandler> networkInstructionEvents = new();
         public static int messageLengthLength = 4;
-        public NetworkCommandHandler()
-        {
-            foreach (NetworkInstruction instruction in Enum.GetValues(typeof(NetworkInstruction)))
-            {
-                this.networkInstructionEvents[instruction] = delegate { };
-            }
-        }
 
-        public static string? ParseSocketData(StringBuilder messageBuffer)
+
+        private static string? ParseSocketData(StringBuilder messageBuffer)
         {
             while (true)
             {
@@ -48,7 +43,30 @@ namespace Sanctum_Core
                 return currentCommand;
             }
         }
-        public static NetworkCommand? ParseCommand(string? command)
+
+        public static NetworkCommand? GetNextNetworkCommand(NetworkStream stream, StringBuilder buffer, int bufferSize)
+        {
+            NetworkCommand? networkCommand;
+            do
+            {
+                NetworkReceiver.ReadSocketData(stream, bufferSize, buffer);
+                try
+                {
+                    string? rawCommand = NetworkCommandManager.ParseSocketData(buffer);
+                    networkCommand = NetworkCommandManager.ParseCommand(rawCommand);
+                    if (networkCommand != null)
+                    {
+                        return networkCommand;
+                    }
+                }
+                catch 
+                {
+                    // Log this.
+                    return null;
+                }
+            } while(true);
+        }
+        private static NetworkCommand? ParseCommand(string? command)
         {
             if (command == null)
             {

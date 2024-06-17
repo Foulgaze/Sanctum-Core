@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -8,18 +9,18 @@ namespace Sanctum_Core
 {
     public enum NetworkInstruction
     {
-        CreateLobby, PlayersInLobby
+        Dummy,CreateLobby, PlayersInLobby
     }
     public class Server
     {
         private enum ConnectType { CreateLobby, JoinLobby };
         private readonly TcpListener _listener;
-        private const int _portNumber = 51522; // Change to ENV
+        public const int portNumber = 51522; // Change to ENV
         private readonly List<Lobby> _lobbies;
         private const int bufferSize = 4096;
         public Server()
         {
-            this._listener = new(IPAddress.Any, _portNumber);
+            this._listener = new(IPAddress.Any, portNumber);
         }
 
         public void StartListening()
@@ -28,6 +29,8 @@ namespace Sanctum_Core
             while (true)
             {
                 TcpClient client = this._listener.AcceptTcpClient();
+                this.HandleClient(client);
+                return;
                 Thread thread = new(() => this.HandleClient(client));
                 thread.Start();
             }
@@ -35,39 +38,30 @@ namespace Sanctum_Core
         private void HandleClient(TcpClient client)
         {
             NetworkStream stream = client.GetStream();
-            StringBuilder messageBuffer = new();
-            NetworkReceiver.ReadSocketData(stream, bufferSize, messageBuffer);
-            NetworkCommand? networkCommand;
-            while (true)
+            
+        }
+
+        private void IntermediateFunction(TcpClient client, NetworkStream stream)
+        {
+            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), bufferSize);
+            if (command is null)
             {
-                try
-                {
-                    string? rawCommand = NetworkCommandHandler.ParseSocketData(messageBuffer);
-                    networkCommand = NetworkCommandHandler.ParseCommand(rawCommand);
-                    if(networkCommand != null)
-                    {
-                        break;
-                    }
-                }
-                catch
-                {
-                    client.Close();
-                    return;
-                }
+                client.Close();
+                return;
             }
-            this.HandleCommand(networkCommand, stream);
+            this.HandleCommand(command, client);
             client.Close();
         }
 
-        private void HandleCommand(NetworkCommand networkCommand, NetworkStream stream)
+        private void HandleCommand(NetworkCommand networkCommand, TcpClient client)
         {
             switch (networkCommand.opCode)
             {
                 case (int)ConnectType.CreateLobby:
-                    this.HandleCreateLobby(networkCommand, stream);
+                    this.CreateLobby(networkCommand, client);
                     return;
                 case (int)ConnectType.JoinLobby:
-                    this.HandleJoinLobby(networkCommand, stream);
+                    this.AddToLobby(networkCommand, client);
                     return;
                 default:
                     return;
@@ -95,7 +89,7 @@ namespace Sanctum_Core
             return finalString;
         }
 
-        private void HandleCreateLobby(NetworkCommand networkCommand, NetworkStream stream)
+        private void CreateLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
             if(data.Length != 3)
@@ -107,12 +101,12 @@ namespace Sanctum_Core
                 return; // Log this
             }
             Lobby newLobby = new(playerCount, this.GenerateLobbyCode());
-            Server.SendMessage(stream, NetworkInstruction.CreateLobby, newLobby.lobbyCode);
-            newLobby.players.Add(new PlayerDescription(data[1], data[2], stream));
+            Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, newLobby.lobbyCode);
+            newLobby.players.Add(new PlayerDescription(data[1], data[2], client));
             this._lobbies.Add(newLobby);
             newLobby.StartLobby();
         }
-        private void HandleJoinLobby(NetworkCommand networkCommand, NetworkStream stream)
+        private void AddToLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
             if(data.Length != 4)
@@ -128,11 +122,11 @@ namespace Sanctum_Core
             {
                 return;
             }
-            lobby.players.Add(new PlayerDescription(data[2], data[3], stream));
+            lobby.players.Add(new PlayerDescription(data[2], data[3], client));
             List<string> playerNames = new(lobby.players.Select(player => player.name));
             foreach (PlayerDescription playerDescription in lobby.players)
             {
-                Server.SendMessage(stream, NetworkInstruction.PlayersInLobby, JsonConvert.SerializeObject(playerNames));
+                Server.SendMessage(client.GetStream(), NetworkInstruction.PlayersInLobby, JsonConvert.SerializeObject(playerNames));
             }
         }
 

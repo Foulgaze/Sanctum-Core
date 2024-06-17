@@ -12,12 +12,13 @@ namespace Sanctum_Core
     {
         public readonly string name;
         public readonly string uuid;
-        public readonly NetworkStream stream;
-        public PlayerDescription(string name, string uuid, NetworkStream stream)
+        public readonly TcpClient client;
+        public NetworkStream stream => this.client.GetStream();
+        public PlayerDescription(string name, string uuid, TcpClient client)
         {
             this.name = name;
             this.uuid = uuid;
-            this.stream = stream;
+            this.client = client;
         }
     }
     public class Lobby
@@ -44,9 +45,14 @@ namespace Sanctum_Core
             {
                 this.playtable.AddPlayer(playerDescription.uuid, playerDescription.name);
             }
-            while (true)
-            {
+            /*NetworkCommandManager.GetNextNetworkCommand();*/
+        }
 
+        public void StopLobby()
+        {
+            foreach(PlayerDescription playerDescription in this.players)
+            {
+                playerDescription.client.Close();
             }
         }
     }
