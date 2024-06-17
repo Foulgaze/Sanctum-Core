@@ -11,9 +11,9 @@ namespace Sanctum_Core
 {
     public static class NetworkCommandManager
     {
-        
 
-        public static int messageLengthLength = 4;
+        public const int messageLengthLength = 4;
+        public const int opCodeLength = 3;
 
 
         private static string? ParseSocketData(StringBuilder messageBuffer)
@@ -73,16 +73,16 @@ namespace Sanctum_Core
                 return null;
             }
             // Parsing recieved message into UUID, opCode, and Content
-
-            int breakPos = command.IndexOf("|");
-            string msgUUID = command[..breakPos];
-            if(!int.TryParse(command.Substring(breakPos + 1, 2),out int opCode ))
+            string[] data = command.Split('|');
+            if(data.Length < 2)
             {
                 return null;
             }
-            string instruction = command[(breakPos + 4)..];
-
-            return new NetworkCommand(msgUUID, opCode, instruction);
+            if (!int.TryParse(data[0],out int opCode ))
+            {
+                return null;
+            }
+            return new NetworkCommand(opCode, string.Join('|', data[1..]));
 
         }
     }
