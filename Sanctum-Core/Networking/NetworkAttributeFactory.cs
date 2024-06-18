@@ -4,19 +4,18 @@ using Newtonsoft.Json.Linq;
 
 namespace Sanctum_Core
 {
-    public class NetworkAttributeFactory
+    public static class NetworkAttributeFactory
     {
-        public event PropertyChangedEventHandler attributeValueChanged = delegate { };
-        public Dictionary<string, NetworkAttribute> networkAttributes = new();
+        public static event PropertyChangedEventHandler attributeValueChanged = delegate { };
+        public static Dictionary<string, NetworkAttribute> networkAttributes = new();
 
-        private int _id = 0;
 
-        private void AttributeChangedEventHandler(object sender, PropertyChangedEventArgs e)
+        private static void AttributeChangedEventHandler(object sender, PropertyChangedEventArgs e)
         {
             attributeValueChanged(sender, e);
         }
 
-        public void HandleNetworkedAttribute(object sender, PropertyChangedEventArgs e)
+        public static void HandleNetworkedAttribute(object sender, PropertyChangedEventArgs e)
         {
             string instruction = (string)sender;
             string[] splitInstruction = instruction.Split("|");
@@ -27,25 +26,36 @@ namespace Sanctum_Core
             }
             string ID = splitInstruction[0];
             string serializedNewValue = splitInstruction[1];
-            NetworkAttribute attribute = this.networkAttributes[ID];
+            NetworkAttribute attribute = networkAttributes[ID];
             if (attribute == null)
             {
                 // Log Error: Attribute with given ID not found
                 return;
             }
 
-            object deserializedValue = JsonConvert.DeserializeObject(serializedNewValue, attribute.ValueType);
+            try
+            {
+                object deserializedValue = JsonConvert.DeserializeObject(serializedNewValue, attribute.ValueType);
+                attribute.SetValue(deserializedValue);
+            }
+            catch
+            {
+                // Bad NetworkAttribute, skip
+            }
 
-            attribute.NonNetworkedSet(deserializedValue);
+            // Network this. 
         }
 
 
-        public NetworkAttribute<T> AddNetworkAttribute<T>(string uuid, T value)
+        public static NetworkAttribute<T> AddNetworkAttribute<T>(string id, T value)
         {
-            string newID = $"{uuid}-{this._id++}";
-            NetworkAttribute<T> newAttribute = new(newID, value);
-            this.networkAttributes.Add(newID, newAttribute);
-            newAttribute.networkValueChange += this.AttributeChangedEventHandler;
+            if(networkAttributes.ContainsKey(id))
+            {
+                throw new Exception($"{id} already present in dictionary");
+            }
+            NetworkAttribute<T> newAttribute = new(id, value);
+            networkAttributes.Add(id, newAttribute);
+            newAttribute.valueChange += AttributeChangedEventHandler;
             return newAttribute;
         }
     }

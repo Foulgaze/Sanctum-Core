@@ -6,41 +6,21 @@ namespace Sanctum_Core
 {
     public class Playtable
     {
-
-        public class PlayerDescription
-        {
-            public string Name { get; set; }
-            public string Uuid { get; set; }
-            public bool AddingPlayer { get; set; }
-            public PlayerDescription(string name, string uuid, bool addingPlayer)
-            {
-                this.Name = name;
-                this.Uuid = uuid;
-                this.AddingPlayer = addingPlayer;
-            }
-        }
-
         private readonly List<Player> _players = new();
 
         /*private readonly NetworkManager _networkManager = null;*/
 
 
         public readonly NetworkAttribute<int> readyUpNeeded;
-        public readonly NetworkAttribute<PlayerDescription> playerDescription;
 
         public bool GameStarted { get; set; } = false;
 
         public event PropertyChangedEventHandler gameStarted = delegate { };
 
-        private readonly CardFactory cardFactory;
-        private readonly NetworkAttributeFactory networkAttributeFactory;
         public Playtable(int playerCount = 4)
         {
             this.readyUpNeeded = new NetworkAttribute<int>("0", playerCount);
-            this.networkAttributeFactory = new NetworkAttributeFactory();
-            this.cardFactory = new CardFactory(this.networkAttributeFactory);
             /*this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);*/
-            this.playerDescription = this.networkAttributeFactory.AddNetworkAttribute<PlayerDescription>("MAIN",null);
             /*this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;*/
         }
 
@@ -50,7 +30,7 @@ namespace Sanctum_Core
             {
                 return;
             }
-            Player player = new(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
+            Player player = new(uuid, name, 40);
             player.ReadiedUp.valueChange += this.CheckForStartGame;
             this._players.Add(player);
         }
@@ -87,7 +67,7 @@ namespace Sanctum_Core
             {
                 List<string> cardNames = DeckListParser.ParseDeckList(player.DeckListRaw.Value);
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
-                List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
+                List<Card> cards = CardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
             }
         }

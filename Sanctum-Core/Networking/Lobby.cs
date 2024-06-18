@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -15,6 +16,7 @@ namespace Sanctum_Core
         public readonly string name;
         public readonly string uuid;
         public readonly TcpClient client;
+        public readonly StringBuilder buffer = new();
         public NetworkStream stream => this.client.GetStream();
         public PlayerDescription(string name, string uuid, TcpClient client)
         {
@@ -37,12 +39,19 @@ namespace Sanctum_Core
             this.size = lobbySize;
             this.code = lobbyCode;
         }
+
+        private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
+        {
+            this.players.ForEach
+                (description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args}"));
+        }
         private void InitGame()
         {
             this.players = this.concurrentPlayers.ToList(); // Ignore concurrent players once lobby starts
             this.players.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
             string lobbyDescription = JsonConvert.SerializeObject(this.players.ToDictionary(player => player.uuid, player => player.name));
             this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
+                    
         }
 
         public void StartLobby()

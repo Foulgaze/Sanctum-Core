@@ -15,13 +15,13 @@
         public bool ethereal = false;
 
 
-        public Card(int id, CardInfo FrontInfo, CardInfo BackInfo, NetworkAttributeFactory networkAttributeFactory)
+        public Card(int id, CardInfo FrontInfo, CardInfo BackInfo)
         {
             this.Id = id;
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
 
-            this.InitializeAttributes(networkAttributeFactory);
+            this.InitializeAttributes();
         }
 
         /// <summary>
@@ -33,21 +33,21 @@
             return this.BackInfo != null;
         }
 
-        private void InitializeAttributes(NetworkAttributeFactory networkAttributeFactory)
+        private void InitializeAttributes()
         {
-            this.isFlipped = networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
+            this.isFlipped = NetworkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
             this.isFlipped.valueChange += this.UpdateAttributes;
-            this.power = networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.power));
-            this.toughness = networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.toughness));
-            this.tapped = networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
+            this.power = NetworkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.power));
+            this.toughness = NetworkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.toughness));
+            this.tapped = NetworkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
         }
 
 
         private void UpdateAttributes(object sender, EventArgs e) // No need to network because flipped is netwokred
         {
-            this.power.NonNetworkedSet(this.ParsePT(this.CurrentInfo.power));
-            this.toughness.NonNetworkedSet(this.ParsePT(this.CurrentInfo.toughness));
-            this.name.NonNetworkedSet(this.CurrentInfo.name);
+            this.power.SetValue(this.ParsePT(this.CurrentInfo.power));
+            this.toughness.SetValue(this.ParsePT(this.CurrentInfo.toughness));
+            this.name.SetValue(this.CurrentInfo.name);
         }
 
         private int ParsePT(string value)

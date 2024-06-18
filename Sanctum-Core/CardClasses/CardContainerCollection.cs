@@ -33,21 +33,17 @@ namespace Sanctum_Core
         private readonly NetworkAttribute<InsertCardData> insertCardData;
         public NetworkAttribute<int> removeCardID;
         public event PropertyChangedEventHandler containerChanged = delegate { };
-        private readonly CardFactory CardFactory;
 
-        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
+        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount)
         {
             this.maxCardCountPerContainer = maxContainerCardCount;
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>(owner, null);
+            this.insertCardData = NetworkAttributeFactory.AddNetworkAttribute<InsertCardData>(owner, null);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>(owner, 0);
+            this.removeCardID = NetworkAttributeFactory.AddNetworkAttribute<int>(owner, 0);
             this.removeCardID.valueChange += this.NetworkRemoveCard;
-
-            this.CardFactory = cardFactory;
-
         }
         public void InsertCardIntoContainer(int? insertPosition, bool createNewContainer, Card cardToInsert, int? cardContainerPosition, bool changeShouldBeNetworked)
         {
@@ -55,7 +51,7 @@ namespace Sanctum_Core
             if (changeShouldBeNetworked)
             {
                 InsertCardData newCardData = new(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
-                this.insertCardData.Value = newCardData;
+                this.insertCardData.SetValue(newCardData);
                 return;
             }
             if(this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer)))
@@ -72,15 +68,12 @@ namespace Sanctum_Core
         private bool ProcessCardInsertion(InsertCardData cardChange)
         {
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
-            Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
+            Card? insertCard = CardFactory.GetCard(cardChange.cardID);
             if (insertCard == null)
             {
                 return false;
             }
-            if(insertCard.CurrentLocation != null)
-            {
-                insertCard.CurrentLocation.removeCardID.Value = cardChange.cardID;
-            }
+            insertCard.CurrentLocation?.removeCardID.SetValue(cardChange.cardID);
             insertCard.CurrentLocation = this;
             destinationContainer.AddCardToContainer(insertCard, cardChange.containerInsertPosition);
             return true;

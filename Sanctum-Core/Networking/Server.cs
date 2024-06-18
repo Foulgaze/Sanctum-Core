@@ -8,7 +8,7 @@ namespace Sanctum_Core
 {
     public enum NetworkInstruction
     {
-        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame
+        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute
     }
 
     public class Server
@@ -110,7 +110,7 @@ namespace Sanctum_Core
                 newLobby.StartLobby();
             }
         }
-
+        //  Format should be [lobbyCode|name]
         private void AddToLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
