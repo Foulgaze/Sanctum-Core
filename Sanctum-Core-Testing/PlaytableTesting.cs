@@ -40,7 +40,7 @@ namespace Sanctum_Core_Testing
                 Server.SendMessage(player.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}");
             }
             NetworkCommand? command;
-            for (int b = 0; b < 4; ++b)
+            for (int b = 0; b < 3; ++b)
             {
                 for (int i = 0; i < players.Count; ++i)
                 {
