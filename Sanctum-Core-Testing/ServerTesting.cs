@@ -14,7 +14,7 @@ namespace Sanctum_Core_Testing
         [OneTimeSetUp]
         public void Init()
         {
-            this.server = new();
+            this.server = new(53522);
             this.serverThread = new Thread(new ThreadStart(this.server.StartListening));
             this.serverThread.Start();
             this.uuidLength = Guid.NewGuid().ToString().Length;
@@ -30,7 +30,7 @@ namespace Sanctum_Core_Testing
         public void CreateLobbyTest()
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
             Server.SendMessage(stream, NetworkInstruction.CreateLobby, $"4|Gabriel");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
@@ -45,7 +45,7 @@ namespace Sanctum_Core_Testing
         public void NoNameCreateLobbyTest()
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
             Server.SendMessage(stream, NetworkInstruction.CreateLobby, $"4");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
@@ -56,7 +56,7 @@ namespace Sanctum_Core_Testing
         public void InvalidSizeCreateLobbyTest()
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
             Server.SendMessage(stream, NetworkInstruction.CreateLobby, "Asd|Asd");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
@@ -67,12 +67,12 @@ namespace Sanctum_Core_Testing
         public void JoinLobbyTest()
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"4|Gabriel");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             string[] data = command.instruction.Split('|');
             client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             AssertCommandResults(command, NetworkInstruction.JoinLobby, null);
@@ -83,7 +83,7 @@ namespace Sanctum_Core_Testing
         public void IncorrectJoinLobbyTest()
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
             Server.SendMessage(stream, NetworkInstruction.JoinLobby, $"Spaghetti & Meatballs");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
@@ -94,12 +94,12 @@ namespace Sanctum_Core_Testing
         public void AddPlayerToLobbyTest()
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"3|Gabriel");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             string[] data = command.instruction.Split('|');
             client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             _ = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); // Should be a list of player names
@@ -110,13 +110,13 @@ namespace Sanctum_Core_Testing
         public void StartLobbyTest()
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"2|Gabriel");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             string[] data = command.instruction.Split('|');
             string p1UUID = data[0];
             client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
             data = command.instruction.Split('|');
