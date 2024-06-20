@@ -9,7 +9,6 @@ namespace Sanctum_Core
         public event PropertyChangedEventHandler attributeValueChanged = delegate { };
         public Dictionary<string, NetworkAttribute> networkAttributes = new();
 
-        private int _id = 0;
 
         private void AttributeChangedEventHandler(object sender, PropertyChangedEventArgs e)
         {
@@ -25,27 +24,43 @@ namespace Sanctum_Core
                 // Log Error;
                 return;
             }
-            string ID = splitInstruction[0];
+            string id = splitInstruction[0];
             string serializedNewValue = splitInstruction[1];
-            NetworkAttribute attribute = this.networkAttributes[ID];
+            NetworkAttribute attribute = this.networkAttributes[id];
             if (attribute == null)
             {
                 // Log Error: Attribute with given ID not found
                 return;
             }
 
-            object deserializedValue = JsonConvert.DeserializeObject(serializedNewValue, attribute.ValueType);
+            try
+            {
+                object deserializedValue = JsonConvert.DeserializeObject(serializedNewValue, attribute.ValueType);
+                if( !attribute.outsideSettable)
+                {
+                    return;
+                }
+                attribute.SetValue(deserializedValue);
+            }
+            catch
+            {
+                // Bad NetworkAttribute, skip
+            }
 
-            attribute.NonNetworkedSet(deserializedValue);
+            // Network this. 
         }
 
 
-        public NetworkAttribute<T> AddNetworkAttribute<T>(string uuid, T value)
+        public NetworkAttribute<T> AddNetworkAttribute<T>(string id, T value, bool outsideSettable = true)
         {
-            string newID = $"{uuid}-{this._id++}";
-            NetworkAttribute<T> newAttribute = new(newID, value);
-            this.networkAttributes.Add(newID, newAttribute);
-            newAttribute.networkValueChange += this.AttributeChangedEventHandler;
+            if(this.networkAttributes.ContainsKey(id))
+            {
+                throw new Exception($"{id} already present in dictionary");
+            }
+            NetworkAttribute<T> newAttribute = new(id, value);
+            this.networkAttributes.Add(id, newAttribute);
+            newAttribute.valueChange += this.AttributeChangedEventHandler;
+            newAttribute.outsideSettable = outsideSettable;
             return newAttribute;
         }
     }

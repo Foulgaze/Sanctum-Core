@@ -18,7 +18,7 @@ namespace Sanctum_Core
         public const int opCodeLength = 3;
 
 
-        private static string? ParseSocketData(StringBuilder messageBuffer)
+        public static string? ParseSocketData(StringBuilder messageBuffer)
         {
             while (true)
             {
@@ -46,7 +46,7 @@ namespace Sanctum_Core
             }
         }
 
-        public static NetworkCommand? GetNextNetworkCommand(NetworkStream stream, StringBuilder buffer, int bufferSize)
+        public static NetworkCommand? GetNextNetworkCommand(NetworkStream stream, StringBuilder buffer, int bufferSize, bool readUntilData = true)
         {
             NetworkCommand? networkCommand;
             do
@@ -66,9 +66,13 @@ namespace Sanctum_Core
                     // Log this.
                     return null;
                 }
+                if (!readUntilData)
+                {
+                    return null;
+                }
             } while(true);
         }
-        private static NetworkCommand? ParseCommand(string? command)
+        public  static NetworkCommand? ParseCommand(string? command)
         {
             if (command == null)
             {

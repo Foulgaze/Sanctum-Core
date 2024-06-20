@@ -8,7 +8,7 @@ namespace Sanctum_Core
 {
     public enum NetworkInstruction
     {
-        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame
+        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute
     }
 
     public class Server
@@ -16,7 +16,7 @@ namespace Sanctum_Core
         private readonly TcpListener _listener;
         private readonly List<Lobby> _lobbies = new();
         public const int portNumber = 51522; // Change to ENV
-        private const int bufferSize = 4096;
+        public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
 
         public Server()
@@ -107,10 +107,12 @@ namespace Sanctum_Core
 
             if (newLobby.concurrentPlayers.Count == newLobby.size)
             {
-                newLobby.StartLobby();
+                Thread thread = new(newLobby.StartLobby);
+                thread.Start();
+                
             }
         }
-
+        //  Format should be [lobbyCode|name]
         private void AddToLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
@@ -135,7 +137,8 @@ namespace Sanctum_Core
 
             if (lobby.concurrentPlayers.Count == lobby.size)
             {
-                lobby.StartLobby();
+                Thread thread = new(lobby.StartLobby);
+                thread.Start();
                 return;
             }
 

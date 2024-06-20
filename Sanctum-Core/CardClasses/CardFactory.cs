@@ -18,6 +18,7 @@ namespace Sanctum_Core
             this.networkAttributeFactory = networkAttributeFactory;
         }
 
+
         /// <summary>
         /// Loads a list of cards based on the provided card names.
         /// </summary>

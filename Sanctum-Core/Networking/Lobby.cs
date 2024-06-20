@@ -3,6 +3,8 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -15,6 +17,7 @@ namespace Sanctum_Core
         public readonly string name;
         public readonly string uuid;
         public readonly TcpClient client;
+        public readonly StringBuilder buffer = new();
         public NetworkStream stream => this.client.GetStream();
         public PlayerDescription(string name, string uuid, TcpClient client)
         {
@@ -25,7 +28,7 @@ namespace Sanctum_Core
     }
     public class Lobby
     {
-        private readonly Playtable playtable = new();
+        private readonly Playtable playtable;
         public readonly int size;
         private List<PlayerDescription> players = new();
         public readonly string code;
@@ -36,6 +39,13 @@ namespace Sanctum_Core
 
             this.size = lobbySize;
             this.code = lobbyCode;
+            this.playtable = new Playtable(lobbySize);
+        }
+
+        private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
+        {
+            this.players.ForEach
+                (description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
         }
         private void InitGame()
         {
@@ -43,6 +53,7 @@ namespace Sanctum_Core
             this.players.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
             string lobbyDescription = JsonConvert.SerializeObject(this.players.ToDictionary(player => player.uuid, player => player.name));
             this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
+            this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
         }
 
         public void StartLobby()
@@ -50,7 +61,28 @@ namespace Sanctum_Core
             this.InitGame();
             while(true)
             {
+                foreach(PlayerDescription playerDescription in  this.players)
+                {
+                    NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(playerDescription.client.GetStream(), playerDescription.buffer, Server.bufferSize, false);
+                    this.HandleCommand(command);
+                }
+            }
+        }
 
+        private void HandleCommand(NetworkCommand? command)
+        {
+            if(command == null)
+            {
+                return;
+            }
+            switch (command.opCode)
+            {
+                case (int)NetworkInstruction.NetworkAttribute:
+                    this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, null);
+                    break;
+                default:
+                    // Ignore!
+                    break;
             }
         }
 
