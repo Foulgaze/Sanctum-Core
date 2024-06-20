@@ -11,28 +11,29 @@ namespace Sanctum_Core
         /*private readonly NetworkManager _networkManager = null;*/
 
 
-        public readonly NetworkAttribute<int> readyUpNeeded;
+        public readonly int readyUpNeeded;
 
-        public bool GameStarted { get; set; } = false;
-
-        public event PropertyChangedEventHandler gameStarted = delegate { };
-
-        public Playtable(int playerCount = 4)
+        public readonly NetworkAttribute<bool> GameStarted;
+        private readonly CardFactory cardFactory;
+        public readonly NetworkAttributeFactory networkAttributeFactory;
+        public Playtable(int playerCount)
         {
-            this.readyUpNeeded = new NetworkAttribute<int>("0", playerCount);
-            /*this._networkManager = new NetworkManager(this.networkAttributeFactory, mock);*/
-            /*this._networkManager.NetworkCommandHandler.networkInstructionEvents[NetworkInstruction.NetworkAttribute] += this.networkAttributeFactory.HandleNetworkedAttribute;*/
+            this.networkAttributeFactory = new NetworkAttributeFactory();
+            this.cardFactory = new CardFactory(this.networkAttributeFactory);
+            this.readyUpNeeded = playerCount;
+            this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
         }
 
-        public void AddPlayer(string uuid, string name)
+        public bool AddPlayer(string uuid, string name)
         {
-            if (this.GameStarted || this._players.Where(player => player.Uuid == uuid).Count() != 0)
+            if (this.GameStarted.Value || this._players.Where(player => player.Uuid == uuid).Count() != 0)
             {
-                return;
+                return false;
             }
-            Player player = new(uuid, name, 40);
+            Player player = new(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
             player.ReadiedUp.valueChange += this.CheckForStartGame;
             this._players.Add(player);
+            return true;
         }
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace Sanctum_Core
         void CheckForStartGame(object obj, PropertyChangedEventArgs args)
         {
             int readyCount = this._players.Count(player => player.ReadiedUp.Value);
-            if (readyCount >= this.readyUpNeeded.Value)
+            if (readyCount >= this.readyUpNeeded)
             {
                 this.StartGame();
             }
@@ -56,9 +57,8 @@ namespace Sanctum_Core
 
         void StartGame()
         {
-            this.GameStarted = true;
+            this.GameStarted.SetValue(true);
             this.SetupDecks();
-            gameStarted(this, new PropertyChangedEventArgs("Started"));
         }
 
         void SetupDecks()
@@ -67,7 +67,7 @@ namespace Sanctum_Core
             {
                 List<string> cardNames = DeckListParser.ParseDeckList(player.DeckListRaw.Value);
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
-                List<Card> cards = CardFactory.LoadCardNames(cardNames);
+                List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
             }
         }

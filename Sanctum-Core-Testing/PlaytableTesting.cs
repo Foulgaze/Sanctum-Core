@@ -1,9 +1,10 @@
-﻿using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions.Interfaces;
-using Sanctum_Core;
-using System.IO;
+﻿using Sanctum_Core;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Newtonsoft.Json;
+using System.Numerics;
+using System.Diagnostics;
 
 namespace Sanctum_Core_Testing
 {
@@ -28,21 +29,58 @@ namespace Sanctum_Core_Testing
         }
 
         [Test]
-        public void CreateLobbyTest()
+        public void NetworkAttributesTest()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
-            players.ForEach(desc => Server.SendMessage(desc.GetStream(), NetworkInstruction.NetworkAttribute, ))
+            for (int i = 0; i < players.Count; ++i)
+            {
+                PlayerDescription player = players[i];
+                Server.SendMessage(player.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{player.uuid}-health|{JsonConvert.SerializeObject(i)}");
+                Server.SendMessage(player.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
+                Server.SendMessage(player.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}");
+            }
+            NetworkCommand? command;
+            for (int b = 0; b < 4; ++b)
+            {
+                for (int i = 0; i < players.Count; ++i)
+                {
+                    PlayerDescription player = players[i];
+                    for (int a = 0; a < players.Count; ++a)
+                    {
+                        command = NetworkCommandManager.GetNextNetworkCommand(players[a].client.GetStream(), players[a].buffer, Server.bufferSize);
+                        switch (b)
+                        {
+                            case 0:
+                                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"{player.uuid}-health|{i}");
+                                break;
+                            case 1:
+                                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
+                                break;
+                            case 2:
+                                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}");
+                                break;
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < players.Count; ++i)
+            {
+                command = NetworkCommandManager.GetNextNetworkCommand(players[i].client.GetStream(), players[i].buffer, Server.bufferSize);
+
+                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"main-started|{JsonConvert.SerializeObject(true)}");
+            }
         }
 
 
+
         // Returns Lobby Code, UUID, Network Stream
-        private (string,PlayerDescription) CreateLobby(int playerCount, string playerName)
+        private (string, PlayerDescription) CreateLobby(int playerCount, string playerName)
         {
 
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, Server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{playerCount}|{playerName}");
-            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(),4096);
+            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             string[] commandData = command.instruction.Split('|');
             return (commandData[1], new PlayerDescription(playerName, commandData[0], client));
         }
@@ -62,14 +100,24 @@ namespace Sanctum_Core_Testing
 
             Assert.That(playerCount > 0);
             (string lobbyCode, PlayerDescription lobbyPlayer) = this.CreateLobby(playerCount, "Player-0");
-            List<PlayerDescription> returnList = new() { lobbyPlayer } ;
-            for(int i = 1; i < playerCount; ++i)
+            List<PlayerDescription> returnList = new() { lobbyPlayer };
+            for (int i = 1; i < playerCount; ++i)
             {
                 TcpClient client = new();
                 client.Connect(IPAddress.Loopback, Server.portNumber);
                 returnList.Add(this.AddToLobby($"Player-{i}", lobbyCode));
             }
+            foreach (PlayerDescription player in returnList)
+            {
+                NetworkCommand? command;
+                do
+                {
+                    command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                } while (command.opCode != (int) NetworkInstruction.StartGame);
+            }
+            returnList.Reverse();
             return returnList;
-            
+
         }
+    }
 }

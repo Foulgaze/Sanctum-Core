@@ -13,10 +13,11 @@
         public NetworkAttribute<string> name;
         public NetworkAttribute<bool> isFlipped;
         public bool ethereal = false;
+        private readonly NetworkAttributeFactory networkAttributeFactory;
 
-
-        public Card(int id, CardInfo FrontInfo, CardInfo BackInfo)
+        public Card(int id, CardInfo FrontInfo, CardInfo BackInfo, NetworkAttributeFactory networkAttributeFactory)
         {
+            this.networkAttributeFactory = networkAttributeFactory;
             this.Id = id;
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
@@ -35,11 +36,11 @@
 
         private void InitializeAttributes()
         {
-            this.isFlipped = NetworkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
+            this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
             this.isFlipped.valueChange += this.UpdateAttributes;
-            this.power = NetworkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.power));
-            this.toughness = NetworkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.toughness));
-            this.tapped = NetworkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
+            this.power = this.networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.power));
+            this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.toughness));
+            this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
         }
 
 

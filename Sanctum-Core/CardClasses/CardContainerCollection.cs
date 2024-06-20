@@ -7,43 +7,50 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
-    
 
+
+    public class InsertCardData
+    {
+        public int? insertPosition;
+        public int cardID;
+        public int? containerInsertPosition;
+        public bool createNewContainer;
+        public InsertCardData(int? insertPosition, int cardID, int? containerInsertPosition, bool createNewContainer)
+        {
+            this.insertPosition = insertPosition;
+            this.cardID = cardID;
+            this.containerInsertPosition = containerInsertPosition;
+            this.createNewContainer = createNewContainer;
+        }
+    }
     public class CardContainerCollection
     {
-        private class InsertCardData
-        {
-            public int? insertPosition;
-            public int cardID;
-            public int? containerInsertPosition;
-            public bool createNewContainer;
-            public InsertCardData(int? insertPosition, int cardID, int? containerInsertPosition, bool createNewContainer)
-            {
-                this.insertPosition = insertPosition;
-                this.cardID = cardID;
-                this.containerInsertPosition = containerInsertPosition;
-                this.createNewContainer = createNewContainer;
-            }
-        }
+        
         public CardZone Zone { get; set; }
         public string Owner { get; }
         public List<CardContainer> Containers { get; set; } = new List<CardContainer>();
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
         private readonly NetworkAttribute<InsertCardData> insertCardData;
+        public NetworkAttribute<bool> revealTopCard;
         public NetworkAttribute<int> removeCardID;
         public event PropertyChangedEventHandler containerChanged = delegate { };
+        private readonly CardFactory CardFactory;
 
-        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount)
+        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount,bool revealTopCard, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
         {
             this.maxCardCountPerContainer = maxContainerCardCount;
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = NetworkAttributeFactory.AddNetworkAttribute<InsertCardData>(owner, null);
+            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{Enum.GetName(this.Zone)}-insert", null);
+            this.revealTopCard = networkAttributeManager.AddNetworkAttribute<bool>($"{owner}-{Enum.GetName(this.Zone)}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-            this.removeCardID = NetworkAttributeFactory.AddNetworkAttribute<int>(owner, 0);
+            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{Enum.GetName(this.Zone)}-remove", 0);
             this.removeCardID.valueChange += this.NetworkRemoveCard;
+
+            this.CardFactory = cardFactory;
+
         }
         public void InsertCardIntoContainer(int? insertPosition, bool createNewContainer, Card cardToInsert, int? cardContainerPosition, bool changeShouldBeNetworked)
         {
@@ -54,7 +61,7 @@ namespace Sanctum_Core
                 this.insertCardData.SetValue(newCardData);
                 return;
             }
-            if(this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer)))
+            if (this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer)))
             {
                 containerChanged(this, new PropertyChangedEventArgs("Inserted"));
             }
@@ -68,7 +75,7 @@ namespace Sanctum_Core
         private bool ProcessCardInsertion(InsertCardData cardChange)
         {
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
-            Card? insertCard = CardFactory.GetCard(cardChange.cardID);
+            Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
             if (insertCard == null)
             {
                 return false;
@@ -82,7 +89,7 @@ namespace Sanctum_Core
 
         private CardContainer CreateAndInsertCardContainer(int insertPosition)
         {
-            if(this.Containers.Count >= this.maxContainerCount)
+            if (this.Containers.Count >= this.maxContainerCount)
             {
                 return this.FindFirstEmptyContainer() ?? throw new Exception("Max container count reached, with all containers full");
             }
@@ -98,7 +105,7 @@ namespace Sanctum_Core
 
         private CardContainer DetermineDestinationContainer(int? targetContainerIndex, bool createNewContainer)
         {
-            int rightwardBound = createNewContainer ? this.Containers.Count : Math.Max(0,this.Containers.Count - 1);
+            int rightwardBound = createNewContainer ? this.Containers.Count : Math.Max(0, this.Containers.Count - 1);
             int insertPosition = targetContainerIndex.HasValue ? Math.Clamp((int)targetContainerIndex, 0, rightwardBound) : rightwardBound;
             if (createNewContainer || this.Containers.Count == 0)
             {

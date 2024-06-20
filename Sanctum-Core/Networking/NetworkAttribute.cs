@@ -8,6 +8,8 @@ namespace Sanctum_Core
         public string Id { get; }
         public abstract Type ValueType { get; }
 
+        public bool outsideSettable { get; set; }
+
         protected NetworkAttribute(string id)
         {
             this.Id = id;

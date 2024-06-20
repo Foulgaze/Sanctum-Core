@@ -49,7 +49,7 @@ namespace Sanctum_Core_Testing
             NetworkStream stream = client.GetStream();
             Server.SendMessage(stream, NetworkInstruction.CreateLobby, $"4");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
-            this.AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Must include name and lobby code");
+            AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Must include name and lobby code");
         }
 
         [Test]
@@ -60,7 +60,7 @@ namespace Sanctum_Core_Testing
             NetworkStream stream = client.GetStream();
             Server.SendMessage(stream, NetworkInstruction.CreateLobby, "Asd|Asd");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
-            this.AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Invalid lobby count");
+            AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Invalid lobby count");
         }
 
         [Test]
@@ -75,7 +75,7 @@ namespace Sanctum_Core_Testing
             client.Connect(IPAddress.Loopback, Server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
-            this.AssertCommandResults(command, NetworkInstruction.JoinLobby, null);
+            AssertCommandResults(command, NetworkInstruction.JoinLobby, null);
             Assert.That(command.instruction.Length, Is.EqualTo(this.uuidLength));
         }
 
@@ -87,7 +87,7 @@ namespace Sanctum_Core_Testing
             NetworkStream stream = client.GetStream();
             Server.SendMessage(stream, NetworkInstruction.JoinLobby, $"Spaghetti & Meatballs");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
-            this.AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Need to include Name and Lobby code");
+            AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Need to include Name and Lobby code");
         }
 
         [Test]
@@ -103,7 +103,7 @@ namespace Sanctum_Core_Testing
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             _ = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); // Should be a list of player names
-            this.AssertCommandResults(command, NetworkInstruction.PlayersInLobby, "[\"Gabe\",\"Gabriel\"]");
+            AssertCommandResults(command, NetworkInstruction.PlayersInLobby, "[\"Gabe\",\"Gabriel\"]");
         }
 
         [Test]
@@ -122,13 +122,13 @@ namespace Sanctum_Core_Testing
             data = command.instruction.Split('|');
             string p2UUID = data[0];
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); // Should be a start lobby call
-            this.AssertCommandResults(command, NetworkInstruction.StartGame, null);
+            AssertCommandResults(command, NetworkInstruction.StartGame, null);
             Dictionary<string, string> expectedLobby = new() { { p1UUID, "Gabriel" } , { p2UUID , "Gabe"} };
             Dictionary<string, string> actualDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(command.instruction);
             CollectionAssert.AreEqual(expectedLobby, actualDictionary);
         }
 
-        private void AssertCommandResults(NetworkCommand? command,NetworkInstruction expectedOpCode, string? expectedPayload)
+        public static void AssertCommandResults(NetworkCommand? command,NetworkInstruction expectedOpCode, string? expectedPayload)
         {
             Assert.IsNotNull(command);
             Assert.That(command.opCode, Is.EqualTo((int)expectedOpCode));
