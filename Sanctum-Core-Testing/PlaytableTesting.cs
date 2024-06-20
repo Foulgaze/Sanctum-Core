@@ -16,7 +16,7 @@ namespace Sanctum_Core_Testing
         [OneTimeSetUp]
         public void Init()
         {
-            this.server = new();
+            this.server = new(52522);
             this.serverThread = new Thread(new ThreadStart(this.server.StartListening));
             this.serverThread.Start();
             this.uuidLength = Guid.NewGuid().ToString().Length;
@@ -78,7 +78,7 @@ namespace Sanctum_Core_Testing
         {
 
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{playerCount}|{playerName}");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             string[] commandData = command.instruction.Split('|');
@@ -88,7 +88,7 @@ namespace Sanctum_Core_Testing
         private PlayerDescription AddToLobby(string playerName, string lobbyCode)
         {
             TcpClient client = new();
-            client.Connect(IPAddress.Loopback, Server.portNumber);
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|{playerName}");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             string[] commandData = command.instruction.Split('|');
@@ -104,7 +104,7 @@ namespace Sanctum_Core_Testing
             for (int i = 1; i < playerCount; ++i)
             {
                 TcpClient client = new();
-                client.Connect(IPAddress.Loopback, Server.portNumber);
+                client.Connect(IPAddress.Loopback, this.server.portNumber);
                 returnList.Add(this.AddToLobby($"Player-{i}", lobbyCode));
             }
             foreach (PlayerDescription player in returnList)

@@ -15,18 +15,21 @@ namespace Sanctum_Core
     {
         private readonly TcpListener _listener;
         private readonly List<Lobby> _lobbies = new();
-        public const int portNumber = 51522; // Change to ENV
+        public int portNumber = 51522; // Change to ENV
         public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
 
-        public Server()
+        public Server(int portNumber = 51522)
         {
+            this.portNumber = portNumber;
             this._listener = new TcpListener(IPAddress.Any, portNumber);
         }
 
         public void StartListening()
         {
+            
             this._listener.Start();
+               
             while (true)
             {
                 TcpClient client = this._listener.AcceptTcpClient();
