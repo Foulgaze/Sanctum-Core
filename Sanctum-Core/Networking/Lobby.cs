@@ -47,6 +47,12 @@ namespace Sanctum_Core
             this.players.ForEach
                 (description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
         }
+
+        private void NetworkBoardChange(object sender, PropertyChangedEventArgs args)
+        {
+
+        }
+
         private void InitGame()
         {
             this.players = this.concurrentPlayers.ToList(); // Ignore concurrent players once lobby starts
@@ -54,6 +60,7 @@ namespace Sanctum_Core
             string lobbyDescription = JsonConvert.SerializeObject(this.players.ToDictionary(player => player.uuid, player => player.name));
             this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
             this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
+            this.playtable.boardChanged += this.NetworkBoardChange;
         }
 
         public void StartLobby()

@@ -34,7 +34,7 @@ namespace Sanctum_Core
         private readonly NetworkAttribute<InsertCardData> insertCardData;
         public NetworkAttribute<bool> revealTopCard;
         public NetworkAttribute<int> removeCardID;
-        public event PropertyChangedEventHandler containerChanged = delegate { };
+        public event PropertyChangedEventHandler boardChanged = delegate { };
         private readonly CardFactory CardFactory;
 
         public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount,bool revealTopCard, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
@@ -61,10 +61,7 @@ namespace Sanctum_Core
                 this.insertCardData.SetValue(newCardData);
                 return;
             }
-            if (this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer)))
-            {
-                containerChanged(this, new PropertyChangedEventArgs("Inserted"));
-            }
+            _ = this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer));
         }
 
         private void NetworkedCardInsert(object sender, PropertyChangedEventArgs args)
@@ -83,6 +80,7 @@ namespace Sanctum_Core
             insertCard.CurrentLocation?.removeCardID.SetValue(cardChange.cardID);
             insertCard.CurrentLocation = this;
             destinationContainer.AddCardToContainer(insertCard, cardChange.containerInsertPosition);
+            boardChanged(this, new PropertyChangedEventArgs("Oof"));
             return true;
         }
 
@@ -139,7 +137,7 @@ namespace Sanctum_Core
                 if (cardToRemove != null)
                 {
                     _ = container.Cards.Remove(cardToRemove); // log
-                    containerChanged(null, new PropertyChangedEventArgs("removed"));
+                    boardChanged(null, new PropertyChangedEventArgs("removed"));
                     return true;
                 }
             }

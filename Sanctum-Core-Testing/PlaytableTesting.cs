@@ -71,6 +71,13 @@ namespace Sanctum_Core_Testing
             }
         }
 
+        [Test]
+        public void PlaytableTest()
+        {
+            List<PlayerDescription> players = this.StartGameXPlayers(4);
+            
+        }
+
 
 
         // Returns Lobby Code, UUID, Network Stream

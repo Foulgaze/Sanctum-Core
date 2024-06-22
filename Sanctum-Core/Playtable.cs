@@ -1,27 +1,27 @@
 ﻿using System.ComponentModel;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace Sanctum_Core
 {
     public class Playtable
     {
         private readonly List<Player> _players = new();
-
-        /*private readonly NetworkManager _networkManager = null;*/
-
-
         public readonly int readyUpNeeded;
-
         public readonly NetworkAttribute<bool> GameStarted;
         private readonly CardFactory cardFactory;
         public readonly NetworkAttributeFactory networkAttributeFactory;
+        public event PropertyChangedEventHandler boardChanged = delegate { };
+
         public Playtable(int playerCount)
         {
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
             this.readyUpNeeded = playerCount;
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
+        }
+
+        private void BoardChanged(object sender, PropertyChangedEventArgs e)
+        {
+            boardChanged(sender, e);
         }
 
         public bool AddPlayer(string uuid, string name)
@@ -33,6 +33,7 @@ namespace Sanctum_Core
             Player player = new(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
             player.ReadiedUp.valueChange += this.CheckForStartGame;
             this._players.Add(player);
+            player.boardChanged += this.BoardChanged;
             return true;
         }
 
@@ -46,7 +47,7 @@ namespace Sanctum_Core
             return this._players.FirstOrDefault(player => player.Uuid == uuid);
         }
 
-        void CheckForStartGame(object obj, PropertyChangedEventArgs args)
+        private void CheckForStartGame(object obj, PropertyChangedEventArgs args)
         {
             int readyCount = this._players.Count(player => player.ReadiedUp.Value);
             if (readyCount >= this.readyUpNeeded)
@@ -55,13 +56,13 @@ namespace Sanctum_Core
             }
         }
 
-        void StartGame()
+        private void StartGame()
         {
             this.GameStarted.SetValue(true);
             this.SetupDecks();
         }
 
-        void SetupDecks()
+        private void SetupDecks()
         {
             foreach (Player player in this._players)
             {
