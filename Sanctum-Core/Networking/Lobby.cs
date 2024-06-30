@@ -50,7 +50,7 @@ namespace Sanctum_Core
 
         private void NetworkBoardChange(object sender, PropertyChangedEventArgs args)
         {
-
+            this.players.ForEach()
         }
 
         private void InitGame()

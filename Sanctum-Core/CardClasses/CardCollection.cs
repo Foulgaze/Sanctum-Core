@@ -37,6 +37,11 @@ namespace Sanctum_Core
             cardsChanged(this, new PropertyChangedEventArgs("added"));
         }
 
+        public List<int> SerializeContainer()
+        {
+            return this.Cards.Select(card => card.Id).ToList();
+        }
+
         public bool IsFull()
         {
             return this.maxCardCount != null && this.Cards.Count >= this.maxCardCount;

@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 namespace Sanctum_Core
 {
 
-
     public class InsertCardData
     {
         public int? insertPosition;
@@ -52,6 +51,15 @@ namespace Sanctum_Core
             this.CardFactory = cardFactory;
 
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="insertPosition"></param>
+        /// <param name="createNewContainer"></param>
+        /// <param name="cardToInsert"></param>
+        /// <param name="cardContainerPosition"></param>
+        /// <param name="changeShouldBeNetworked"></param>
         public void InsertCardIntoContainer(int? insertPosition, bool createNewContainer, Card cardToInsert, int? cardContainerPosition, bool changeShouldBeNetworked)
         {
 
@@ -63,6 +71,44 @@ namespace Sanctum_Core
             }
             _ = this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer));
         }
+        /// <summary>
+        /// Removes a card from the first card container that matches ID
+        /// </summary>
+        /// <param name="cardID">The id of the card to remove</param>
+        /// <returns>true if removed else false</returns>
+        public bool RemoveCardFromContainer(int cardID)
+        {
+            foreach (CardContainer container in this.Containers)
+            {
+                Card cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
+                if (cardToRemove != null)
+                {
+                    _ = container.Cards.Remove(cardToRemove); // log
+                    boardChanged(null, new PropertyChangedEventArgs("removed"));
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the name of the card zone.
+        /// </summary>
+        /// <returns>The name of the card zone.</returns>
+        public string GetName()
+        {
+            return Enum.GetName(typeof(CardZone), this.Zone);
+        }
+
+        /// <summary>
+        /// Creates a serialized version of the card containers
+        /// </summary>
+        /// <returns></returns>
+        public List<List<int>> SerializeContainerCollection()
+        {
+            return this.Containers.Select(container => container.SerializeContainer()).ToList();
+        }
+
 
         private void NetworkedCardInsert(object sender, PropertyChangedEventArgs args)
         {
@@ -126,31 +172,6 @@ namespace Sanctum_Core
         {
             _ = this.RemoveCardFromContainer((int)sender);
             // log this.
-        }
-
-
-        public bool RemoveCardFromContainer(int cardID)
-        {
-            foreach (CardContainer container in this.Containers)
-            {
-                Card cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
-                if (cardToRemove != null)
-                {
-                    _ = container.Cards.Remove(cardToRemove); // log
-                    boardChanged(null, new PropertyChangedEventArgs("removed"));
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Gets the name of the card zone.
-        /// </summary>
-        /// <returns>The name of the card zone.</returns>
-        public string GetName()
-        {
-            return Enum.GetName(typeof(CardZone), this.Zone);
         }
     }
 }
