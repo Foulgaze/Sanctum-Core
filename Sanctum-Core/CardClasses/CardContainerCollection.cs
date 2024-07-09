@@ -42,10 +42,10 @@ namespace Sanctum_Core
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{Enum.GetName(this.Zone)}-insert", null);
-            this.revealTopCard = networkAttributeManager.AddNetworkAttribute<bool>($"{owner}-{Enum.GetName(this.Zone)}-reveal", revealTopCard);
+            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{(int)this.Zone}-insert", null, false);
+            this.revealTopCard = networkAttributeManager.AddNetworkAttribute<bool>($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{Enum.GetName(this.Zone)}-remove", 0);
+            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{(int)this.Zone}-remove", 0, false);
             this.removeCardID.valueChange += this.NetworkRemoveCard;
 
             this.CardFactory = cardFactory;
@@ -83,7 +83,14 @@ namespace Sanctum_Core
                 Card cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
                 if (cardToRemove != null)
                 {
-                    _ = container.Cards.Remove(cardToRemove); // log
+                    if(!container.Cards.Remove(cardToRemove))
+                    {
+                        return false;
+                    }
+                    if(container.Cards.Count == 0)
+                    {
+                        _ = this.Containers.Remove(container);
+                    }
                     boardChanged(null, new PropertyChangedEventArgs("removed"));
                     return true;
                 }
@@ -104,7 +111,7 @@ namespace Sanctum_Core
         /// Creates a serialized version of the card containers
         /// </summary>
         /// <returns></returns>
-        public List<List<int>> SerializeContainerCollection()
+        public List<List<int>> ContainerCollectionToList()
         {
             return this.Containers.Select(container => container.SerializeContainer()).ToList();
         }

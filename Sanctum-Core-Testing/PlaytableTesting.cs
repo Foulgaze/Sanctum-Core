@@ -72,10 +72,22 @@ namespace Sanctum_Core_Testing
         }
 
         [Test]
-        public void PlaytableTest()
+        public void RemoveCardFromDeck()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
-            
+            players.Sort((x,y) => x.uuid.CompareTo(y.uuid));
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{0}-remove|0");
+            foreach (PlayerDescription player in players)
+            {
+                NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                Assert.IsNotNull(command);
+                string[] data = command.instruction.Split('|');
+                Assert.AreEqual(2, data.Length);
+                Assert.AreEqual("0", $"{data[0]}");
+                List<List<int>> deck = JsonConvert.DeserializeObject<List<List<int>>>(data[1]);
+                Assert.AreEqual(deck.Count,1 );
+                Assert.AreEqual(deck[0].Count,99 );
+            }
         }
 
 

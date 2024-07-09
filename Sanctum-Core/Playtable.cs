@@ -59,6 +59,7 @@ namespace Sanctum_Core
         private void StartGame()
         {
             this.GameStarted.SetValue(true);
+            this._players.Sort((x, y) => x.Uuid.CompareTo(y.Uuid));
             this.SetupDecks();
         }
 
@@ -67,6 +68,7 @@ namespace Sanctum_Core
             foreach (Player player in this._players)
             {
                 List<string> cardNames = DeckListParser.ParseDeckList(player.DeckListRaw.Value);
+                cardNames.Sort();
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
                 List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));

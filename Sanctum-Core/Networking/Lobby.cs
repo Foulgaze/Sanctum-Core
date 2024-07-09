@@ -45,12 +45,16 @@ namespace Sanctum_Core
         private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
         {
             this.players.ForEach
-                (description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
+                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
         }
 
         private void NetworkBoardChange(object sender, PropertyChangedEventArgs args)
         {
-            this.players.ForEach()
+            CardContainerCollection cardContainerCollection = (CardContainerCollection)sender;
+            List<List<int>> allCards = cardContainerCollection.ContainerCollectionToList();
+            string cardsSerialized = JsonConvert.SerializeObject(allCards);
+            this.players.ForEach
+                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Zone}|{cardsSerialized}"));
         }
 
         private void InitGame()
