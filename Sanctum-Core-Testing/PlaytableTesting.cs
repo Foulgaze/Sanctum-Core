@@ -28,6 +28,15 @@ namespace Sanctum_Core_Testing
 
         }
 
+        private void CheckAttribute(List<PlayerDescription> players, NetworkStream stream,string payload)
+        {
+            Server.SendMessage(stream, NetworkInstruction.NetworkAttribute, payload);
+            foreach(PlayerDescription player in players)
+            {
+                NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                Assert.That(command.instruction, Is.EqualTo(payload));
+            }
+        }
         [Test]
         public void NetworkAttributesTest()
         {
@@ -35,58 +44,54 @@ namespace Sanctum_Core_Testing
             for (int i = 0; i < players.Count; ++i)
             {
                 PlayerDescription player = players[i];
-                Server.SendMessage(player.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{player.uuid}-health|{JsonConvert.SerializeObject(i)}");
-                Server.SendMessage(player.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
-                Server.SendMessage(player.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}");
-            }
-            NetworkCommand? command;
-            for (int b = 0; b < 3; ++b)
-            {
-                for (int i = 0; i < players.Count; ++i)
-                {
-                    PlayerDescription player = players[i];
-                    for (int a = 0; a < players.Count; ++a)
-                    {
-                        command = NetworkCommandManager.GetNextNetworkCommand(players[a].client.GetStream(), players[a].buffer, Server.bufferSize);
-                        switch (b)
-                        {
-                            case 0:
-                                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"{player.uuid}-health|{i}");
-                                break;
-                            case 1:
-                                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
-                                break;
-                            case 2:
-                                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}");
-                                break;
-                        }
-                    }
-                }
-            }
-            for (int i = 0; i < players.Count; ++i)
-            {
-                command = NetworkCommandManager.GetNextNetworkCommand(players[i].client.GetStream(), players[i].buffer, Server.bufferSize);
-
-                ServerTesting.AssertCommandResults(command, NetworkInstruction.NetworkAttribute, $"main-started|{JsonConvert.SerializeObject(true)}");
+                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-health|{JsonConvert.SerializeObject(i)}");
+                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
+                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}");
             }
         }
 
         [Test]
-        public void RemoveCardFromDeck()
+        public void RemoveCard()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
             players.Sort((x,y) => x.uuid.CompareTo(y.uuid));
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{0}-remove|0");
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-0-remove|{JsonConvert.SerializeObject(0)}");
+            NetworkAttributeManager nam = new(players);
+            nam.ReadPlayerData(1);
+            string key = $"{players[0].uuid}-0|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
+            Assert.That(nam.networkAttributes.Count(item => key == item) == players.Count);
+            /*foreach (PlayerDescription player in players)
+            {
+                NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                Assert.IsNotNull(command);
+                string[] data = command.instruction.Split('|');
+                Assert.That(data.Length, Is.EqualTo(2));
+                Assert.That($"{data[0]}", Is.EqualTo($"{players[0].uuid}-{(int)CardZone.Library}"));
+                Assert.That($"{data[1]}", Is.EqualTo(JsonConvert.SerializeObject(new List<List<int>> {Enumerable.Range(1,99).ToList()})));
+                List<List<int>> deck = JsonConvert.DeserializeObject<List<List<int>>>(data[1]);
+                Assert.That(1, Is.EqualTo(deck.Count));
+                Assert.That(99, Is.EqualTo(deck[0].Count));
+            }*/
+            }
+
+        [Test]
+        public void MoveCardToHand()
+        {
+            List<PlayerDescription> players = this.StartGameXPlayers(4);
+            players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
+            InsertCardData cardToMove = new(0,0,null,true);
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
             foreach (PlayerDescription player in players)
             {
                 NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
                 Assert.IsNotNull(command);
                 string[] data = command.instruction.Split('|');
-                Assert.AreEqual(2, data.Length);
-                Assert.AreEqual("0", $"{data[0]}");
+                Assert.That(data.Length, Is.EqualTo(2));
+                Assert.That($"{data[0]}", Is.EqualTo($"{players[0].uuid}-{(int)CardZone.Library}"));
+                Assert.That($"{data[1]}", Is.EqualTo(JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })));
                 List<List<int>> deck = JsonConvert.DeserializeObject<List<List<int>>>(data[1]);
-                Assert.AreEqual(deck.Count,1 );
-                Assert.AreEqual(deck[0].Count,99 );
+                Assert.That(1, Is.EqualTo(deck.Count));
+                Assert.That(99, Is.EqualTo(deck[0].Count));
             }
         }
 
@@ -114,6 +119,19 @@ namespace Sanctum_Core_Testing
             return new PlayerDescription(playerName, commandData[0], client);
         }
 
+        private void HandleNetworkAttribute(List<PlayerDescription> allPlayers, PlayerDescription currentPlayer, string payload)
+        {
+            Server.SendMessage(currentPlayer.client.GetStream(), NetworkInstruction.NetworkAttribute, payload);
+            NetworkCommand? command;
+            foreach (PlayerDescription player in allPlayers)
+            {
+                do
+                {
+                    command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                } while (command.opCode != (int)NetworkInstruction.NetworkAttribute);
+            }
+        }
+
         private List<PlayerDescription> StartGameXPlayers(int playerCount)
         {
 
@@ -134,9 +152,35 @@ namespace Sanctum_Core_Testing
                     command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
                 } while (command.opCode != (int) NetworkInstruction.StartGame);
             }
-            returnList.Reverse();
-            return returnList;
 
+            returnList.ForEach(player => this.HandleNetworkAttribute(returnList,player,$"{player.uuid}-decklist|{JsonConvert.SerializeObject("100 Plains")}"));
+            returnList.ForEach(player => this.HandleNetworkAttribute(returnList,player, $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}"));
+            
+            foreach (PlayerDescription player in returnList)
+            {
+                NetworkCommand? command;
+                do
+                {
+                    command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                } while (command.opCode != (int)NetworkInstruction.NetworkAttribute);
+            }
+
+            for (int i = 0; i < playerCount; ++i)
+            {
+                string expectedList = JsonConvert.SerializeObject(new List<List<int>>() { Enumerable.Range(i * 100, 100).ToList()});
+                foreach (PlayerDescription player in returnList)
+                {
+                    NetworkCommand? command;
+                    do
+                    {
+                        command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                    } while (command.opCode != (int)NetworkInstruction.BoardUpdate);
+                    string[] data = command.instruction.Split('|');
+                    Assert.That(expectedList, Is.EqualTo(data[1]));
+                }
+            }
+            returnList.Sort((x, y) => x.uuid.CompareTo(y.uuid));
+            return returnList;
         }
     }
 }

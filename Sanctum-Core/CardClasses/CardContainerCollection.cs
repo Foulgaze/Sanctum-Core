@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -42,10 +43,10 @@ namespace Sanctum_Core
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{(int)this.Zone}-insert", null, false);
+            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{(int)this.Zone}-insert", null,true, false);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute<bool>($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{(int)this.Zone}-remove", 0, false);
+            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{(int)this.Zone}-remove", 0, true, false);
             this.removeCardID.valueChange += this.NetworkRemoveCard;
 
             this.CardFactory = cardFactory;
@@ -69,7 +70,7 @@ namespace Sanctum_Core
                 this.insertCardData.SetValue(newCardData);
                 return;
             }
-            _ = this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer));
+            _ = this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer), false);
         }
         /// <summary>
         /// Removes a card from the first card container that matches ID
@@ -91,7 +92,7 @@ namespace Sanctum_Core
                     {
                         _ = this.Containers.Remove(container);
                     }
-                    boardChanged(null, new PropertyChangedEventArgs("removed"));
+                    boardChanged(this, new PropertyChangedEventArgs("removed"));
                     return true;
                 }
             }
@@ -116,13 +117,12 @@ namespace Sanctum_Core
             return this.Containers.Select(container => container.SerializeContainer()).ToList();
         }
 
-
         private void NetworkedCardInsert(object sender, PropertyChangedEventArgs args)
         {
-            _ = this.ProcessCardInsertion((InsertCardData)sender);
+            _ = this.ProcessCardInsertion(JsonConvert.DeserializeObject<InsertCardData>(args.PropertyName), true);
         }
 
-        private bool ProcessCardInsertion(InsertCardData cardChange)
+        private bool ProcessCardInsertion(InsertCardData cardChange, bool networkChange)
         {
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
             Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
@@ -133,7 +133,10 @@ namespace Sanctum_Core
             insertCard.CurrentLocation?.removeCardID.SetValue(cardChange.cardID);
             insertCard.CurrentLocation = this;
             destinationContainer.AddCardToContainer(insertCard, cardChange.containerInsertPosition);
-            boardChanged(this, new PropertyChangedEventArgs("Oof"));
+            if(networkChange)
+            {
+                boardChanged(this, new PropertyChangedEventArgs("Oof"));
+            }
             return true;
         }
 
@@ -177,7 +180,11 @@ namespace Sanctum_Core
 
         private void NetworkRemoveCard(object sender, PropertyChangedEventArgs args)
         {
-            _ = this.RemoveCardFromContainer((int)sender);
+            if(!int.TryParse(args.PropertyName,out int cardID ))
+            {
+                return; // Log this
+            }
+            _ = this.RemoveCardFromContainer(cardID);
             // log this.
         }
     }

@@ -11,6 +11,10 @@ namespace Sanctum_Core
         // Load all card names into a HashSet for quick lookup
         public static void LoadCardNames(string filePath)
         {
+            if(cardsLoaded)
+            {
+                return;
+            }
             cardsLoaded = true;
             using StreamReader reader = new(filePath);
             using CsvReader csv = new(reader, CultureInfo.InvariantCulture);

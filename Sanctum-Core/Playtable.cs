@@ -11,11 +11,12 @@ namespace Sanctum_Core
         public readonly NetworkAttributeFactory networkAttributeFactory;
         public event PropertyChangedEventHandler boardChanged = delegate { };
 
-        public Playtable(int playerCount)
+        public Playtable(int playerCount, string filepath)
         {
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
             this.readyUpNeeded = playerCount;
+            CardData.LoadCardNames(filepath);
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
         }
 
@@ -50,7 +51,7 @@ namespace Sanctum_Core
         private void CheckForStartGame(object obj, PropertyChangedEventArgs args)
         {
             int readyCount = this._players.Count(player => player.ReadiedUp.Value);
-            if (readyCount >= this.readyUpNeeded)
+            if (readyCount >= this.readyUpNeeded && !this.GameStarted.Value)
             {
                 this.StartGame();
             }
@@ -72,6 +73,7 @@ namespace Sanctum_Core
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
                 List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
+                boardChanged(library, null);
             }
         }
 

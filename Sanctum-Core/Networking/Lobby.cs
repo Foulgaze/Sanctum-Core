@@ -39,7 +39,7 @@ namespace Sanctum_Core
 
             this.size = lobbySize;
             this.code = lobbyCode;
-            this.playtable = new Playtable(lobbySize);
+            this.playtable = new Playtable(lobbySize, "cards.csv");
         }
 
         private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
@@ -54,7 +54,7 @@ namespace Sanctum_Core
             List<List<int>> allCards = cardContainerCollection.ContainerCollectionToList();
             string cardsSerialized = JsonConvert.SerializeObject(allCards);
             this.players.ForEach
-                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Zone}|{cardsSerialized}"));
+                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Owner}-{(int)cardContainerCollection.Zone}|{cardsSerialized}"));
         }
 
         private void InitGame()

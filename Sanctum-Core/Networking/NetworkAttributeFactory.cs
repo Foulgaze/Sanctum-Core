@@ -51,7 +51,7 @@ namespace Sanctum_Core
         }
 
 
-        public NetworkAttribute<T> AddNetworkAttribute<T>(string id, T value, bool outsideSettable = true)
+        public NetworkAttribute<T> AddNetworkAttribute<T>(string id, T value, bool outsideSettable = true, bool networkChange = true)
         {
             if(this.networkAttributes.ContainsKey(id))
             {
@@ -59,7 +59,10 @@ namespace Sanctum_Core
             }
             NetworkAttribute<T> newAttribute = new(id, value);
             this.networkAttributes.Add(id, newAttribute);
-            newAttribute.valueChange += this.AttributeChangedEventHandler;
+            if(networkChange)
+            {
+                newAttribute.valueChange += this.AttributeChangedEventHandler;
+            }
             newAttribute.outsideSettable = outsideSettable;
             return newAttribute;
         }

@@ -12,10 +12,9 @@ namespace Sanctum_Core
 
         public bool outsideSettable { get; set; }
 
-        protected NetworkAttribute(string id, bool networkChange)
+        protected NetworkAttribute(string id)
         {
             this.Id = id;
-            this.networkChange = networkChange;
         }
         public abstract void SetValue(object value);
     }
@@ -29,15 +28,13 @@ namespace Sanctum_Core
         public override void SetValue(object value)
         { 
             this.Value = (T)value;
-            if(this.networkChange)
-            {
-                this.valueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));
-            }
+            
+            this.valueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));
         }
 
         public override Type ValueType => typeof(T);
 
-        public NetworkAttribute(string id, T value, bool networkChange = true) : base(id, networkChange)
+        public NetworkAttribute(string id, T value) : base(id)
         {
             this.Value = value;
         }
