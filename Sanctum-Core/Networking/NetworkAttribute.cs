@@ -1,11 +1,13 @@
 ﻿using Newtonsoft.Json;
 using System.ComponentModel;
+using System.Net.NetworkInformation;
 
 namespace Sanctum_Core
 {
     public abstract class NetworkAttribute
     {
         public string Id { get; }
+        protected readonly bool networkChange;
         public abstract Type ValueType { get; }
 
         public bool outsideSettable { get; set; }
@@ -26,6 +28,7 @@ namespace Sanctum_Core
         public override void SetValue(object value)
         { 
             this.Value = (T)value;
+            
             this.valueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));
         }
 

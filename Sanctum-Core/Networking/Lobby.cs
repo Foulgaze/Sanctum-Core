@@ -39,14 +39,24 @@ namespace Sanctum_Core
 
             this.size = lobbySize;
             this.code = lobbyCode;
-            this.playtable = new Playtable(lobbySize);
+            this.playtable = new Playtable(lobbySize, "cards.csv");
         }
 
         private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
         {
             this.players.ForEach
-                (description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
+                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
         }
+
+        private void NetworkBoardChange(object sender, PropertyChangedEventArgs args)
+        {
+            CardContainerCollection cardContainerCollection = (CardContainerCollection)sender;
+            List<List<int>> allCards = cardContainerCollection.ContainerCollectionToList();
+            string cardsSerialized = JsonConvert.SerializeObject(allCards);
+            this.players.ForEach
+                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Owner}-{(int)cardContainerCollection.Zone}|{cardsSerialized}"));
+        }
+
         private void InitGame()
         {
             this.players = this.concurrentPlayers.ToList(); // Ignore concurrent players once lobby starts
@@ -54,6 +64,7 @@ namespace Sanctum_Core
             string lobbyDescription = JsonConvert.SerializeObject(this.players.ToDictionary(player => player.uuid, player => player.name));
             this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
             this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
+            this.playtable.boardChanged += this.NetworkBoardChange;
         }
 
         public void StartLobby()

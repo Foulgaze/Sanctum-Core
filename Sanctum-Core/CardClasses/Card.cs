@@ -36,11 +36,11 @@
 
         private void InitializeAttributes()
         {
-            this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
+            this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
             this.isFlipped.valueChange += this.UpdateAttributes;
-            this.power = this.networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.power));
-            this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>(this.Id.ToString(), this.ParsePT(this.CurrentInfo.toughness));
-            this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>(this.Id.ToString(), false);
+            this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", this.ParsePT(this.CurrentInfo.power));
+            this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
+            this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
         }
 
 

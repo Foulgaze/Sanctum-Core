@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -7,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
-
 
     public class InsertCardData
     {
@@ -34,7 +34,7 @@ namespace Sanctum_Core
         private readonly NetworkAttribute<InsertCardData> insertCardData;
         public NetworkAttribute<bool> revealTopCard;
         public NetworkAttribute<int> removeCardID;
-        public event PropertyChangedEventHandler containerChanged = delegate { };
+        public event PropertyChangedEventHandler boardChanged = delegate { };
         private readonly CardFactory CardFactory;
 
         public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount,bool revealTopCard, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
@@ -43,15 +43,24 @@ namespace Sanctum_Core
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{Enum.GetName(this.Zone)}-insert", null);
-            this.revealTopCard = networkAttributeManager.AddNetworkAttribute<bool>($"{owner}-{Enum.GetName(this.Zone)}-reveal", revealTopCard);
+            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{(int)this.Zone}-insert", null,true, false);
+            this.revealTopCard = networkAttributeManager.AddNetworkAttribute<bool>($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{Enum.GetName(this.Zone)}-remove", 0);
+            this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{(int)this.Zone}-remove", 0, true, false);
             this.removeCardID.valueChange += this.NetworkRemoveCard;
 
             this.CardFactory = cardFactory;
 
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="insertPosition"></param>
+        /// <param name="createNewContainer"></param>
+        /// <param name="cardToInsert"></param>
+        /// <param name="cardContainerPosition"></param>
+        /// <param name="changeShouldBeNetworked"></param>
         public void InsertCardIntoContainer(int? insertPosition, bool createNewContainer, Card cardToInsert, int? cardContainerPosition, bool changeShouldBeNetworked)
         {
 
@@ -61,18 +70,59 @@ namespace Sanctum_Core
                 this.insertCardData.SetValue(newCardData);
                 return;
             }
-            if (this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer)))
+            _ = this.ProcessCardInsertion(new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer), false);
+        }
+        /// <summary>
+        /// Removes a card from the first card container that matches ID
+        /// </summary>
+        /// <param name="cardID">The id of the card to remove</param>
+        /// <returns>true if removed else false</returns>
+        public bool RemoveCardFromContainer(int cardID)
+        {
+            foreach (CardContainer container in this.Containers)
             {
-                containerChanged(this, new PropertyChangedEventArgs("Inserted"));
+                Card cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
+                if (cardToRemove != null)
+                {
+                    if(!container.Cards.Remove(cardToRemove))
+                    {
+                        return false;
+                    }
+                    if(container.Cards.Count == 0)
+                    {
+                        _ = this.Containers.Remove(container);
+                    }
+                    boardChanged(this, new PropertyChangedEventArgs("removed"));
+                    return true;
+                }
             }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the name of the card zone.
+        /// </summary>
+        /// <returns>The name of the card zone.</returns>
+        public string GetName()
+        {
+            return Enum.GetName(typeof(CardZone), this.Zone);
+        }
+
+        /// <summary>
+        /// Creates a serialized version of the card containers
+        /// </summary>
+        /// <returns></returns>
+        public List<List<int>> ContainerCollectionToList()
+        {
+            return this.Containers.Select(container => container.SerializeContainer()).ToList();
         }
 
         private void NetworkedCardInsert(object sender, PropertyChangedEventArgs args)
         {
-            _ = this.ProcessCardInsertion((InsertCardData)sender);
+            _ = this.ProcessCardInsertion(JsonConvert.DeserializeObject<InsertCardData>(args.PropertyName), true);
         }
 
-        private bool ProcessCardInsertion(InsertCardData cardChange)
+        private bool ProcessCardInsertion(InsertCardData cardChange, bool networkChange)
         {
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
             Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
@@ -83,6 +133,10 @@ namespace Sanctum_Core
             insertCard.CurrentLocation?.removeCardID.SetValue(cardChange.cardID);
             insertCard.CurrentLocation = this;
             destinationContainer.AddCardToContainer(insertCard, cardChange.containerInsertPosition);
+            if(networkChange)
+            {
+                boardChanged(this, new PropertyChangedEventArgs("Oof"));
+            }
             return true;
         }
 
@@ -126,33 +180,12 @@ namespace Sanctum_Core
 
         private void NetworkRemoveCard(object sender, PropertyChangedEventArgs args)
         {
-            _ = this.RemoveCardFromContainer((int)sender);
-            // log this.
-        }
-
-
-        public bool RemoveCardFromContainer(int cardID)
-        {
-            foreach (CardContainer container in this.Containers)
+            if(!int.TryParse(args.PropertyName,out int cardID ))
             {
-                Card cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
-                if (cardToRemove != null)
-                {
-                    _ = container.Cards.Remove(cardToRemove); // log
-                    containerChanged(null, new PropertyChangedEventArgs("removed"));
-                    return true;
-                }
+                return; // Log this
             }
-            return false;
-        }
-
-        /// <summary>
-        /// Gets the name of the card zone.
-        /// </summary>
-        /// <returns>The name of the card zone.</returns>
-        public string GetName()
-        {
-            return Enum.GetName(typeof(CardZone), this.Zone);
+            _ = this.RemoveCardFromContainer(cardID);
+            // log this.
         }
     }
 }
