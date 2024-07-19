@@ -39,7 +39,8 @@ namespace Sanctum_Core
 
             this.size = lobbySize;
             this.code = lobbyCode;
-            this.playtable = new Playtable(lobbySize, "cards.csv");
+            string path = System.IO.Path.GetFullPath(@"..\..\..\..");
+            this.playtable = new Playtable(lobbySize, $"{path}/Sanctum-Core/Assets/cards.csv");
         }
 
         private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
