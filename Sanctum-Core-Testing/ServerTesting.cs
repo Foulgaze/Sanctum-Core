@@ -8,6 +8,7 @@ namespace Sanctum_Core_Testing
 {
     public class ServerTesting
     {
+        private const int MessageLength = 36;
         private Server server;
         private Thread serverThread;
         private int uuidLength;
@@ -37,7 +38,7 @@ namespace Sanctum_Core_Testing
             Assert.IsNotNull(command);
             Assert.That(command.instruction.Length == (this.uuidLength + 1 + Server.lobbyCodeLength)); // 36 UUID | 4 Lobby Code = 41
             string[] data = command.instruction.Split('|');
-            Assert.That(36, Is.EqualTo(data[0].Length));
+            Assert.That(data[0].Length, Is.EqualTo(MessageLength));
             Assert.That(data[1].Where(c => !char.IsLetterOrDigit(c)).Count() == 0);
         }
 
@@ -70,11 +71,13 @@ namespace Sanctum_Core_Testing
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"4|Gabriel");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
             client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            Assert.IsNotNull(command);
             AssertCommandResults(command, NetworkInstruction.JoinLobby, null);
             Assert.That(command.instruction.Length, Is.EqualTo(this.uuidLength));
         }
@@ -97,6 +100,7 @@ namespace Sanctum_Core_Testing
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"3|Gabriel");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
             client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
@@ -113,18 +117,30 @@ namespace Sanctum_Core_Testing
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"2|Gabriel");
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
             string p1UUID = data[0];
             client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
+            Assert.IsNotNull(command);
             data = command.instruction.Split('|');
             string p2UUID = data[0];
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); // Should be a start lobby call
+            Assert.IsNotNull(command);
             AssertCommandResults(command, NetworkInstruction.StartGame, null);
             Dictionary<string, string> expectedLobby = new() { { p1UUID, "Gabriel" } , { p2UUID , "Gabe"} };
-            Dictionary<string, string> actualDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(command.instruction);
+            Dictionary<string, string>? actualDictionary;
+            try
+            {
+                actualDictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(command.instruction);
+            }
+            catch
+            {
+                actualDictionary = null;
+            }
+            Assert.IsNotNull(actualDictionary);
             CollectionAssert.AreEqual(expectedLobby, actualDictionary);
         }
 

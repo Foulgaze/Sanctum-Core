@@ -10,13 +10,17 @@ namespace Sanctum_Core
         public Dictionary<string, NetworkAttribute> networkAttributes = new();
 
 
-        private void AttributeChangedEventHandler(object sender, PropertyChangedEventArgs e)
+        private void AttributeChangedEventHandler(object? sender, PropertyChangedEventArgs e)
         {
             attributeValueChanged(sender, e);
         }
 
-        public void HandleNetworkedAttribute(object sender, PropertyChangedEventArgs e)
+        public void HandleNetworkedAttribute(object? sender, PropertyChangedEventArgs e)
         {
+            if(sender == null)
+            {
+                return;
+            }
             string instruction = (string)sender;
             string[] splitInstruction = instruction.Split("|");
             if (splitInstruction.Length != 2)
@@ -35,8 +39,8 @@ namespace Sanctum_Core
 
             try
             {
-                object deserializedValue = JsonConvert.DeserializeObject(serializedNewValue, attribute.ValueType);
-                if( !attribute.outsideSettable)
+                object? deserializedValue = JsonConvert.DeserializeObject(serializedNewValue, attribute.ValueType);
+                if( !attribute.outsideSettable || deserializedValue is null)
                 {
                     return;
                 }

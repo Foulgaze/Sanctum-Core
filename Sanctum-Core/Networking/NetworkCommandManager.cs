@@ -72,7 +72,7 @@ namespace Sanctum_Core
                 }
             } while(true);
         }
-        public  static NetworkCommand? ParseCommand(string? command)
+        public static NetworkCommand? ParseCommand(string? command)
         {
             if (command == null)
             {
@@ -80,7 +80,7 @@ namespace Sanctum_Core
             }
             try
             {
-                NetworkCommand networkCommand = JsonConvert.DeserializeObject<NetworkCommand>(command);
+                NetworkCommand? networkCommand = JsonConvert.DeserializeObject<NetworkCommand>(command);
                 return networkCommand;
             }
             catch

@@ -43,14 +43,24 @@ namespace Sanctum_Core
             this.playtable = new Playtable(lobbySize, $"{path}/Sanctum-Core/Assets/cards.csv");
         }
 
-        private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
+        private void NetworkAttributeChanged(object? sender, PropertyChangedEventArgs? args)
         {
+            if(args == null)
+            {
+                // Log this
+                return;
+            }
             this.players.ForEach
                 (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
         }
 
-        private void NetworkBoardChange(object sender, PropertyChangedEventArgs args)
+        private void NetworkBoardChange(object? sender, PropertyChangedEventArgs? args)
         {
+            if(sender == null)
+            {
+                // Log this
+                return;
+            }
             CardContainerCollection cardContainerCollection = (CardContainerCollection)sender;
             List<List<int>> allCards = cardContainerCollection.ContainerCollectionToList();
             string cardsSerialized = JsonConvert.SerializeObject(allCards);

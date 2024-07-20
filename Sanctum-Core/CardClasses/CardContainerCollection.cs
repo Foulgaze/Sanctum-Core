@@ -43,7 +43,7 @@ namespace Sanctum_Core
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{(int)this.Zone}-insert", null,true, false);
+            this.insertCardData = networkAttributeManager.AddNetworkAttribute<InsertCardData>($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null,0,null,false),true, false);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute<bool>($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
             this.removeCardID = networkAttributeManager.AddNetworkAttribute<int>($"{owner}-{(int)this.Zone}-remove", 0, true, false);
@@ -81,7 +81,7 @@ namespace Sanctum_Core
         {
             foreach (CardContainer container in this.Containers)
             {
-                Card cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
+                Card? cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
                 if (cardToRemove != null)
                 {
                     if(!container.Cards.Remove(cardToRemove))
@@ -105,7 +105,8 @@ namespace Sanctum_Core
         /// <returns>The name of the card zone.</returns>
         public string GetName()
         {
-            return Enum.GetName(typeof(CardZone), this.Zone);
+            string? name = Enum.GetName(typeof(CardZone), this.Zone) ?? "Unable To Find";
+            return name;
         }
 
         /// <summary>
@@ -117,9 +118,28 @@ namespace Sanctum_Core
             return this.Containers.Select(container => container.SerializeContainer()).ToList();
         }
 
-        private void NetworkedCardInsert(object sender, PropertyChangedEventArgs args)
+        private void NetworkedCardInsert(object? sender, PropertyChangedEventArgs? args)
         {
-            _ = this.ProcessCardInsertion(JsonConvert.DeserializeObject<InsertCardData>(args.PropertyName), true);
+            InsertCardData? result;
+            try
+            {
+                if(args == null || args.PropertyName == null)
+                {
+                    // Log this
+                    return;
+                }
+                result = JsonConvert.DeserializeObject<InsertCardData>(args.PropertyName);
+            }
+            catch
+            {
+                result = null;
+            }
+            if(result == null)
+            {
+                // Log this
+                return;
+            }
+            _ = this.ProcessCardInsertion(result, true);
         }
 
         private bool ProcessCardInsertion(InsertCardData cardChange, bool networkChange)
@@ -178,11 +198,17 @@ namespace Sanctum_Core
             }
         }
 
-        private void NetworkRemoveCard(object sender, PropertyChangedEventArgs args)
+        private void NetworkRemoveCard(object? sender, PropertyChangedEventArgs? args)
         {
+            if(args == null || args.PropertyName == null)
+            {
+                // Log this
+                return;
+            }
             if(!int.TryParse(args.PropertyName,out int cardID ))
             {
-                return; // Log this
+                // Log this
+                return;
             }
             _ = this.RemoveCardFromContainer(cardID);
             // log this.
