@@ -100,7 +100,7 @@ namespace Sanctum_Core
             switch (command.opCode)
             {
                 case (int)NetworkInstruction.NetworkAttribute:
-                    this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, null);
+                    this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, new PropertyChangedEventArgs("instruction"));
                     break;
                 default:
                     // Ignore!

@@ -42,7 +42,7 @@ namespace Sanctum_Core
             }
         }
 
-        public void BoardChanged(object? o, PropertyChangedEventArgs? args)
+        public void BoardChanged(object? o, PropertyChangedEventArgs args)
         {
             boardChanged(o, args);
         }
