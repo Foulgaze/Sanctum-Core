@@ -27,7 +27,7 @@ namespace Sanctum_Core_Testing
             
         }
 
-        [Test]
+        [Test, Timeout(5000)]
         public void CreateLobbyTest()
         {
             TcpClient client = new();
@@ -42,7 +42,7 @@ namespace Sanctum_Core_Testing
             Assert.That(data[1].Where(c => !char.IsLetterOrDigit(c)).Count() == 0);
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void NoNameCreateLobbyTest()
         {
             TcpClient client = new();
@@ -53,7 +53,7 @@ namespace Sanctum_Core_Testing
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Must include name and lobby code");
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void InvalidSizeCreateLobbyTest()
         {
             TcpClient client = new();
@@ -64,7 +64,7 @@ namespace Sanctum_Core_Testing
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Invalid lobby count");
         }
 
-        [Test]
+        [Test,Timeout(3000)]
         public void JoinLobbyTest()
         {
             TcpClient client = new();
@@ -82,7 +82,7 @@ namespace Sanctum_Core_Testing
             Assert.That(command.instruction.Length, Is.EqualTo(this.uuidLength));
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void IncorrectJoinLobbyTest()
         {
             TcpClient client = new();
@@ -93,7 +93,7 @@ namespace Sanctum_Core_Testing
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Need to include Name and Lobby code");
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void AddPlayerToLobbyTest()
         {
             TcpClient client = new();
@@ -110,7 +110,7 @@ namespace Sanctum_Core_Testing
             AssertCommandResults(command, NetworkInstruction.PlayersInLobby, "[\"Gabe\",\"Gabriel\"]");
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void StartLobbyTest()
         {
             TcpClient client = new();

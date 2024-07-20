@@ -38,7 +38,7 @@ namespace Sanctum_Core_Testing
                 Assert.That(command.instruction, Is.EqualTo(payload));
             }
         }
-        [Test]
+        [Test, Timeout(5000)]
         public void NetworkAttributesTest()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
@@ -51,7 +51,7 @@ namespace Sanctum_Core_Testing
             }
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void TestRemoveCard()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
@@ -63,7 +63,7 @@ namespace Sanctum_Core_Testing
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void TestMoveCard()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
@@ -78,7 +78,7 @@ namespace Sanctum_Core_Testing
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
 
-        [Test]
+        [Test, Timeout(3000)]
         public void TestMoveCardToBoard()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
