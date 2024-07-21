@@ -41,8 +41,6 @@ namespace Sanctum_Core_Testing
         [Test]
         public void NetworkAttributesTest()
         {
-            Console.WriteLine("===NetworkAttributesTest===");
-
             List<PlayerDescription> players = this.StartGameXPlayers(4);
             for (int i = 0; i < players.Count; ++i)
             {
@@ -56,14 +54,11 @@ namespace Sanctum_Core_Testing
         [Test]
         public void TestRemoveCard()
         {
-            Console.WriteLine("===Remove Card===");
             List<PlayerDescription> players = this.StartGameXPlayers(4);
             players.Sort((x,y) => x.uuid.CompareTo(y.uuid));
             Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-0-remove|{JsonConvert.SerializeObject(0)}");
             NetworkAttributeManager nam = new(players);
             nam.ReadPlayerData(1);
-            Console.WriteLine("===Finished Removing===");
-
             string key = $"{players[0].uuid}-0|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
@@ -71,16 +66,12 @@ namespace Sanctum_Core_Testing
         [Test]
         public void TestMoveCard()
         {
-            Console.WriteLine("===TestMoveCard===");
-
             List<PlayerDescription> players = this.StartGameXPlayers(4);
             players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
             NetworkAttributeManager nam = new(players);
             InsertCardData cardToMove = new(0, 0, null, true);
             Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
             nam.ReadPlayerData(2);
-            Console.WriteLine("===Finished Moving===");
-
             string key = $"{players[0].uuid}-{(int)CardZone.Library}|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
             key = $"{players[0].uuid}-{(int)CardZone.Graveyard}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0 } })}";
@@ -90,7 +81,6 @@ namespace Sanctum_Core_Testing
         [Test]
         public void TestMoveCardToBoard()
         {
-            Console.WriteLine("===TestMoveCardToBoard===");
             List<PlayerDescription> players = this.StartGameXPlayers(4);
             players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
             NetworkAttributeManager nam = new(players);
@@ -100,7 +90,6 @@ namespace Sanctum_Core_Testing
                 Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
             }
             nam.ReadPlayerData(8);
-            Console.WriteLine("===Finished TestMoveCardOne===");
 
             string key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0, 1, 2 }, new() { 3 } })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
@@ -109,7 +98,6 @@ namespace Sanctum_Core_Testing
                 Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-remove|{JsonConvert.SerializeObject(i)}");
             }
             nam.ReadPlayerData(4);
-            Console.WriteLine("===Finished TestMoveCardTwo===");
 
             key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
