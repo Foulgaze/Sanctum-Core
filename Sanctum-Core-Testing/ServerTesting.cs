@@ -1,4 +1,4 @@
-﻿/*using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Sanctum_Core;
 using System.Net;
 using System.Net.Sockets;
@@ -24,7 +24,7 @@ namespace Sanctum_Core_Testing
         [SetUp]
         public void Setup()
         {
-            
+
         }
 
         [Test, Timeout(10000)]
@@ -64,7 +64,7 @@ namespace Sanctum_Core_Testing
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Invalid lobby count");
         }
 
-        [Test,Timeout(10000)]
+        [Test, Timeout(10000)]
         public void JoinLobbyTest()
         {
             TcpClient client = new();
@@ -130,7 +130,7 @@ namespace Sanctum_Core_Testing
             command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); // Should be a start lobby call
             Assert.IsNotNull(command);
             AssertCommandResults(command, NetworkInstruction.StartGame, null);
-            Dictionary<string, string> expectedLobby = new() { { p1UUID, "Gabriel" } , { p2UUID , "Gabe"} };
+            Dictionary<string, string> expectedLobby = new() { { p1UUID, "Gabriel" }, { p2UUID, "Gabe" } };
             Dictionary<string, string>? actualDictionary;
             try
             {
@@ -144,15 +144,14 @@ namespace Sanctum_Core_Testing
             CollectionAssert.AreEqual(expectedLobby, actualDictionary);
         }
 
-        public static void AssertCommandResults(NetworkCommand? command,NetworkInstruction expectedOpCode, string? expectedPayload)
+        public static void AssertCommandResults(NetworkCommand? command, NetworkInstruction expectedOpCode, string? expectedPayload)
         {
             Assert.IsNotNull(command);
             Assert.That(command.opCode, Is.EqualTo((int)expectedOpCode));
-            if(expectedPayload is not null)
+            if (expectedPayload is not null)
             {
                 Assert.That(command.instruction, Is.EqualTo(expectedPayload));
             }
         }
     }
 }
-*/
