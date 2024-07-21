@@ -45,6 +45,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void NoNameCreateLobbyTest()
         {
+
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
@@ -56,6 +57,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void InvalidSizeCreateLobbyTest()
         {
+
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
@@ -67,6 +69,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void JoinLobbyTest()
         {
+
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"4|Gabriel");
@@ -85,6 +88,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void IncorrectJoinLobbyTest()
         {
+
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
@@ -96,6 +100,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void AddPlayerToLobbyTest()
         {
+
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"3|Gabriel");
@@ -113,6 +118,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void StartLobbyTest()
         {
+
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"2|Gabriel");
