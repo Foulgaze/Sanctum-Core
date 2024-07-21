@@ -67,7 +67,7 @@ namespace Sanctum_Core
 
         private void SendMessage(NetworkInstruction instruction, string payload)
         {
-            Console.WriteLine($"===\nInstruction: {instruction}\nPayload: {payload}\n===");
+            /*Console.WriteLine($"===\nInstruction: {instruction}\nPayload: {payload}\n===");*/
             this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), instruction, payload));
         }
 
