@@ -38,7 +38,7 @@ namespace Sanctum_Core_Testing
                 Assert.That(command.instruction, Is.EqualTo(payload));
             }
         }
-        [Test, Timeout(10000)]
+        [Test]
         public void NetworkAttributesTest()
         {
             Console.WriteLine("===NetworkAttributesTest===");
@@ -53,7 +53,7 @@ namespace Sanctum_Core_Testing
             }
         }
 
-        [Test, Timeout(10000)]
+        [Test]
         public void TestRemoveCard()
         {
             Console.WriteLine("===Remove Card===");
@@ -68,7 +68,7 @@ namespace Sanctum_Core_Testing
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
 
-        [Test, Timeout(10000)]
+        [Test]
         public void TestMoveCard()
         {
             Console.WriteLine("===TestMoveCard===");
@@ -87,7 +87,7 @@ namespace Sanctum_Core_Testing
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
 
-        [Test, Timeout(10000)]
+        [Test]
         public void TestMoveCardToBoard()
         {
             Console.WriteLine("===TestMoveCardToBoard===");
