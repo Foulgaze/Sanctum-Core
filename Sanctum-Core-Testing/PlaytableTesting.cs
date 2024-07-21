@@ -64,17 +64,17 @@ namespace Sanctum_Core_Testing
             string key = $"{players[0].uuid}-0|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
-/*
+
         [Test, Timeout(10000)]
         public void TestMoveCard()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
             players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
             NetworkAttributeManager nam = new(players);
-            InsertCardData cardToMove = new(0,0,null,true);
+            InsertCardData cardToMove = new(0, 0, null, true);
             Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
             nam.ReadPlayerData(2);
-            string key = $"{players[0].uuid}-{(int)CardZone.Library}|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList()})}";
+            string key = $"{players[0].uuid}-{(int)CardZone.Library}|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
             key = $"{players[0].uuid}-{(int)CardZone.Graveyard}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0 } })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
@@ -86,22 +86,22 @@ namespace Sanctum_Core_Testing
             List<PlayerDescription> players = this.StartGameXPlayers(4);
             players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
             NetworkAttributeManager nam = new(players);
-            for(int i = 0; i < 4; ++i)
+            for (int i = 0; i < 4; ++i)
             {
                 InsertCardData cardToMove = new(i, i, i, i == 0);
                 Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
             }
             nam.ReadPlayerData(8);
-            string key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { new() {0,1,2 }, new() { 3 } })}";
+            string key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0, 1, 2 }, new() { 3 } })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
-            for(int i = 0; i < 4; ++i)
+            for (int i = 0; i < 4; ++i)
             {
                 Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-remove|{JsonConvert.SerializeObject(i)}");
             }
             nam.ReadPlayerData(4);
-            key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> {})}";
+            key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
-        }*/
+        }
 
 
         // Returns Lobby Code, UUID, Network Stream
