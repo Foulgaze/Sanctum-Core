@@ -30,6 +30,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void CreateLobbyTest()
         {
+            Console.WriteLine("CreateLobbyTest");
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
@@ -45,6 +46,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void NoNameCreateLobbyTest()
         {
+            Console.WriteLine("NoNameCreateLobbyTest");
 
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
@@ -57,6 +59,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void InvalidSizeCreateLobbyTest()
         {
+            Console.WriteLine("InvalidSizeCreateLobbyTest");
 
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
@@ -97,7 +100,7 @@ namespace Sanctum_Core_Testing
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Need to include Name and Lobby code");
         }
 
-        [Test]
+        [Test, Timeout(10000)]
         public void AddPlayerToLobbyTest()
         {
 
