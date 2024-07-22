@@ -5,7 +5,7 @@
         public int Id { get; }
         public CardInfo FrontInfo { get; }
         public CardInfo? BackInfo { get; }
-        public CardInfo CurrentInfo => this.isFlipped.Value ? this.BackInfo : this.FrontInfo;
+        public CardInfo CurrentInfo => this.isFlipped.Value && this.BackInfo != null ? this.BackInfo : this.FrontInfo;
         public CardContainerCollection? CurrentLocation { get; set; } = null;
         public NetworkAttribute<int> power;
         public NetworkAttribute<int> toughness;
@@ -15,14 +15,19 @@
         public bool ethereal = false;
         private readonly NetworkAttributeFactory networkAttributeFactory;
 
-        public Card(int id, CardInfo FrontInfo, CardInfo BackInfo, NetworkAttributeFactory networkAttributeFactory)
+        public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory)
         {
             this.networkAttributeFactory = networkAttributeFactory;
             this.Id = id;
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
 
-            this.InitializeAttributes();
+            this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
+            this.isFlipped.valueChange += this.UpdateAttributes;
+            this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", this.ParsePT(this.CurrentInfo.power));
+            this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
+            this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
+            this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", "");
         }
 
         /// <summary>
@@ -34,17 +39,7 @@
             return this.BackInfo != null;
         }
 
-        private void InitializeAttributes()
-        {
-            this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
-            this.isFlipped.valueChange += this.UpdateAttributes;
-            this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", this.ParsePT(this.CurrentInfo.power));
-            this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
-            this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
-        }
-
-
-        private void UpdateAttributes(object sender, EventArgs e) // No need to network because flipped is netwokred
+        private void UpdateAttributes(object? sender, EventArgs e) // No need to network because flipped is netwokred
         {
             this.power.SetValue(this.ParsePT(this.CurrentInfo.power));
             this.toughness.SetValue(this.ParsePT(this.CurrentInfo.toughness));

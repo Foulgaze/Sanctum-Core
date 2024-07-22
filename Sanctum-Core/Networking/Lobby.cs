@@ -36,26 +36,39 @@ namespace Sanctum_Core
 
         public Lobby(int lobbySize, string lobbyCode)
         {
-
             this.size = lobbySize;
             this.code = lobbyCode;
             string path = System.IO.Path.GetFullPath(@"..\..\..\..");
             this.playtable = new Playtable(lobbySize, $"{path}/Sanctum-Core/Assets/cards.csv");
         }
 
-        private void NetworkAttributeChanged(object sender, PropertyChangedEventArgs args)
+        private void NetworkAttributeChanged(object? sender, PropertyChangedEventArgs? args)
         {
-            this.players.ForEach
-                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}"));
+            if(args == null)
+            {
+                // Log this
+                return;
+            }
+            this.SendMessage(NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}");
         }
 
-        private void NetworkBoardChange(object sender, PropertyChangedEventArgs args)
+        private void NetworkBoardChange(object? sender, PropertyChangedEventArgs? args)
         {
+            if(sender == null)
+            {
+                // Log this
+                return;
+            }
             CardContainerCollection cardContainerCollection = (CardContainerCollection)sender;
             List<List<int>> allCards = cardContainerCollection.ContainerCollectionToList();
             string cardsSerialized = JsonConvert.SerializeObject(allCards);
-            this.players.ForEach
-                (playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Owner}-{(int)cardContainerCollection.Zone}|{cardsSerialized}"));
+            this.SendMessage(NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Owner}-{(int)cardContainerCollection.Zone}|{cardsSerialized}");
+        }
+
+        private void SendMessage(NetworkInstruction instruction, string payload)
+        {
+            /*Console.WriteLine($"===\nInstruction: {instruction}\nPayload: {payload}\n===");*/
+            this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), instruction, payload));
         }
 
         private void InitGame()
@@ -90,7 +103,7 @@ namespace Sanctum_Core
             switch (command.opCode)
             {
                 case (int)NetworkInstruction.NetworkAttribute:
-                    this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, null);
+                    this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, new PropertyChangedEventArgs("instruction"));
                     break;
                 default:
                     // Ignore!

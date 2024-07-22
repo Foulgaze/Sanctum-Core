@@ -59,13 +59,19 @@ namespace Sanctum_Core
             {
                 frontName = info.name;
             }
-            Card newCard = new(this.cardID++, CardData.GetCardInfo(frontName), CardData.GetCardInfo(backName), this.networkAttributeFactory);
+            CardInfo? frontInfo = CardData.GetCardInfo(frontName);
+            CardInfo? backInfo = CardData.GetCardInfo(backName);
+            if(frontInfo == null)
+            {
+                return null;
+            }
+            Card newCard = new(this.cardID++, frontInfo, backInfo, this.networkAttributeFactory);
             return newCard;
         }
 
         public Card? GetCard(int cardID)
         {
-            _ = this.idToCard.TryGetValue(cardID, out Card returnCard);
+            _ = this.idToCard.TryGetValue(cardID, out Card? returnCard);
             return returnCard;
         }
 

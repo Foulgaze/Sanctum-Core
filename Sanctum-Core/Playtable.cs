@@ -20,7 +20,7 @@ namespace Sanctum_Core
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
         }
 
-        private void BoardChanged(object sender, PropertyChangedEventArgs e)
+        private void BoardChanged(object? sender, PropertyChangedEventArgs e)
         {
             boardChanged(sender, e);
         }
@@ -48,7 +48,7 @@ namespace Sanctum_Core
             return this._players.FirstOrDefault(player => player.Uuid == uuid);
         }
 
-        private void CheckForStartGame(object obj, PropertyChangedEventArgs args)
+        private void CheckForStartGame(object? obj, PropertyChangedEventArgs? args)
         {
             int readyCount = this._players.Count(player => player.ReadiedUp.Value);
             if (readyCount >= this.readyUpNeeded && !this.GameStarted.Value)
@@ -73,7 +73,7 @@ namespace Sanctum_Core
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
                 List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
-                boardChanged(library, null);
+                boardChanged(library, new PropertyChangedEventArgs("DeckSetup"));
             }
         }
 
