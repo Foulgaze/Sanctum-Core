@@ -23,6 +23,7 @@ namespace Sanctum_Core
     {
         public event PropertyChangedEventHandler valueChange = delegate { };
 
+
         public T Value { get; protected set; }
 
         public override void SetValue(object value)
