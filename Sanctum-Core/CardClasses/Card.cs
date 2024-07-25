@@ -1,16 +1,18 @@
-﻿namespace Sanctum_Core
+﻿
+namespace Sanctum_Core
 {
     public class Card
     {
         public int Id { get; }
         public CardInfo FrontInfo { get; }
         public CardInfo? BackInfo { get; }
-        public CardInfo CurrentInfo => this.isFlipped.Value && this.BackInfo != null ? this.BackInfo : this.FrontInfo;
+        public CardInfo CurrentInfo => this.isUsingBackSide.Value && this.BackInfo != null ? this.BackInfo : this.FrontInfo;
         public CardContainerCollection? CurrentLocation { get; set; } = null;
         public NetworkAttribute<int> power;
         public NetworkAttribute<int> toughness;
         public NetworkAttribute<bool> tapped;
         public NetworkAttribute<string> name;
+        public NetworkAttribute<bool> isUsingBackSide;
         public NetworkAttribute<bool> isFlipped;
         public bool ethereal = false;
         private readonly NetworkAttributeFactory networkAttributeFactory;
@@ -22,8 +24,9 @@
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
 
+            this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", false);
+            this.isUsingBackSide.valueChange += this.UpdateAttributes;
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
-            this.isFlipped.valueChange += this.UpdateAttributes;
             this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", this.ParsePT(this.CurrentInfo.power));
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
             this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
@@ -39,7 +42,7 @@
             return this.BackInfo != null;
         }
 
-        private void UpdateAttributes(object? sender, EventArgs e) // No need to network because flipped is netwokred
+        public void UpdateAttributes(object? sender, EventArgs e) // No need to network because flipped is netwokred
         {
             this.power.SetValue(this.ParsePT(this.CurrentInfo.power));
             this.toughness.SetValue(this.ParsePT(this.CurrentInfo.toughness));
