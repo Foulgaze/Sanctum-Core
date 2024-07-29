@@ -1,5 +1,4 @@
-﻿using Sanctum_Core.CardContainers;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace Sanctum_Core
 {
@@ -27,7 +26,7 @@ namespace Sanctum_Core
             this.InitializeBoards();
         }
 
-        void InitializeBoards()
+        private void InitializeBoards()
         {
             this.zoneToContainer[CardZone.Library] = new CardContainerCollection(CardZone.Library, this.Uuid, 1, null, false,this.networkAttributeFactory, this.cardFactory);
             this.zoneToContainer[CardZone.Graveyard] = new CardContainerCollection(CardZone.Graveyard, this.Uuid, 1, null,true, this.networkAttributeFactory, this.cardFactory);

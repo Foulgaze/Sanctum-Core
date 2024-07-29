@@ -1,5 +1,4 @@
-﻿using Sanctum_Core.CardContainers;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace Sanctum_Core
 {
@@ -21,11 +20,13 @@ namespace Sanctum_Core
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
         }
 
-        private void BoardChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            boardChanged(sender, e);
-        }
-
+        
+        /// <summary>
+        /// Adds a player to the playtable
+        /// </summary>
+        /// <param name="uuid"> the uuid of the player</param>
+        /// <param name="name"> the name of the player</param>
+        /// <returns> If the player was succesfully added</returns>
         public bool AddPlayer(string uuid, string name)
         {
             if (this.GameStarted.Value || this._players.Where(player => player.Uuid == uuid).Count() != 0)
@@ -47,6 +48,33 @@ namespace Sanctum_Core
         public Player? GetPlayer(string uuid)
         {
             return this._players.FirstOrDefault(player => player.Uuid == uuid);
+        }
+
+
+        /// <summary>
+        /// Networks the current state of a cardzone
+        /// </summary>
+        /// <param name="player"> The player whose zone is being updated</param>
+        /// <param name="zone"> The zone that should be networked</param>
+        public void UpdateCardZone(Player player, CardZone zone)
+        {
+            boardChanged(player.GetCardContainer(zone), new PropertyChangedEventArgs(string.Empty));
+        }
+
+        /// <summary>
+        /// Removes a player from the playtable
+        /// </summary>
+        /// <param name="uuid"> UUID of player to remove</param>
+        /// <returns>if player was removed</returns>
+        public bool RemovePlayer(string uuid)
+        {
+            Player? player = this.GetPlayer(uuid);
+            return player != null && this._players.Remove(player);
+        }
+
+        private void BoardChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            boardChanged(sender, e);
         }
 
         private void CheckForStartGame(object? obj, PropertyChangedEventArgs? args)
@@ -74,15 +102,8 @@ namespace Sanctum_Core
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
                 List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
-                boardChanged(library, new PropertyChangedEventArgs("DeckSetup"));
+                boardChanged(library, new PropertyChangedEventArgs(string.Empty));
             }
-        }
-
-
-        public bool RemovePlayer(string uuid)
-        {
-            Player? player = this.GetPlayer(uuid);
-            return player != null && this._players.Remove(player);
         }
     }
 }
