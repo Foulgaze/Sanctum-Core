@@ -57,6 +57,9 @@ namespace Sanctum_Core
             MoveCards(table, uuid, rawCardCount, CardZone.Library, CardZone.Exile);
         }
 
+        /*public static void CreateRelatedCard(Playtable table, string newCardUUID, string originCardId)
+        {
+        }*/
         public static void Shuffle(Playtable table, string uuid)
         {
             Player? playerWhoIsShuffling = table.GetPlayer(uuid);
