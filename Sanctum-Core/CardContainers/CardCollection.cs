@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace Sanctum_Core
 {
@@ -40,6 +41,39 @@ namespace Sanctum_Core
             cardsChanged(this, new PropertyChangedEventArgs("added"));
         }
 
+        /// <summary>
+        /// Shuffles the card container
+        /// </summary>
+        public void Shuffle()
+        {
+            Random rng = new();
+            int n = this.Cards.Count;
+            while (n > 1)
+            {
+                --n;
+                int k = rng.Next(n + 1);
+                (this.Cards[n], this.Cards[k]) = (this.Cards[k], this.Cards[n]);
+            }
+        }
+
+        /// <summary>
+        /// Gets the card IDs
+        /// </summary>
+        /// <returns>A list of all the card ids</returns>
+        public List<int> GetCardIDs()
+        {
+            return this.Cards.Select(card => card.Id).ToList();
+        }
+
+        /// <summary>
+        /// Checks if collection is full
+        /// </summary>
+        /// <returns>Returns if container is full</returns>
+        public bool IsFull()
+        {
+            return this.maxCardCount != null && this.Cards.Count >= this.maxCardCount;
+        }
+
         private void ModifyAddedCard(Card card)
         {
             switch (this.parentZone)
@@ -75,17 +109,6 @@ namespace Sanctum_Core
             {
                 card.UpdateAttributes(null, new PropertyChangedEventArgs(""));
             }
-
-        }
-
-        public List<int> SerializeContainer()
-        {
-            return this.Cards.Select(card => card.Id).ToList();
-        }
-
-        public bool IsFull()
-        {
-            return this.maxCardCount != null && this.Cards.Count >= this.maxCardCount;
         }
     }
 }

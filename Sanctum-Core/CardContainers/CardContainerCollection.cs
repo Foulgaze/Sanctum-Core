@@ -77,7 +77,7 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="cardID">The id of the card to remove</param>
         /// <returns>true if removed else false</returns>
-        public bool RemoveCardFromContainer(int cardID)
+        public bool RemoveCardFromContainer(int cardID, bool networkChange = true)
         {
             foreach (CardContainer container in this.Containers)
             {
@@ -92,7 +92,10 @@ namespace Sanctum_Core
                     {
                         _ = this.Containers.Remove(container);
                     }
-                    boardChanged(this, new PropertyChangedEventArgs("removed"));
+                    if(networkChange)
+                    {
+                        boardChanged(this, new PropertyChangedEventArgs("removed"));
+                    }
                     return true;
                 }
             }
@@ -115,7 +118,28 @@ namespace Sanctum_Core
         /// <returns></returns>
         public List<List<int>> ContainerCollectionToList()
         {
-            return this.Containers.Select(container => container.SerializeContainer()).ToList();
+            return this.Containers.Select(container => container.GetCardIDs()).ToList();
+        }
+
+        /// <summary>
+        /// Gets the top card
+        /// </summary>
+        /// <returns> Returns the top card of the last collection or null if empty</returns>
+        public Card? GetTopCard()
+        {
+            if(this.Containers.Count == 0)
+            {
+                return null;
+            }
+            return this.Containers.Last().Cards.Last();
+        }
+
+        /// <summary>
+        /// Shuffles the deck
+        /// </summary>
+        public void Shuffle()
+        {
+            this.Containers.ForEach(container => container.Shuffle());
         }
 
         private void NetworkedCardInsert(object? sender, PropertyChangedEventArgs? args)
@@ -150,7 +174,7 @@ namespace Sanctum_Core
             {
                 return false;
             }
-            insertCard.CurrentLocation?.removeCardID.SetValue(cardChange.cardID);
+            _ = insertCard.CurrentLocation?.RemoveCardFromContainer(cardChange.cardID, networkChange);
             insertCard.CurrentLocation = this;
             destinationContainer.AddCardToContainer(insertCard, cardChange.containerInsertPosition);
             if (networkChange)
