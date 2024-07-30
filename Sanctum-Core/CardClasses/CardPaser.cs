@@ -37,7 +37,14 @@ namespace Sanctum_Core
                     // Log this
                     continue;
                 }
-                string cardName = trimmedLine[(spaceIndex + 1)..];
+                int endIndex = trimmedLine.IndexOf("//"); // Only ever enter the firstname of a card i.e. Civilized Scholar // Homicidal Brute should just be returned as Civilized Scholar
+                if (endIndex != -1 && (spaceIndex + 1 > endIndex))
+                {
+                    // Log this
+                    continue;
+                }
+
+                string cardName = endIndex == - 1 ? trimmedLine[(spaceIndex + 1)..] : trimmedLine[(spaceIndex + 1)..(endIndex - 1)];
                 cardNames.AddRange(Enumerable.Repeat(cardName, cardCount));
             }
             return cardNames;
