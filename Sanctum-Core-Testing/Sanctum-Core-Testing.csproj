@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Assets\CardTests\" />
     <Folder Include="Decklists\" />
   </ItemGroup>
 
