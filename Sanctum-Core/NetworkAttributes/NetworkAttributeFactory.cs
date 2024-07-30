@@ -54,6 +54,15 @@ namespace Sanctum_Core
             // Network this. 
         }
 
+        public void ClearNetworkAttributes()
+        {
+            foreach (NetworkAttribute attribute in this.networkAttributes.Values)
+            {
+                attribute.ClearListeners();
+            }
+            this.networkAttributes.Clear();
+        }
+
 
         public NetworkAttribute<T> AddNetworkAttribute<T>(string id, T value, bool outsideSettable = true, bool networkChange = true)
         {

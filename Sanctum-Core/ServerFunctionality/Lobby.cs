@@ -1,14 +1,8 @@
-﻿using CsvHelper.Configuration.Attributes;
-using Newtonsoft.Json;
-using System;
+﻿using Newtonsoft.Json;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
@@ -38,13 +32,13 @@ namespace Sanctum_Core
         {
             this.size = lobbySize;
             this.code = lobbyCode;
-            string path = System.IO.Path.GetFullPath(@"..\..\..\..");
+            string path = Path.GetFullPath(@"..\..\..\..");
             this.playtable = new Playtable(lobbySize, $"{path}/Sanctum-Core/Assets/cards.csv");
         }
 
         private void NetworkAttributeChanged(object? sender, PropertyChangedEventArgs? args)
         {
-            if(args == null)
+            if (args == null)
             {
                 // Log this
                 return;
@@ -54,7 +48,7 @@ namespace Sanctum_Core
 
         private void NetworkBoardChange(object? sender, PropertyChangedEventArgs? args)
         {
-            if(sender == null)
+            if (sender == null)
             {
                 // Log this
                 return;
@@ -84,9 +78,9 @@ namespace Sanctum_Core
         public void StartLobby()
         {
             this.InitGame();
-            while(true)
+            while (true)
             {
-                foreach(PlayerDescription playerDescription in  this.players)
+                foreach (PlayerDescription playerDescription in this.players)
                 {
                     NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(playerDescription.client.GetStream(), playerDescription.buffer, Server.bufferSize, false);
                     this.HandleCommand(command);
@@ -96,7 +90,7 @@ namespace Sanctum_Core
 
         private void HandleCommand(NetworkCommand? command)
         {
-            if(command == null)
+            if (command == null)
             {
                 return;
             }

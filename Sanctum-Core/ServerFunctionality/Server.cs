@@ -8,7 +8,7 @@ namespace Sanctum_Core
 {
     public enum NetworkInstruction
     {
-        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute, BoardUpdate,TestAttribute
+        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute, BoardUpdate, TestAttribute
     }
 
     public class Server
@@ -27,9 +27,9 @@ namespace Sanctum_Core
 
         public void StartListening()
         {
-            
+
             this._listener.Start();
-               
+
             while (true)
             {
                 TcpClient client = this._listener.AcceptTcpClient();
@@ -112,7 +112,7 @@ namespace Sanctum_Core
             {
                 Thread thread = new(newLobby.StartLobby);
                 thread.Start();
-                
+
             }
         }
         //  Format should be [lobbyCode|name]

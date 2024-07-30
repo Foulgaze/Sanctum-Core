@@ -17,7 +17,7 @@ namespace Sanctum_Core
                 do
                 {
                     int dataSize = rwStream.Read(data, 0, data.Length);
-                    completeMessage += System.Text.Encoding.UTF8.GetString(data, 0, dataSize);
+                    completeMessage += Encoding.UTF8.GetString(data, 0, dataSize);
                 } while (rwStream.DataAvailable); // Read entire stream in case buffer is too small
 
                 // Data format {4 char Command Length | 32 Char UUID|2 Char OpCode | Up to 4060 Char Instruction}

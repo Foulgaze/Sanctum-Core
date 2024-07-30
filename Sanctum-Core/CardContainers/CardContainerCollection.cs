@@ -28,7 +28,7 @@ namespace Sanctum_Core
 
         public CardZone Zone { get; set; }
         public string Owner { get; }
-        public List<CardContainer> Containers { get; set; } = new List<CardContainer>();
+        private readonly List<CardContainer> Containers = new();
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
         private readonly NetworkAttribute<InsertCardData> insertCardData;
@@ -142,6 +142,7 @@ namespace Sanctum_Core
             this.Containers.ForEach(container => container.Shuffle());
         }
 
+
         private void NetworkedCardInsert(object? sender, PropertyChangedEventArgs? args)
         {
             InsertCardData? result;
@@ -172,6 +173,7 @@ namespace Sanctum_Core
             Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
             if (insertCard == null)
             {
+                // Log this
                 return false;
             }
             _ = insertCard.CurrentLocation?.RemoveCardFromContainer(cardChange.cardID, networkChange);

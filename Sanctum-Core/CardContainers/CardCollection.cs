@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace Sanctum_Core
 {
@@ -93,18 +92,18 @@ namespace Sanctum_Core
         {
             // Nothing to do here. Yet
         }
-        
+
         private void ModifyCardForPile(Card card)
         {
             // Reset Card To Original State
-            if(card.isFlipped.Value)
+            if (card.isFlipped.Value)
             {
                 card.isFlipped.SetValue(false);
             }
-            if(card.isUsingBackSide.Value)
+            if (card.isUsingBackSide.Value)
             {
                 card.isUsingBackSide.SetValue(false);
-            } 
+            }
             else
             {
                 card.UpdateAttributes(null, new PropertyChangedEventArgs(""));
