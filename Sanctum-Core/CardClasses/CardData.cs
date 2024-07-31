@@ -15,6 +15,10 @@ namespace Sanctum_Core
             {
                 return;
             }
+            if(!File.Exists(filePath))
+            {
+                throw new Exception($"Could not find filePath : {filePath}");
+            }
             cardsLoaded = true;
             using StreamReader reader = new(filePath);
             using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
