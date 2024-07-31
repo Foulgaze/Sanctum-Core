@@ -107,11 +107,11 @@ namespace Sanctum_Core_Testing
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
             Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
-            client = new();
-            client.Connect(IPAddress.Loopback, this.server.portNumber);
-            Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
-            _ = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
-            command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); // Should be a list of player names
+            TcpClient client2 = new();
+            client2.Connect(IPAddress.Loopback, this.server.portNumber);
+            Server.SendMessage(client2.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
+            _ = NetworkCommandManager.GetNextNetworkCommand(client2.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
+            command = NetworkCommandManager.GetNextNetworkCommand(client2.GetStream(), new StringBuilder(), 4096); // Should be a list of player names
             AssertCommandResults(command, NetworkInstruction.PlayersInLobby, "[\"Gabe\",\"Gabriel\"]");
         }
 
