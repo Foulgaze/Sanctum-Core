@@ -46,7 +46,7 @@ namespace Sanctum_Core
             }
         }
 
-        public static NetworkCommand? GetNextNetworkCommand(NetworkStream stream, StringBuilder buffer, int bufferSize, bool readUntilData = true)
+        public static NetworkCommand? GetNextNetworkCommand(Stream stream, StringBuilder buffer, int bufferSize, bool readUntilData = true)
         {
             NetworkCommand? networkCommand;
             do
@@ -54,14 +54,14 @@ namespace Sanctum_Core
                 NetworkReceiver.ReadSocketData(stream, bufferSize, buffer);
                 try
                 {
-                    string? rawCommand = NetworkCommandManager.ParseSocketData(buffer);
-                    networkCommand = NetworkCommandManager.ParseCommand(rawCommand);
+                    string? rawCommand = ParseSocketData(buffer);
+                    networkCommand = ParseCommand(rawCommand);
                     if (networkCommand != null)
                     {
                         return networkCommand;
                     }
                 }
-                catch 
+                catch
                 {
                     // Log this.
                     return null;
@@ -70,7 +70,7 @@ namespace Sanctum_Core
                 {
                     return null;
                 }
-            } while(true);
+            } while (true);
         }
         public static NetworkCommand? ParseCommand(string? command)
         {

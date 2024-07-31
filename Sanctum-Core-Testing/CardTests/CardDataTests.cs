@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core_Testing.CardTests
 {
-    internal class CardDataTesting
+    internal class CardDataTests
     {
         [SetUp]
         public void InitData()

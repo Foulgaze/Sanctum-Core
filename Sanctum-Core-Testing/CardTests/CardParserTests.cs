@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core_Testing.CardTests
 {
-    internal class CardParserTesting
+    internal class CardParserTests
     {
         [Test]
         public void ParseDeckList_ValidDeckList_ReturnsParsedNames()

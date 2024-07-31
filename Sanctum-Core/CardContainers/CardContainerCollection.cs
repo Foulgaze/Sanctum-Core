@@ -28,12 +28,11 @@ namespace Sanctum_Core
 
         public CardZone Zone { get; set; }
         public string Owner { get; }
-        public List<CardContainer> Containers { get; set; } = new List<CardContainer>();
+        private readonly List<CardContainer> Containers = new();
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
         private readonly NetworkAttribute<InsertCardData> insertCardData;
         public NetworkAttribute<bool> revealTopCard;
-        public NetworkAttribute<int> removeCardID;
         public event PropertyChangedEventHandler boardChanged = delegate { };
         private readonly CardFactory CardFactory;
 
@@ -46,8 +45,6 @@ namespace Sanctum_Core
             this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, false);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-            this.removeCardID = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-remove", 0, true, false);
-            this.removeCardID.valueChange += this.NetworkRemoveCard;
 
             this.CardFactory = cardFactory;
 
@@ -142,6 +139,7 @@ namespace Sanctum_Core
             this.Containers.ForEach(container => container.Shuffle());
         }
 
+
         private void NetworkedCardInsert(object? sender, PropertyChangedEventArgs? args)
         {
             InsertCardData? result;
@@ -168,10 +166,16 @@ namespace Sanctum_Core
 
         private bool ProcessCardInsertion(InsertCardData cardChange, bool networkChange)
         {
+            if(this.IsFull())
+            {
+                // log
+                return false;
+            }
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
             Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
             if (insertCard == null)
             {
+                // Log this
                 return false;
             }
             _ = insertCard.CurrentLocation?.RemoveCardFromContainer(cardChange.cardID, networkChange);
@@ -182,6 +186,15 @@ namespace Sanctum_Core
                 boardChanged(this, new PropertyChangedEventArgs("Oof"));
             }
             return true;
+        }
+
+        private bool IsFull()
+        {
+            if(!this.maxContainerCount.HasValue || this.Containers.Count < this.maxContainerCount)
+            {
+                return false;
+            }
+            return this.Containers.All(container => container.IsFull());
         }
 
 
@@ -220,22 +233,6 @@ namespace Sanctum_Core
                     return this.FindFirstEmptyContainer() ?? this.CreateAndInsertCardContainer(this.Containers.Count);
                 }
             }
-        }
-
-        private void NetworkRemoveCard(object? sender, PropertyChangedEventArgs? args)
-        {
-            if (args == null || args.PropertyName == null)
-            {
-                // Log this
-                return;
-            }
-            if (!int.TryParse(args.PropertyName, out int cardID))
-            {
-                // Log this
-                return;
-            }
-            _ = this.RemoveCardFromContainer(cardID);
-            // log this.
         }
     }
 }

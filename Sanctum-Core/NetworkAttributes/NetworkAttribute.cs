@@ -17,6 +17,7 @@ namespace Sanctum_Core
             this.Id = id;
         }
         public abstract void SetValue(object value);
+        public abstract void ClearListeners();
     }
 
     public class NetworkAttribute<T> : NetworkAttribute
@@ -31,6 +32,14 @@ namespace Sanctum_Core
             this.Value = (T)value;
             
             this.valueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));
+        }
+
+        public override void ClearListeners()
+        {
+            foreach (Delegate d in valueChange.GetInvocationList())
+            {
+                valueChange -= (PropertyChangedEventHandler)d;
+            }
         }
 
         public override Type ValueType => typeof(T);

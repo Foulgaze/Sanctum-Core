@@ -35,7 +35,6 @@ namespace Sanctum_Core
                     continue;
                 }
                 cards.Add(newCard);
-                this.idToCard[newCard.Id] = newCard;
             }
             return cards;
         }
@@ -66,6 +65,7 @@ namespace Sanctum_Core
                 return null;
             }
             Card newCard = new(this.cardID++, frontInfo, backInfo, this.networkAttributeFactory);
+            this.idToCard[newCard.Id] = newCard;
             return newCard;
         }
 

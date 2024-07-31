@@ -1,10 +1,5 @@
-﻿using Sanctum_Core;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
+using Sanctum_Core;
 
 namespace Sanctum_Core_Testing
 {
