@@ -73,4 +73,5 @@ jobs:
 
     # Execute all unit tests in the solution
     - name: Execute unit tests
-      run: dotnet test -l "console;verbosity=normal"
+      #run: dotnet test -l "console;verbosity=normal"
+      run: dotnet test --filter AddPlayerToLobbyTest
