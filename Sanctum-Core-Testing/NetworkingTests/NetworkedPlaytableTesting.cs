@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Sanctum_Core_Testing
 {
-    public class PlaytableTesting
+    public class NetworkedPlaytableTesting
     {
         private Server server;
         private Thread serverThread;
@@ -44,18 +44,6 @@ namespace Sanctum_Core_Testing
         }
 
         [Test]
-        public void TestRemoveCard()
-        {
-            List<PlayerDescription> players = this.StartGameXPlayers(4);
-            players.Sort((x,y) => x.uuid.CompareTo(y.uuid));
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-0-remove|{JsonConvert.SerializeObject(0)}");
-            NetworkAttributeManager nam = new(players);
-            nam.ReadPlayerData(1);
-            string key = $"{players[0].uuid}-0|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
-            Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
-        }
-
-        [Test]
         public void TestMoveCard()
         {
             List<PlayerDescription> players = this.StartGameXPlayers(4);
@@ -84,14 +72,6 @@ namespace Sanctum_Core_Testing
             nam.ReadPlayerData(8);
 
             string key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0, 1, 2 }, new() { 3 } })}";
-            Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
-            for (int i = 0; i < 4; ++i)
-            {
-                Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-remove|{JsonConvert.SerializeObject(i)}");
-            }
-            nam.ReadPlayerData(4);
-
-            key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
 

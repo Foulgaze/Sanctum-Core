@@ -190,7 +190,7 @@ namespace Sanctum_Core
 
         private bool IsFull()
         {
-            if(this.maxContainerCount.HasValue || this.Containers.Count < this.maxContainerCount)
+            if(!this.maxContainerCount.HasValue || this.Containers.Count < this.maxContainerCount)
             {
                 return false;
             }
