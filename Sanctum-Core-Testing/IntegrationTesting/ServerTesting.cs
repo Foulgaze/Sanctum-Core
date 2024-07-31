@@ -100,18 +100,17 @@ namespace Sanctum_Core_Testing
         [Test]
         public void AddPlayerToLobbyTest()
         {
-
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"3|Gabriel");
-            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            NetworkCommand? command = this.NonBlockingRead(client.GetStream(),30);
             Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
             TcpClient client2 = new();
             client2.Connect(IPAddress.Loopback, this.server.portNumber);
             Server.SendMessage(client2.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
-            _ = NetworkCommandManager.GetNextNetworkCommand(client2.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
-            command = NetworkCommandManager.GetNextNetworkCommand(client2.GetStream(), new StringBuilder(), 4096); // Should be a list of player names
+            _ = this.NonBlockingRead(client2.GetStream(), 30);
+            command = _ = this.NonBlockingRead(client2.GetStream(), 30);
             AssertCommandResults(command, NetworkInstruction.PlayersInLobby, "[\"Gabe\",\"Gabriel\"]");
         }
 
@@ -158,6 +157,18 @@ namespace Sanctum_Core_Testing
             {
                 Assert.That(command.instruction, Is.EqualTo(expectedPayload));
             }
+        }
+
+        private NetworkCommand? NonBlockingRead(NetworkStream stream,int timeout)
+        {
+            DateTime endTime = DateTime.Now.AddSeconds(timeout);
+            NetworkCommand? command = null;
+            StringBuilder buff = new();
+            while (DateTime.Now < endTime && command is null)
+            {
+                command = NetworkCommandManager.GetNextNetworkCommand(stream, buff, 4096);
+            }
+            return command;
         }
     }
 }
