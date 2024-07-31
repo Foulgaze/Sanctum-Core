@@ -15,16 +15,16 @@ namespace Sanctum_Core_Testing
         [OneTimeSetUp]
         public void Init()
         {
-            this.server = new(53522);
-            this.serverThread = new Thread(new ThreadStart(this.server.StartListening));
-            this.serverThread.Start();
-            this.uuidLength = Guid.NewGuid().ToString().Length;
+            
         }
 
         [SetUp]
         public void Setup()
         {
-
+            this.server = new(53522);
+            this.serverThread = new Thread(new ThreadStart(this.server.StartListening));
+            this.serverThread.Start();
+            this.uuidLength = Guid.NewGuid().ToString().Length;
         }
 
         [Test]
