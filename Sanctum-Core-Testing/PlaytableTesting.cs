@@ -63,7 +63,7 @@ namespace Sanctum_Core_Testing
             NetworkAttributeManager nam = new(players);
             InsertCardData cardToMove = new(0, 0, null, true);
             Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
-            nam.ReadPlayerData(2);
+            nam.ReadPlayerData(5);
             string key = $"{players[0].uuid}-{(int)CardZone.Library}|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
             key = $"{players[0].uuid}-{(int)CardZone.Graveyard}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0 } })}";

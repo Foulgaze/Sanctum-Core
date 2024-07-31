@@ -33,7 +33,6 @@ namespace Sanctum_Core
         private readonly int? maxCardCountPerContainer;
         private readonly NetworkAttribute<InsertCardData> insertCardData;
         public NetworkAttribute<bool> revealTopCard;
-        public NetworkAttribute<int> removeCardID;
         public event PropertyChangedEventHandler boardChanged = delegate { };
         private readonly CardFactory CardFactory;
 
@@ -46,8 +45,6 @@ namespace Sanctum_Core
             this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, false);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-            this.removeCardID = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-remove", 0, true, false);
-            this.removeCardID.valueChange += this.NetworkRemoveCard;
 
             this.CardFactory = cardFactory;
 
@@ -236,22 +233,6 @@ namespace Sanctum_Core
                     return this.FindFirstEmptyContainer() ?? this.CreateAndInsertCardContainer(this.Containers.Count);
                 }
             }
-        }
-
-        private void NetworkRemoveCard(object? sender, PropertyChangedEventArgs? args)
-        {
-            if (args == null || args.PropertyName == null)
-            {
-                // Log this
-                return;
-            }
-            if (!int.TryParse(args.PropertyName, out int cardID))
-            {
-                // Log this
-                return;
-            }
-            _ = this.RemoveCardFromContainer(cardID);
-            // log this.
         }
     }
 }
