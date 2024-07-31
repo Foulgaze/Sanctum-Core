@@ -30,7 +30,6 @@ namespace Sanctum_Core_Testing
         [Test]
         public void CreateLobbyTest()
         {
-            Console.WriteLine("CreateLobbyTest");
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();

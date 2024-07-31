@@ -79,6 +79,8 @@ namespace Sanctum_Core_Testing.CardCollectionTests
             Assert.IsNull(topCard);
         }
 
+
+
         private Card GenerateCard()
         {
             int id = this.cardId++;

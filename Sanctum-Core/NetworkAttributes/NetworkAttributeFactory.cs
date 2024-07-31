@@ -30,7 +30,7 @@ namespace Sanctum_Core
             }
             string id = splitInstruction[0];
             string serializedNewValue = splitInstruction[1];
-            NetworkAttribute attribute = this.networkAttributes[id];
+            NetworkAttribute? attribute = this.networkAttributes.GetValueOrDefault(id);
             if (attribute == null)
             {
                 // Log Error: Attribute with given ID not found

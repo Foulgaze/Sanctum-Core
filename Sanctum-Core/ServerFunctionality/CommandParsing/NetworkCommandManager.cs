@@ -46,7 +46,7 @@ namespace Sanctum_Core
             }
         }
 
-        public static NetworkCommand? GetNextNetworkCommand(NetworkStream stream, StringBuilder buffer, int bufferSize, bool readUntilData = true)
+        public static NetworkCommand? GetNextNetworkCommand(Stream stream, StringBuilder buffer, int bufferSize, bool readUntilData = true)
         {
             NetworkCommand? networkCommand;
             do

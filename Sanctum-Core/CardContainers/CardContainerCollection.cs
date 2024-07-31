@@ -169,6 +169,11 @@ namespace Sanctum_Core
 
         private bool ProcessCardInsertion(InsertCardData cardChange, bool networkChange)
         {
+            if(this.IsFull())
+            {
+                // log
+                return false;
+            }
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
             Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
             if (insertCard == null)
@@ -184,6 +189,15 @@ namespace Sanctum_Core
                 boardChanged(this, new PropertyChangedEventArgs("Oof"));
             }
             return true;
+        }
+
+        private bool IsFull()
+        {
+            if(this.maxContainerCount.HasValue || this.Containers.Count < this.maxContainerCount)
+            {
+                return false;
+            }
+            return this.Containers.All(container => container.IsFull());
         }
 
 

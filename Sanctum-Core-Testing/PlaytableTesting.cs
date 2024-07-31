@@ -20,12 +20,6 @@ namespace Sanctum_Core_Testing
             this.uuidLength = Guid.NewGuid().ToString().Length;
         }
 
-        [SetUp]
-        public void Setup()
-        {
-
-        }
-
         private void CheckAttribute(List<PlayerDescription> players, NetworkStream stream,string payload)
         {
             Server.SendMessage(stream, NetworkInstruction.NetworkAttribute, payload);
