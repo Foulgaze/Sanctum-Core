@@ -8,7 +8,6 @@ namespace Sanctum_Core_Tests
     public class IntegrationTests
     {
         private Playtable playtable;
-        private readonly string filepath = "path_to_card_data_file"; // Update this path to the actual file path
 
         [SetUp]
         public void Setup()

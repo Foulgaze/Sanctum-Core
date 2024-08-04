@@ -100,7 +100,7 @@ namespace Sanctum_Core
                 case "exile":
                     SpecialActions.ExileCards(this, uuid, data[1]);
                     break;
-                case "createcard":
+                case "createtoken":
                     SpecialActions.CreateTokenCard(this.cardFactory, this.GetPlayer(uuid), string.Join("|", data[1..]));
                     break;
                 default:

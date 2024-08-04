@@ -44,6 +44,8 @@ namespace Sanctum_Core
 
         public void UpdateAttributes(object? sender, EventArgs e) // No need to network because flipped is netwokred
         {
+            this.isFlipped.SetValue(false);
+            this.isUsingBackSide.SetValue(false);
             this.power.SetValue(this.ParsePT(this.CurrentInfo.power));
             this.toughness.SetValue(this.ParsePT(this.CurrentInfo.toughness));
             this.name.SetValue(this.CurrentInfo.name);
