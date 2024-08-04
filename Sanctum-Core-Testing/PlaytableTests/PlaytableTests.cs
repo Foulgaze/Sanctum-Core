@@ -14,7 +14,7 @@ namespace Sanctum_Core_Tests
         public void Setup()
         {
             string path = Path.GetFullPath(@"..\..\..\..");
-            this.playtable = new Playtable(2, $"{path}/Sanctum-Core/Assets/cards.csv");
+            this.playtable = new Playtable(2, $"{path}/Sanctum-Core/Assets/cards.csv", $"{path}/Sanctum-Core/Assets/tokens.csv");
         }
 
         [Test]

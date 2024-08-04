@@ -32,8 +32,8 @@ namespace Sanctum_Core
         {
             this.size = lobbySize;
             this.code = lobbyCode;
-            string path = Path.GetFullPath(@"..\..\..\..");
-            this.playtable = new Playtable(lobbySize, $"{path}/Sanctum-Core/Assets/cards.csv");
+            string path = Path.GetFullPath(@"..\..\..\..\Sanctum-Core\Assets\");
+            this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
         }
 
         private void NetworkAttributeChanged(object? sender, PropertyChangedEventArgs? args)
@@ -59,9 +59,18 @@ namespace Sanctum_Core
             this.SendMessage(NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Owner}-{(int)cardContainerCollection.Zone}|{cardsSerialized}");
         }
 
+        private void NetworkCardCreation(object? sender, PropertyChangedEventArgs? args)
+        {
+            if(sender is not Card)
+            {
+                return;
+            }
+            Card card = (Card)sender;
+            this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.name}|{card.Id}"));
+        }
+
         private void SendMessage(NetworkInstruction instruction, string payload)
         {
-            /*Console.WriteLine($"===\nInstruction: {instruction}\nPayload: {payload}\n===");*/
             this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), instruction, payload));
         }
 
@@ -73,6 +82,7 @@ namespace Sanctum_Core
             this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
             this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
             this.playtable.boardChanged += this.NetworkBoardChange;
+            this.playtable.cardCreated += this.NetworkCardCreation;
         }
 
         public void StartLobby()
@@ -83,12 +93,12 @@ namespace Sanctum_Core
                 foreach (PlayerDescription playerDescription in this.players)
                 {
                     NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(playerDescription.client.GetStream(), playerDescription.buffer, Server.bufferSize, false);
-                    this.HandleCommand(command);
+                    this.HandleCommand(command, playerDescription.uuid);
                 }
             }
         }
 
-        private void HandleCommand(NetworkCommand? command)
+        private void HandleCommand(NetworkCommand? command, string uuid)
         {
             if (command == null)
             {
@@ -98,6 +108,9 @@ namespace Sanctum_Core
             {
                 case (int)NetworkInstruction.NetworkAttribute:
                     this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, new PropertyChangedEventArgs("instruction"));
+                    break;
+                case (int)NetworkInstruction.SpecialAction:
+                    this.playtable.HandleSpecialAction(command.instruction,uuid);
                     break;
                 default:
                     // Ignore!
