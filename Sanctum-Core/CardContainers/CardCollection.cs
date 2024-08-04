@@ -95,19 +95,7 @@ namespace Sanctum_Core
 
         private void ModifyCardForPile(Card card)
         {
-            // Reset Card To Original State
-            if (card.isFlipped.Value)
-            {
-                card.isFlipped.SetValue(false);
-            }
-            if (card.isUsingBackSide.Value)
-            {
-                card.isUsingBackSide.SetValue(false);
-            }
-            else
-            {
-                card.UpdateAttributes(null, new PropertyChangedEventArgs(""));
-            }
+            card.UpdateAttributes(null, new PropertyChangedEventArgs(""));
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.ComponentModel;
 using System.Net.NetworkInformation;
 
@@ -27,8 +28,13 @@ namespace Sanctum_Core
 
         public T Value { get; protected set; }
 
+
         public override void SetValue(object value)
         { 
+            if(EqualityComparer<T>.Default.Equals((T)value, this.Value))
+            {
+                return;
+            }
             this.Value = (T)value;
             
             this.valueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));

@@ -30,6 +30,15 @@ namespace Sanctum_Core_Testing
                 Assert.That(command.instruction, Is.EqualTo(payload));
             }
         }
+
+        private List<PlayerDescription> StartAndSortPlayers(int playerCount)
+        {
+            List<PlayerDescription> players = this.StartGameXPlayers(playerCount);
+            players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
+            return players;
+        }
+
+
         [Test]
         public void NetworkAttributesTest()
         {
@@ -39,19 +48,18 @@ namespace Sanctum_Core_Testing
                 PlayerDescription player = players[i];
                 this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-health|{JsonConvert.SerializeObject(i)}");
                 this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
-                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-ready|{JsonConvert.SerializeObject(true)}");
+                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-ready|{JsonConvert.SerializeObject(false)}");
             }
         }
 
         [Test]
         public void TestMoveCard()
         {
-            List<PlayerDescription> players = this.StartGameXPlayers(4);
-            players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
+            List<PlayerDescription> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
             InsertCardData cardToMove = new(0, 0, null, true);
             Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
-            nam.ReadPlayerData(5);
+            nam.ReadPlayerData(2);
             string key = $"{players[0].uuid}-{(int)CardZone.Library}|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
             key = $"{players[0].uuid}-{(int)CardZone.Graveyard}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0 } })}";
@@ -61,8 +69,7 @@ namespace Sanctum_Core_Testing
         [Test]
         public void TestMoveCardToBoard()
         {
-            List<PlayerDescription> players = this.StartGameXPlayers(4);
-            players.Sort((x, y) => x.uuid.CompareTo(y.uuid));
+            List<PlayerDescription> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
             for (int i = 0; i < 4; ++i)
             {
@@ -73,6 +80,68 @@ namespace Sanctum_Core_Testing
 
             string key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0, 1, 2 }, new() { 3 } })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
+        }
+
+
+
+        private void SendSpecialAction(List<PlayerDescription> players, NetworkAttributeManager nam, string action)
+        {
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, action);
+            nam.ReadPlayerData(2);
+        }
+
+        private void AssertNetworkAttributes(NetworkAttributeManager nam, string uuid, CardZone zone, List<int> expectedIds, int playerCount)
+        {
+            string key = $"{uuid}-{(int)zone}|{JsonConvert.SerializeObject(new List<List<int>> { expectedIds })}";
+            Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(playerCount));
+        }
+
+        [Test]
+        public void TestMill()
+        {
+            List<PlayerDescription> players = this.StartAndSortPlayers(4);
+            NetworkAttributeManager nam = new(players);
+
+            this.SendSpecialAction(players, nam, "mill|10");
+
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Graveyard, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
+        }
+
+        [Test]
+        public void TestDrawCards()
+        {
+            List<PlayerDescription> players = this.StartAndSortPlayers(4);
+            NetworkAttributeManager nam = new(players);
+
+            this.SendSpecialAction(players, nam, "draw|10");
+
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Hand, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
+        }
+
+        [Test]
+        public void TestExileCards()
+        {
+            List<PlayerDescription> players = this.StartAndSortPlayers(4);
+            NetworkAttributeManager nam = new(players);
+
+            this.SendSpecialAction(players, nam, "exile|10");
+
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
+        }
+
+        [Test]
+        public void TestCreateToken()
+        {
+            List<PlayerDescription> players = this.StartAndSortPlayers(4);
+            NetworkAttributeManager nam = new(players);
+
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{players[0].uuid}-|createtoken|Soldier|");    
+
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
         }
 
 

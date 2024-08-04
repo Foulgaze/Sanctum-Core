@@ -24,8 +24,10 @@ namespace Sanctum_Core
                 return;
             }
             Card? cardToBeMoved;
+            bool loopedAtLeastOnce = false;
             while (cardCount > 0)
             {
+                loopedAtLeastOnce = true;
                 cardToBeMoved = player.GetCardContainer(sourceZone).GetTopCard();
                 if (cardToBeMoved == null)
                 {
@@ -34,8 +36,11 @@ namespace Sanctum_Core
                 player.GetCardContainer(targetZone).InsertCardIntoContainer(null, false, cardToBeMoved, null, false);
                 --cardCount;
             }
-            table.UpdateCardZone(player, targetZone);
-            table.UpdateCardZone(player, sourceZone);
+            if(loopedAtLeastOnce)
+            {
+                table.UpdateCardZone(player, targetZone);
+                table.UpdateCardZone(player, sourceZone);
+            }
         }
 
         public static void DrawCards(Playtable table, string uuid, string rawCardCount)
