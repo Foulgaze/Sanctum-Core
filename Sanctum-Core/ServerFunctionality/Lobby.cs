@@ -110,7 +110,7 @@ namespace Sanctum_Core
                     this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, new PropertyChangedEventArgs("instruction"));
                     break;
                 case (int)NetworkInstruction.SpecialAction:
-                    this.playtable.HandleSpecialAction(command.instruction, command.);
+                    this.playtable.HandleSpecialAction(command.instruction,uuid);
                     break;
                 default:
                     // Ignore!
