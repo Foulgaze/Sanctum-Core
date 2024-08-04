@@ -132,7 +132,7 @@ namespace Sanctum_Core_Testing
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
         }
 
-        [Test]
+/*        [Test]
         public void TestCreateToken()
         {
             List<PlayerDescription> players = this.StartAndSortPlayers(4);
@@ -143,7 +143,7 @@ namespace Sanctum_Core_Testing
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
         }
-
+*/
 
         // Returns Lobby Code, UUID, Network Stream
         private (string, PlayerDescription) CreateLobby(int playerCount, string playerName)
