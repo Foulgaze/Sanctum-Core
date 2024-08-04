@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace Sanctum_Core
         private readonly List<string> twoSidedCardLayouts = new() { "meld", "transform", "modal_dfc" };
         private readonly Dictionary<int, Card> idToCard = new();
         private readonly NetworkAttributeFactory networkAttributeFactory;
+        public event PropertyChangedEventHandler CardCreated = delegate { };
 
         public CardFactory(NetworkAttributeFactory networkAttributeFactory)
         {
@@ -39,7 +41,7 @@ namespace Sanctum_Core
             return cards;
         }
 
-        public Card? CreateCard(string cardName)
+        public Card? CreateCard(string cardName, bool network = false)
         {
             CardInfo? info = CardData.GetCardInfo(cardName);
             string? backName = null;
@@ -66,6 +68,10 @@ namespace Sanctum_Core
             }
             Card newCard = new(this.cardID++, frontInfo, backInfo, this.networkAttributeFactory);
             this.idToCard[newCard.Id] = newCard;
+            if(network)
+            {
+                CardCreated(this, new PropertyChangedEventArgs(""));
+            }
             return newCard;
         }
 

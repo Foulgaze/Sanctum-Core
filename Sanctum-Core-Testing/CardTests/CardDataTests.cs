@@ -14,6 +14,8 @@ namespace Sanctum_Core_Testing.CardTests
         {
             string path = System.IO.Path.GetFullPath(@"..\..\..\..");
             CardData.LoadCardNames($"{path}/Sanctum-Core/Assets/cards.csv");
+            CardData.LoadCardNames($"{path}/Sanctum-Core/Assets/tokens.csv", true);
+
         }
 
         [Test]
@@ -109,6 +111,20 @@ namespace Sanctum_Core_Testing.CardTests
             Assert.That(info.toughness, Is.EqualTo("4"));
             Assert.That(info.name, Is.EqualTo(cardName));
             Assert.That(info.type, Is.EqualTo("Creature — Angel"));
+        }
+
+        [Test]
+        public void VerifyCardInfo_WithengarUnbound()
+        {
+            string cardName = "Phyrexian Golem";
+
+            CardInfo? info = CardData.GetCardInfo(cardName, isToken: true);
+            Assert.IsNotNull(info);
+
+            Assert.That(info.power, Is.EqualTo("3"));
+            Assert.That(info.toughness, Is.EqualTo("3"));
+            Assert.That(info.name, Is.EqualTo(cardName));
+            Assert.That(info.type, Is.EqualTo("Token Artifact Creature — Phyrexian Golem"));
         }
     }
 }

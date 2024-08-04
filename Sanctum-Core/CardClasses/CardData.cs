@@ -5,13 +5,15 @@ namespace Sanctum_Core
 {
     public static class CardData
     {
-        private static readonly Dictionary<string, CardInfo> loadedCards = new();
-        private static bool cardsLoaded = false;
+        private static readonly Dictionary<string, CardInfo> nameToInfoStandardCards = new();
+        private static readonly Dictionary<string, CardInfo> nameToInfoTokenCards = new();
+
+        private static readonly HashSet<string> filesLoaded = new();
 
         // Load all card names into a HashSet for quick lookup
-        public static void LoadCardNames(string filePath)
+        public static void LoadCardNames(string filePath, bool tokens = false)
         {
-            if(cardsLoaded)
+            if(filesLoaded.Contains(filePath))
             {
                 return;
             }
@@ -19,7 +21,8 @@ namespace Sanctum_Core
             {
                 throw new Exception($"Could not find filePath : {filePath}");
             }
-            cardsLoaded = true;
+            Dictionary<string, CardInfo> cardData = tokens ? nameToInfoTokenCards : nameToInfoStandardCards;
+            _ = filesLoaded.Add(filePath);
             using StreamReader reader = new(filePath);
             using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
             _ = csv.Read();
@@ -27,21 +30,31 @@ namespace Sanctum_Core
             while (csv.Read())
             {
                 CardInfo c = csv.GetRecord<CardInfo>();
-                loadedCards[c.name] = c;
-                loadedCards[c.faceName] = c;
+                cardData[c.name] = c;
+                cardData[c.faceName] = c;
             }
         }
 
         // Check if a card name exists in the loaded data
-        public static bool CheckCardName(string cardName)
+        public static bool DoesCardExist(string cardName, bool isToken = false)
         {
-            return !cardsLoaded ? throw new Exception("Must load cardnames") : loadedCards.ContainsKey(cardName);
+            if (filesLoaded.Count == 0)
+            {
+                throw new Exception("Must load cardnames");
+            }
+
+            return isToken ? nameToInfoTokenCards.ContainsKey(cardName) : nameToInfoStandardCards.ContainsKey(cardName);
         }
 
         // Get card information, either from loaded data or by loading it
-        public static CardInfo? GetCardInfo(string? cardName)
+        public static CardInfo? GetCardInfo(string? cardName, bool isToken = false)
         {
-            return cardName == null || !loadedCards.ContainsKey(cardName) ? null : loadedCards[cardName];
+            if (cardName == null)
+            {
+                return null;
+            }
+            Dictionary<string, CardInfo> searchDict = isToken ? nameToInfoTokenCards : nameToInfoStandardCards;
+            return !searchDict.ContainsKey(cardName) ? null : searchDict[cardName];
         }
     }
 }

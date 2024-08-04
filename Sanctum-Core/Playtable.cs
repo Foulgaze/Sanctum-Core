@@ -10,13 +10,22 @@ namespace Sanctum_Core
         private readonly CardFactory cardFactory;
         public readonly NetworkAttributeFactory networkAttributeFactory;
         public event PropertyChangedEventHandler boardChanged = delegate { };
+        public event PropertyChangedEventHandler cardCreated = delegate { };
 
-        public Playtable(int playerCount, string filepath)
+        /// <summary>
+        /// Creates playtable
+        /// </summary>
+        /// <param name="playerCount">Number of players present in table</param>
+        /// <param name="cardsPath">Path to cards.csv</param>
+        /// <param name="tokensPath">Path to tokens.csv</param>
+        public Playtable(int playerCount, string cardsPath, string tokensPath)
         {
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
+            this.cardFactory.CardCreated += this.CardCreated;
             this.readyUpNeeded = playerCount;
-            CardData.LoadCardNames(filepath);
+            CardData.LoadCardNames(cardsPath);
+            CardData.LoadCardNames(tokensPath, true);
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
         }
 
@@ -72,9 +81,42 @@ namespace Sanctum_Core
             return player != null && this._players.Remove(player);
         }
 
+        public void HandleSpecialAction(string rawInput, string uuid)
+        {
+            string[] data = rawInput.Split('|');
+            if(data.Length < 2)
+            {
+                // Log this
+                return;
+            }
+            switch (data[0])
+            {
+                case "mill":
+                    SpecialActions.MillCards(this, uuid, data[1]);
+                    break;
+                case "draw":
+                    SpecialActions.DrawCards(this, uuid, data[1]);
+                    break;
+                case "exile":
+                    SpecialActions.ExileCards(this, uuid, data[1]);
+                    break;
+                case "createcard":
+                    SpecialActions.CreateTokenCard(this.cardFactory, this.GetPlayer(uuid), string.Join("|", data[1..]));
+                    break;
+                default:
+                    // Log this
+                    break;
+            }
+        }
+
         private void BoardChanged(object? sender, PropertyChangedEventArgs e)
         {
             boardChanged(sender, e);
+        }
+
+        private void CardCreated(object? sender, PropertyChangedEventArgs e)
+        {
+            cardCreated(sender, e);
         }
 
         private void CheckForStartGame(object? obj, PropertyChangedEventArgs? args)

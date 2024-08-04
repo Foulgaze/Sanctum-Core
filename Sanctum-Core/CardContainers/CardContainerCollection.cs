@@ -139,6 +139,30 @@ namespace Sanctum_Core
             this.Containers.ForEach(container => container.Shuffle());
         }
 
+        public bool ContainsCard(Card card)
+        {
+            return this.Containers.Any(container => container.Cards.Contains(card));
+        }
+
+        public void InsertCardIntoContainerNextToCard(Card insertCard, Card cardToFind)
+        {
+            int? containerIndex = null;
+            for(int i = 0; i <  this.Containers.Count; ++i)
+            {
+                if (this.Containers[i].Cards.Contains(cardToFind))
+                {
+                    containerIndex = i;
+                    break;
+                }
+            }
+            if(containerIndex == null)
+            {
+                return;
+            }
+            this.InsertCardIntoContainer(containerIndex, false, insertCard, this.Containers[(int)containerIndex].Cards.IndexOf(cardToFind) + 1, true);
+
+        }
+
 
         private void NetworkedCardInsert(object? sender, PropertyChangedEventArgs? args)
         {
