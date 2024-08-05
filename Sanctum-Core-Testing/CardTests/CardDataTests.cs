@@ -114,16 +114,16 @@ namespace Sanctum_Core_Testing.CardTests
         }
 
         [Test]
-        public void VerifyCardInfo_WithengarUnbound()
+        public void VerifyCardInfo_PhyrexianGolem()
         {
-            string cardName = "Phyrexian Golem";
+            string cardIdentifier = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            CardInfo? info = CardData.GetCardInfo(cardName, isToken: true);
+            CardInfo? info = CardData.GetCardInfo(cardIdentifier, isToken: true);
             Assert.IsNotNull(info);
 
             Assert.That(info.power, Is.EqualTo("3"));
             Assert.That(info.toughness, Is.EqualTo("3"));
-            Assert.That(info.name, Is.EqualTo(cardName));
+            Assert.That(info.uuid, Is.EqualTo(cardIdentifier));
             Assert.That(info.type, Is.EqualTo("Token Artifact Creature — Phyrexian Golem"));
         }
     }
