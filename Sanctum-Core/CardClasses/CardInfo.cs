@@ -28,9 +28,6 @@ namespace Sanctum_Core
 
         [Name("text")]
         public string text { get; set; } = "";
-
-        // [Name("types")]
-        // public string types {get;set;}
         [Name("type")]
         public string type { get; set; } = "";
         [Name("layout")]
