@@ -66,7 +66,8 @@ namespace Sanctum_Core
                 return;
             }
             Card card = (Card)sender;
-            this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.name}|{card.Id}"));
+            // This function should probably only be called by create token. Hence the identifier is the UUID.
+            this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}"));
         }
 
         private void SendMessage(NetworkInstruction instruction, string payload)

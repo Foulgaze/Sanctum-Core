@@ -22,7 +22,7 @@ namespace Sanctum_Core
         {
             this.networkAttributeFactory = new NetworkAttributeFactory();
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
-            this.cardFactory.CardCreated += this.CardCreated;
+            this.cardFactory.cardCreated += this.CardCreated;
             this.readyUpNeeded = playerCount;
             CardData.LoadCardNames(cardsPath);
             CardData.LoadCardNames(tokensPath, true);

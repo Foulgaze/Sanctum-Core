@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Newtonsoft.Json;
+using System.Numerics;
 
 namespace Sanctum_Core_Testing
 {
@@ -132,18 +133,55 @@ namespace Sanctum_Core_Testing
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
         }
 
-/*        [Test]
+        [Test]
         public void TestCreateToken()
         {
             List<PlayerDescription> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
+            string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{players[0].uuid}-|createtoken|Soldier|");    
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"createtoken|{tokenUUID}");
 
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
+            nam.ReadPlayerData(2);
+            string cardCreationKey = $"{tokenUUID}|400";
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
+            string fieldKey = $"{players[0].uuid}-{(int)CardZone.MainField}|[[400]]";
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
         }
-*/
+
+        [Test]
+        public void TestCreateTokenNextToCard()
+        {
+            List<PlayerDescription> players = this.StartAndSortPlayers(4);
+            NetworkAttributeManager nam = new(players);
+            for (int i = 0; i < 4; ++i)
+            {
+                InsertCardData cardToMove = new(i, i, i, i == 0);
+                Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
+            }
+            nam.ReadPlayerData(8);
+            string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
+
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"createtoken|{tokenUUID}|0");
+
+            nam.ReadPlayerData(2);
+            string cardCreationKey = $"{tokenUUID}|400";
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
+            string fieldKey = $"{players[0].uuid}-{(int)CardZone.MainField}|[[3,400]]";
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
+
+            tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
+
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"createtoken|{tokenUUID}|400");
+
+            nam.ReadPlayerData(2);
+            cardCreationKey = $"{tokenUUID}|400";
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
+            fieldKey = $"{players[0].uuid}-{(int)CardZone.MainField}|[[3,400,401]]";
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
+
+        }
+
 
         // Returns Lobby Code, UUID, Network Stream
         private (string, PlayerDescription) CreateLobby(int playerCount, string playerName)
