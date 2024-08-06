@@ -17,6 +17,7 @@ namespace Sanctum_Core_Testing.PlaytableTests.SpecialActionTests
                 Assert.IsTrue(successfullAdd);
                 Player? player = table.GetPlayer(i.ToString());
                 Assert.IsNotNull(player);
+                player.DeckListRaw.SetValue("100 Plains");
                 player.ReadiedUp.SetValue(true);
             }
             Assert.IsTrue(table.GameStarted.Value);

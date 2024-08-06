@@ -101,7 +101,7 @@ namespace Sanctum_Core_Testing.CardCollectionTests
 
         private Card GenerateCard()
         {
-            return new Card(this.cardId++, new CardInfo(), null, this.networkAttributeFactory);
+            return new Card(this.cardId++, new CardInfo(), null, this.networkAttributeFactory, false);
         }
     }
 }
