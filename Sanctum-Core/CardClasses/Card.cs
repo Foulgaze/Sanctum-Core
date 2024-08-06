@@ -14,16 +14,21 @@ namespace Sanctum_Core
         public NetworkAttribute<string> name;
         public NetworkAttribute<bool> isUsingBackSide;
         public NetworkAttribute<bool> isFlipped;
-        public bool ethereal = false;
+        public bool isEthereal = false;
         private readonly NetworkAttributeFactory networkAttributeFactory;
 
-        public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory)
+        public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory, bool isEthereal)
         {
             this.networkAttributeFactory = networkAttributeFactory;
             this.Id = id;
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
+            this.isEthereal = isEthereal;
+            this.InitializeNetworkAttributes();
+        }
 
+        private void InitializeNetworkAttributes()
+        {
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", false);
             this.isUsingBackSide.valueChange += this.UpdateAttributes;
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
@@ -31,6 +36,11 @@ namespace Sanctum_Core
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
             this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
             this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", "");
+        }
+
+        public Card(int id, Card card)
+        {
+            Card(id, )
         }
 
         /// <summary>

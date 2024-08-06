@@ -2,17 +2,17 @@
 
 namespace Sanctum_Core
 {
+    public enum SpecialAction { Draw, Mill, Exile, CreateToken, CopyCard, PutCardXFrom, RevealTopCards, RevealLibrary, Shuffle}
     public static class SpecialActions
     {
-
-        public static void MoveCards(Playtable table, string uuid, string rawCardCount, CardZone sourceZone, CardZone targetZone)
+        private static readonly List<CardZone> boardCardZones = new()
         {
-            Player? player = table.GetPlayer(uuid);
-            if (player is null)
-            {
-                // Log this
-                return;
-            }
+                CardZone.MainField,
+                CardZone.LeftField,
+                CardZone.RightField,
+        };
+        public static void MoveCards(Playtable table, Player player, string rawCardCount, CardZone sourceZone, CardZone targetZone)
+        {
             if (!int.TryParse(rawCardCount, out int cardCount))
             {
                 // Log this
@@ -43,25 +43,26 @@ namespace Sanctum_Core
             }
         }
 
-        public static void DrawCards(Playtable table, string uuid, string rawCardCount)
+        public static void DrawCards(Playtable table, Player player, string rawCardCount)
         {
-            MoveCards(table, uuid, rawCardCount, CardZone.Library, CardZone.Hand);
+            MoveCards(table, player, rawCardCount, CardZone.Library, CardZone.Hand);
         }
 
-        public static void MillCards(Playtable table, string uuid, string rawCardCount)
+        public static void MillCards(Playtable table, Player player, string rawCardCount)
         {
-            MoveCards(table, uuid, rawCardCount, CardZone.Library, CardZone.Graveyard);
+            MoveCards(table, player, rawCardCount, CardZone.Library, CardZone.Graveyard);
         }
 
-        public static void ExileCards(Playtable table, string uuid, string rawCardCount)
+        public static void ExileCards(Playtable table, Player player, string rawCardCount)
         {
-            MoveCards(table, uuid, rawCardCount, CardZone.Library, CardZone.Exile);
+            MoveCards(table, player, rawCardCount, CardZone.Library, CardZone.Exile);
         }
 
-        public static void CreateTokenCard(CardFactory factory, Player? player, string rawData)
+        public static void CreateTokenCard(CardFactory cardFactory, Player player, string rawData)
         {
-            if (player == null || string.IsNullOrEmpty(rawData))
+            if (string.IsNullOrEmpty(rawData))
             {
+                // Log this
                 return;
             }
 
@@ -69,28 +70,27 @@ namespace Sanctum_Core
             string tokenName = data[0];
             string? rawCardOriginID = data.Length > 1 ? data[1] : null;
 
-            CreateTokenCard(factory, player, tokenName, rawCardOriginID);
+            CreateTokenCard(cardFactory, player, tokenName, rawCardOriginID);
         }
 
-        private static void CreateTokenCard(CardFactory factory, Player player, string tokenName, string? rawCardOriginID)
+        private static void CreateTokenCard(CardFactory cardFactory, Player player, string tokenName, string? rawCardOriginID)
         {
-            if (!TryGetOriginCard(factory, rawCardOriginID, out Card? originCard))
+            if (!TryGetOriginCard(cardFactory, rawCardOriginID, out Card? originCard))
             {
                 // Log failure to get origin card
                 return;
             }
 
-            Card? tokenCard = factory.CreateCard(tokenName,true, true);
+            Card? tokenCard = cardFactory.CreateCard(tokenName,true, true);
             if (tokenCard == null)
             {
                 // Log failure to create token card
                 return;
             }
-
             InsertTokenCard(player, originCard, tokenCard);
         }
 
-        private static bool TryGetOriginCard(CardFactory factory, string? rawCardOriginID, out Card? originCard)
+        private static bool TryGetOriginCard(CardFactory cardFactory, string? rawCardOriginID, out Card? originCard)
         {
             originCard = null;
 
@@ -105,7 +105,7 @@ namespace Sanctum_Core
                 return false;
             }
 
-            originCard = factory.GetCard(cardOriginID);
+            originCard = cardFactory.GetCard(cardOriginID);
             if (originCard == null)
             {
                 // Log that origin card not found
@@ -125,21 +125,18 @@ namespace Sanctum_Core
                 return;
             }
 
-            List<CardContainerCollection> collections = new()
+            
+            if(originCard.CurrentLocation == null)
             {
-                    mainBoard,
-                    player.GetCardContainer(CardZone.LeftField),
-                    player.GetCardContainer(CardZone.RightField)
-            };
-
-            CardContainerCollection? targetCollection = collections.FirstOrDefault(container => container.ContainsCard(originCard));
-            if (targetCollection == null)
-            {
-                // Log that the origin card's container was not found
+                // Log this
                 return;
             }
-
-            targetCollection.InsertCardIntoContainerNextToCard(tokenCard, originCard);
+            if(!boardCardZones.Contains(originCard.CurrentLocation.Zone))
+            {
+                // Log this
+                return;
+            }
+            originCard.CurrentLocation.InsertCardIntoContainerNextToCard(tokenCard, originCard);
         }
 
         public static void Shuffle(Playtable table, string uuid)
@@ -154,5 +151,23 @@ namespace Sanctum_Core
             library.Shuffle();
             table.UpdateCardZone(playerWhoIsShuffling, CardZone.Library);
         }
+
+        public static void CreateCopyCard(CardFactory cardFactory, Player player, string cardToCopyId)
+        {
+            if(!int.TryParse(cardToCopyId, out int cardId))
+            {
+                // Log this
+                return;
+            }
+            Card? cardToCopy = cardFactory.GetCard(cardId);
+            if(cardToCopy == null)
+            {
+                // Log this
+                return;
+            }
+            Card cardCopy = cardFactory.CreateCard(cardToCopy);
+
+        }
+
     }
 }

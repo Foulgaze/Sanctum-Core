@@ -9,7 +9,15 @@ namespace Sanctum_Core
 {
     public class CardFactory
     {
-        private int cardID = 0;
+        private class CardIdCounter
+        {
+            private int cardID = 0;
+            public int GetNextCardId()
+            {
+                return this.cardID++;
+            }
+        }
+        private readonly CardIdCounter cardIdCounter = new();
         private readonly List<string> twoSidedCardLayouts = new() { "meld", "transform", "modal_dfc" };
         private readonly Dictionary<int, Card> idToCard = new();
         private readonly NetworkAttributeFactory networkAttributeFactory;
@@ -66,13 +74,18 @@ namespace Sanctum_Core
             {
                 return null;
             }
-            Card newCard = new(this.cardID++, frontInfo, backInfo, this.networkAttributeFactory);
+            Card newCard = new(this.cardIdCounter.GetNextCardId(), frontInfo, backInfo, this.networkAttributeFactory, isTokenCard);
             this.idToCard[newCard.Id] = newCard;
             if(network)
             {
                 cardCreated(newCard, new PropertyChangedEventArgs(""));
             }
             return newCard;
+        }
+
+        public Card? CreateCard(Card cardToCopy)
+        {
+            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), cardToCopy);
         }
 
         public Card? GetCard(int cardID)
