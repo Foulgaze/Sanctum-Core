@@ -38,7 +38,7 @@ namespace Sanctum_Core
         /// <returns> If the player was succesfully added</returns>
         public bool AddPlayer(string uuid, string name)
         {
-            if (this.GameStarted.Value || this._players.Where(player => player.Uuid == uuid).Count() != 0)
+            if (this.GameStarted.Value || this._players.Where(player => player.Uuid == uuid).Count() != 0 || this._players.Count >= this.readyUpNeeded)
             {
                 return false;
             }
