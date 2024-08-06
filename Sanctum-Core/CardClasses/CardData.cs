@@ -36,7 +36,6 @@ namespace Sanctum_Core
                     continue;
                 }
                 cardData[currentCardInfo.name] = currentCardInfo;
-                cardData[currentCardInfo.faceName] = currentCardInfo;
             }
         }
 

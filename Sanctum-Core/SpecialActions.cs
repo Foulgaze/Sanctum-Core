@@ -80,7 +80,7 @@ namespace Sanctum_Core
                 return;
             }
 
-            Card? tokenCard = factory.CreateCard(tokenName, true);
+            Card? tokenCard = factory.CreateCard(tokenName,true, true);
             if (tokenCard == null)
             {
                 // Log failure to create token card

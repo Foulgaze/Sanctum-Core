@@ -13,7 +13,7 @@ namespace Sanctum_Core
         private readonly List<string> twoSidedCardLayouts = new() { "meld", "transform", "modal_dfc" };
         private readonly Dictionary<int, Card> idToCard = new();
         private readonly NetworkAttributeFactory networkAttributeFactory;
-        public event PropertyChangedEventHandler CardCreated = delegate { };
+        public event PropertyChangedEventHandler cardCreated = delegate { };
 
         public CardFactory(NetworkAttributeFactory networkAttributeFactory)
         {
@@ -41,9 +41,9 @@ namespace Sanctum_Core
             return cards;
         }
 
-        public Card? CreateCard(string cardName, bool network = false)
+        public Card? CreateCard(string cardIdentifier, bool isTokenCard = false, bool network = false)
         {
-            CardInfo? info = CardData.GetCardInfo(cardName);
+            CardInfo? info = CardData.GetCardInfo(cardIdentifier, isTokenCard);
             string? backName = null;
             if (info == null)
             {
@@ -54,14 +54,14 @@ namespace Sanctum_Core
             string frontName;
             if (this.twoSidedCardLayouts.Contains(info.layout))
             {
-                (frontName, backName) = this.GetFrontBackNames(info.name);
+                (frontName, backName) = this.GetFrontBackNames(info, isTokenCard);
             }
             else
             {
-                frontName = info.name;
+                frontName = isTokenCard ? info.uuid : info.name;
             }
-            CardInfo? frontInfo = CardData.GetCardInfo(frontName);
-            CardInfo? backInfo = CardData.GetCardInfo(backName);
+            CardInfo? frontInfo = CardData.GetCardInfo(frontName, isTokenCard);
+            CardInfo? backInfo = CardData.GetCardInfo(backName, isTokenCard);
             if(frontInfo == null)
             {
                 return null;
@@ -70,7 +70,7 @@ namespace Sanctum_Core
             this.idToCard[newCard.Id] = newCard;
             if(network)
             {
-                CardCreated(this, new PropertyChangedEventArgs(""));
+                cardCreated(newCard, new PropertyChangedEventArgs(""));
             }
             return newCard;
         }
@@ -82,17 +82,21 @@ namespace Sanctum_Core
         }
 
 
-        private (string, string?) GetFrontBackNames(string fullName)
+        private (string, string?) GetFrontBackNames(CardInfo info, bool isTokenCard = false)
         {
-            fullName = fullName.Trim();
+            string fullName = info.name.Trim();
 
             int doubleSlashIndex = fullName.IndexOf("//");
             if (doubleSlashIndex == -1)
             {
-                return (fullName, null);
+                return isTokenCard ? (info.uuid, null) : (fullName, null);
             }
             string frontName = fullName[..doubleSlashIndex];
             string backName = fullName[doubleSlashIndex..];
+            if (isTokenCard) // This basically assumes that you'll only create tokens starting with front face
+            {
+                return (info.uuid, info.otherFace);
+            }
             return (frontName, backName);
         }
     }

@@ -11,8 +11,6 @@ namespace Sanctum_Core
     {
         [Name("name")]
         public string name { get; set; } = "";
-        [Name("faceName")]
-        public string faceName { get; set; } = "";
 
         [Name("setCode")]
         public string setCode { get; set; } = "";
@@ -34,5 +32,7 @@ namespace Sanctum_Core
         public string layout { get; set; } = "";
         [Name("uuid")]
         public string uuid { get; set; } = "";
+        [Name("otherFaceIds")]
+        public string otherFace { get; set; } = "";
     }
 }
