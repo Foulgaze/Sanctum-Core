@@ -49,7 +49,7 @@ namespace Sanctum_Core
             return cards;
         }
 
-        public Card? CreateCard(string cardIdentifier, bool isTokenCard = false, bool network = false)
+        public Card? CreateCard(string cardIdentifier, bool isTokenCard = false, bool changeShouldBeNetworked = false)
         {
             CardInfo? info = CardData.GetCardInfo(cardIdentifier, isTokenCard);
             string? backName = null;
@@ -76,7 +76,7 @@ namespace Sanctum_Core
             }
             Card newCard = new(this.cardIdCounter.GetNextCardId(), frontInfo, backInfo, this.networkAttributeFactory, isTokenCard);
             this.idToCard[newCard.Id] = newCard;
-            if(network)
+            if(changeShouldBeNetworked)
             {
                 cardCreated(newCard, new PropertyChangedEventArgs(""));
             }
@@ -85,7 +85,7 @@ namespace Sanctum_Core
 
         public Card? CreateCard(Card cardToCopy)
         {
-            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), cardToCopy);
+            return new Card(this.cardIdCounter.GetNextCardId(),this.networkAttributeFactory, cardToCopy);
         }
 
         public Card? GetCard(int cardID)

@@ -152,7 +152,7 @@ namespace Sanctum_Core
             table.UpdateCardZone(playerWhoIsShuffling, CardZone.Library);
         }
 
-        public static void CreateCopyCard(CardFactory cardFactory, Player player, string cardToCopyId)
+        public static void CreateCopyCard(CardFactory cardFactory, string cardToCopyId)
         {
             if(!int.TryParse(cardToCopyId, out int cardId))
             {
@@ -165,9 +165,14 @@ namespace Sanctum_Core
                 // Log this
                 return;
             }
-            Card cardCopy = cardFactory.CreateCard(cardToCopy);
+            Card? cardCopy = cardFactory.CreateCard(cardToCopy);
+            if (cardToCopy.CurrentLocation == null || cardCopy == null)
+            {
+                // Log this
+                return;
+            }
+            cardToCopy.CurrentLocation.InsertCardIntoContainerNextToCard(cardCopy, cardToCopy);
 
         }
-
     }
 }

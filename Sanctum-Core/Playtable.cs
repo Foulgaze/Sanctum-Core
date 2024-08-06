@@ -112,9 +112,10 @@ namespace Sanctum_Core
                     SpecialActions.ExileCards(this, callingPlayer, data[1]);
                     break;
                 case (int)SpecialAction.CreateToken:
-                    SpecialActions.CreateTokenCard(this.cardFactory, callingPlayer), string.Join("|", data[1..]));
+                    SpecialActions.CreateTokenCard(this.cardFactory, callingPlayer, string.Join("|", data[1..]));
                     break;
                 case (int)SpecialAction.CopyCard:
+                    SpecialActions.CreateCopyCard(this.cardFactory, data[1]);
                     break;
                 case (int)SpecialAction.PutCardXFrom:
                     break;

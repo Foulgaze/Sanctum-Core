@@ -79,12 +79,10 @@ namespace Sanctum_Core_Testing.CardCollectionTests
             Assert.IsNull(topCard);
         }
 
-
-
         private Card GenerateCard()
         {
             int id = this.cardId++;
-            this.idToCard[id] = new Card(id, new CardInfo(), null, this.networkAttributeFactory);
+            this.idToCard[id] = new Card(id, new CardInfo(), null, this.networkAttributeFactory, false);
             return this.idToCard[id];
         }
 
