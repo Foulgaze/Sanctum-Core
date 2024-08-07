@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 
@@ -20,6 +21,32 @@ namespace Sanctum_Core
             this.client = client;
         }
     }
+
+    public class TimeChecker
+    {
+        private DateTime lastCheckedTime;
+        private readonly double timeToWait;
+
+        public TimeChecker(double timeToWait = 1)
+        {
+            this.lastCheckedTime = DateTime.Now;
+            this.timeToWait = timeToWait;
+        }
+
+        public bool HasMinutePassed()
+        {
+            DateTime currentTime = DateTime.Now;
+            TimeSpan timeElapsed = currentTime - this.lastCheckedTime;
+
+            if (timeElapsed.TotalMinutes >= this.timeToWait)
+            {
+                this.lastCheckedTime = currentTime;
+                return true;
+            }
+
+            return false;
+        }
+    }
     public class Lobby
     {
         private readonly Playtable playtable;
@@ -27,7 +54,16 @@ namespace Sanctum_Core
         private List<PlayerDescription> players = new();
         public readonly string code;
         public ConcurrentBag<PlayerDescription> concurrentPlayers = new();
+        private readonly TimeChecker timeChecker = new();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Lobby"/> class with the specified size and code.
+        /// </summary>
+        /// <param name="lobbySize">The maximum number of players allowed in the lobby.</param>
+        /// <param name="lobbyCode">The unique code identifying the lobby.</param>
+        /// <remarks>
+        /// The constructor sets up the playtable for the lobby, loading the card and token data from CSV files located in the designated assets directory.
+        /// </remarks>
         public Lobby(int lobbySize, string lobbyCode)
         {
             this.size = lobbySize;
@@ -86,17 +122,56 @@ namespace Sanctum_Core
             this.playtable.cardCreated += this.NetworkCardCreation;
         }
 
+        /// <summary>
+        /// Starts the lobby by initializing the game and continuously listening for player commands.
+        /// </summary>
         public void StartLobby()
         {
             this.InitGame();
             while (true)
             {
+                if(this.players.Count == 0)
+                {
+                    return;
+                }
                 foreach (PlayerDescription playerDescription in this.players)
                 {
                     NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(playerDescription.client.GetStream(), playerDescription.buffer, Server.bufferSize, false);
                     this.HandleCommand(command, playerDescription.uuid);
                 }
+                if(this.timeChecker.HasMinutePassed())
+                {
+                    List<PlayerDescription> closedConnections = this.CheckForClosedConnections();
+                    this.players = this.players.Except(closedConnections).ToList();
+                    closedConnections.ForEach(this.SendDisconnectMessages);
+                }
             }
+        }
+
+        private void SendDisconnectMessages(PlayerDescription disconnectedPlayers)
+        {
+            this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.Disconnect, disconnectedPlayers.uuid));
+        }
+
+        private List<PlayerDescription> CheckForClosedConnections()
+        {
+            IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+            TcpConnectionInformation[] tcpConnections = ipProperties.GetActiveTcpConnections();
+            List<PlayerDescription> closedConnections = new();
+            foreach (PlayerDescription description in this.players)
+            {
+                TcpClient client = description.client;
+                TcpConnectionInformation? connectionInfo = tcpConnections.FirstOrDefault(x =>
+                    x.LocalEndPoint.Equals(client.Client.LocalEndPoint) &&
+                    x.RemoteEndPoint.Equals(client.Client.RemoteEndPoint));
+
+                TcpState stateOfConnection = tcpConnections.First().State;
+                if (stateOfConnection != TcpState.Established)
+                {
+                    closedConnections.Add(description);
+                }
+            }
+            return closedConnections;
         }
 
         private void HandleCommand(NetworkCommand? command, string uuid)
@@ -117,11 +192,6 @@ namespace Sanctum_Core
                     // Ignore!
                     break;
             }
-        }
-
-        public void StopLobby()
-        {
-            this.players.ForEach(description => description.client.Close());
         }
     }
 }

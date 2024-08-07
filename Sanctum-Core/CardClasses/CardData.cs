@@ -10,7 +10,12 @@ namespace Sanctum_Core
 
         private static readonly HashSet<string> filesLoaded = new();
 
-        // Load all card names into a HashSet for quick lookup
+        /// <summary>
+        /// Loads card names and information from a CSV file into the appropriate dictionary.
+        /// </summary>
+        /// <param name="filePath">The path to the CSV file containing card information.</param>
+        /// <param name="isLoadingTokens">Indicates whether the cards being loaded are tokens. Default is false.</param>
+        /// <exception cref="Exception">Thrown if the file path does not exist.</exception>
         public static void LoadCardNames(string filePath, bool isLoadingTokens = false)
         {
             if(filesLoaded.Contains(filePath))
@@ -39,7 +44,13 @@ namespace Sanctum_Core
             }
         }
 
-        // Check if a card name exists in the loaded data
+        /// <summary>
+        /// Checks if a card with the specified identifier exists in the loaded data.
+        /// </summary>
+        /// <param name="cardIdentifier">The name or UUID of the card to check.</param>
+        /// <param name="isToken">Indicates whether to check in the token cards dictionary. Default is false.</param>
+        /// <returns>True if the card exists, otherwise false.</returns>
+        /// <exception cref="Exception">Thrown if no card data has been loaded.</exception>
         public static bool DoesCardExist(string cardIdentifier, bool isToken = false)
         {
             if (filesLoaded.Count == 0)
@@ -50,7 +61,12 @@ namespace Sanctum_Core
             return isToken ? uuidToInfoTokenCards.ContainsKey(cardIdentifier) : nameToInfoStandardCards.ContainsKey(cardIdentifier);
         }
 
-        // Get card information, either from loaded data or by loading it
+        /// <summary>
+        /// Retrieves card information for a specified card identifier from the loaded data.
+        /// </summary>
+        /// <param name="cardIdentifier">The name or UUID of the card to retrieve information for.</param>
+        /// <param name="isToken">Indicates whether to search in the token cards dictionary. Default is false.</param>
+        /// <returns>The <see cref="CardInfo"/> for the specified card, or null if not found.</returns>
         public static CardInfo? GetCardInfo(string? cardIdentifier, bool isToken = false)
         {
             if (cardIdentifier == null)

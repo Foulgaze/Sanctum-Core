@@ -36,6 +36,16 @@ namespace Sanctum_Core
         public event PropertyChangedEventHandler boardChanged = delegate { };
         private readonly CardFactory CardFactory;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CardContainerCollection"/> class with the specified parameters.
+        /// </summary>
+        /// <param name="zone">The card zone associated with this container collection.</param>
+        /// <param name="owner">The owner of the card container collection.</param>
+        /// <param name="maxContainerCount">The maximum number of containers allowed (nullable).</param>
+        /// <param name="maxContainerCardCount">The maximum number of cards allowed per container (nullable).</param>
+        /// <param name="revealTopCard">Indicates whether the top card of each container should be revealed.</param>
+        /// <param name="networkAttributeManager">The factory for managing network attributes.</param>
+        /// <param name="cardFactory">The factory for creating cards.</param>
         public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, bool revealTopCard, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
         {
             this.maxCardCountPerContainer = maxContainerCardCount;
@@ -45,9 +55,7 @@ namespace Sanctum_Core
             this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, false);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.insertCardData.valueChange += this.NetworkedCardInsert;
-
             this.CardFactory = cardFactory;
-
         }
 
         /// <summary>
@@ -148,11 +156,21 @@ namespace Sanctum_Core
             return this.Containers.Aggregate(0, (acc, container) => acc + container.Cards.Count());
         }
 
+        /// <summary>
+        /// Checks if a specified card is contained within any of the containers.
+        /// </summary>
+        /// <param name="card">The card to check for.</param>
+        /// <returns>True if the card is found in any container, otherwise false.</returns>
         public bool ContainsCard(Card card)
         {
             return this.Containers.Any(container => container.Cards.Contains(card));
         }
 
+        /// <summary>
+        /// Inserts a specified card into the container next to a given card.
+        /// </summary>
+        /// <param name="insertCard">The card to insert.</param>
+        /// <param name="cardToFind">The card to find and insert next to.</param>
         public void InsertCardIntoContainerNextToCard(Card insertCard, Card cardToFind)
         {
             int? containerIndex = null;

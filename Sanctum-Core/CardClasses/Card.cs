@@ -17,6 +17,14 @@ namespace Sanctum_Core
         public bool isEthereal = false;
         private readonly NetworkAttributeFactory networkAttributeFactory;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Card"/> class with the specified attributes and sets up network attributes.
+        /// </summary>
+        /// <param name="id">The unique identifier for the card.</param>
+        /// <param name="FrontInfo">The information for the front side of the card.</param>
+        /// <param name="BackInfo">The information for the back side of the card (nullable).</param>
+        /// <param name="networkAttributeFactory">The factory for creating network attributes.</param>
+        /// <param name="isEthereal">Indicates whether the card will be destroyed upon being moved from the field.</param>
         public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory, bool isEthereal)
         {
             this.networkAttributeFactory = networkAttributeFactory;
@@ -34,6 +42,12 @@ namespace Sanctum_Core
             this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", "");
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Card"/> class as a copy of an existing card, with a new identifier.
+        /// </summary>
+        /// <param name="id">The unique identifier for the new card.</param>
+        /// <param name="networkAttributeFactory">The factory for creating network attributes.</param>
+        /// <param name="cardToCopy">The card to copy attributes from.</param>
         public Card(int id, NetworkAttributeFactory networkAttributeFactory, Card cardToCopy)
         {
             this.Id = id;
@@ -60,7 +74,13 @@ namespace Sanctum_Core
             return this.BackInfo != null;
         }
 
-        public void UpdateAttributes(object? sender, EventArgs e) // No need to network because flipped is netwokred
+        /// <summary>
+        /// Updates the card's attributes based on the current card information.
+        /// Resets the flipped state and backside usage, then updates power, toughness, and name.
+        /// </summary>
+        /// <param name="sender">The source of the event triggering the update (can be null).</param>
+        /// <param name="e">Event arguments associated with the update.</param>
+        public void UpdateAttributes(object? sender, EventArgs e)
         {
             this.isFlipped.SetValue(false);
             this.isUsingBackSide.SetValue(false);
