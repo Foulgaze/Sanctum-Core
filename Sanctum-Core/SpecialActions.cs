@@ -174,5 +174,51 @@ namespace Sanctum_Core
             cardToCopy.CurrentLocation.InsertCardIntoContainerNextToCard(cardCopy, cardToCopy);
 
         }
+
+        public static bool PutCardXFromTopOrBottom(CardFactory cardFactory,CardContainerCollection library,string[] data)
+        {
+            if(data.Length != 3)
+            {
+                // Log this
+                return false;
+            }
+            string startingLocation = data[0];
+            string rawCardId = data[1];
+            string rawCardDistance = data[2];
+            if (!int.TryParse(rawCardId, out int cardId))
+            {
+                // Log this
+                return false;
+            }
+            if (!int.TryParse(rawCardDistance, out int cardDistance) || cardDistance < 0)
+            {
+                // Log this
+                return false;
+            }
+            if(startingLocation is not "top" and not "bottom")
+            {
+                // log this
+                return false;
+            }
+            Card? card = cardFactory.GetCard(cardId);
+            if(card == null)
+            {
+                // Log this
+                return false;
+            }
+            PutCardXFromTopOrBottom(card, cardDistance, startingLocation, library);
+            return true;
+
+        }
+        private static void PutCardXFromTopOrBottom(Card cardToMove, int cardDistance, string startingLocation, CardContainerCollection zone)
+        {
+            int zoneCount = zone.GetTotalCardCount();
+            if(cardToMove.CurrentLocation != null && cardToMove.CurrentLocation.Zone == CardZone.Library)
+            {
+                --zoneCount;
+            }
+            int insertPosition = startingLocation == "top" ? zoneCount - cardDistance : 0 + cardDistance;
+            zone.InsertCardIntoContainer(0, false, cardToMove, insertPosition, true);
+        }
     }
 }

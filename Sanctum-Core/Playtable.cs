@@ -118,6 +118,7 @@ namespace Sanctum_Core
                     SpecialActions.CreateCopyCard(this.cardFactory, data[1]);
                     break;
                 case (int)SpecialAction.PutCardXFrom:
+                    _ = SpecialActions.PutCardXFromTopOrBottom(this.cardFactory, callingPlayer.GetCardContainer(CardZone.Library), data[1..]);
                     break;
                 case (int)SpecialAction.RevealTopCards:
                     break;

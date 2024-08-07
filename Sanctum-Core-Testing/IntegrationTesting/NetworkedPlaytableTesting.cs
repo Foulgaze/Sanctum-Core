@@ -103,7 +103,7 @@ namespace Sanctum_Core_Testing
             List<PlayerDescription> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
 
-            this.SendSpecialAction(players, nam, "mill|10");
+            this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Mill}|10");
 
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Graveyard, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
@@ -115,7 +115,7 @@ namespace Sanctum_Core_Testing
             List<PlayerDescription> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
 
-            this.SendSpecialAction(players, nam, "draw|10");
+            this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Draw}|10");
 
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Hand, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
@@ -127,7 +127,7 @@ namespace Sanctum_Core_Testing
             List<PlayerDescription> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
 
-            this.SendSpecialAction(players, nam, "exile|10");
+            this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Exile}|10");
 
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
@@ -140,7 +140,7 @@ namespace Sanctum_Core_Testing
             NetworkAttributeManager nam = new(players);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"createtoken|{tokenUUID}");
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}");
 
             nam.ReadPlayerData(2);
             string cardCreationKey = $"{tokenUUID}|400";
@@ -162,7 +162,7 @@ namespace Sanctum_Core_Testing
             nam.ReadPlayerData(8);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"createtoken|{tokenUUID}|0");
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|0");
 
             nam.ReadPlayerData(2);
             string cardCreationKey = $"{tokenUUID}|400";
@@ -172,7 +172,7 @@ namespace Sanctum_Core_Testing
 
             tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"createtoken|{tokenUUID}|400");
+            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|400");
 
             nam.ReadPlayerData(2);
             cardCreationKey = $"{tokenUUID}|400";

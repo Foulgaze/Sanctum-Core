@@ -79,6 +79,23 @@ namespace Sanctum_Core_Testing.CardCollectionTests
             Assert.IsNull(topCard);
         }
 
+        [Test]
+        public void CheckCardCount()
+        {
+            Card card = this.GenerateCard();
+
+            Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(0));
+            this.cardContainerCollection.InsertCardIntoContainer(null, true, card, null, false);
+
+            List<CardContainer> containers = this.GetCardContainers(this.cardContainerCollection);
+
+            Assert.That(containers.Count, Is.EqualTo(1));
+            Assert.That(containers[0].Cards.Count, Is.EqualTo(1));
+            Assert.That(containers[0].Cards[0].Id, Is.EqualTo(card.Id));
+            Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(1));
+
+        }
+
         private Card GenerateCard()
         {
             int id = this.cardId++;

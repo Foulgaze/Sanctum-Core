@@ -139,6 +139,15 @@ namespace Sanctum_Core
             this.Containers.ForEach(container => container.Shuffle());
         }
 
+        /// <summary>
+        /// The total number of cards in containers
+        /// </summary>
+        /// <returns>The total number of cards in containers</returns>
+        public int GetTotalCardCount()
+        {
+            return this.Containers.Aggregate(0, (acc, container) => acc + container.Cards.Count());
+        }
+
         public bool ContainsCard(Card card)
         {
             return this.Containers.Any(container => container.Cards.Contains(card));
