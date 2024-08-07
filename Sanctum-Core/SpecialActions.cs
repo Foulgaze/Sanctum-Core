@@ -2,7 +2,7 @@
 
 namespace Sanctum_Core
 {
-    public enum SpecialAction { Draw, Mill, Exile, CreateToken, CopyCard, PutCardXFrom, RevealTopCards, RevealLibrary, Shuffle}
+    public enum SpecialAction { Draw, Mill, Exile, CreateToken, CopyCard, PutCardXFrom, Shuffle}
     public static class SpecialActions
     {
         private static readonly List<CardZone> boardCardZones = new()
