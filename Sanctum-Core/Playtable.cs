@@ -38,7 +38,7 @@ namespace Sanctum_Core
         /// <returns> If the player was succesfully added</returns>
         public bool AddPlayer(string uuid, string name)
         {
-            if (this.GameStarted.Value || this._players.Where(player => player.Uuid == uuid).Count() != 0)
+            if (this.GameStarted.Value || this._players.Where(player => player.Uuid == uuid).Count() != 0 || this._players.Count >= this.readyUpNeeded)
             {
                 return false;
             }
@@ -81,7 +81,7 @@ namespace Sanctum_Core
             return player != null && this._players.Remove(player);
         }
 
-        public void HandleSpecialAction(string rawInput, string uuid)
+        public void HandleSpecialAction(string rawInput, string callerUUID)
         {
             string[] data = rawInput.Split('|');
             if(data.Length < 2)
@@ -89,19 +89,39 @@ namespace Sanctum_Core
                 // Log this
                 return;
             }
-            switch (data[0])
+            if (!int.TryParse(data[0], out int specialAction))
             {
-                case "mill":
-                    SpecialActions.MillCards(this, uuid, data[1]);
+                // Log this
+                return;
+            }
+            Player? callingPlayer = this.GetPlayer(callerUUID);
+            if (callingPlayer == null)
+            {
+                // Log this
+                return;
+            }
+            switch (specialAction)
+            {
+                case (int)SpecialAction.Draw:
+                    SpecialActions.DrawCards(this, callingPlayer, data[1]);
                     break;
-                case "draw":
-                    SpecialActions.DrawCards(this, uuid, data[1]);
+                case (int)SpecialAction.Mill:
+                    SpecialActions.MillCards(this, callingPlayer, data[1]);
                     break;
-                case "exile":
-                    SpecialActions.ExileCards(this, uuid, data[1]);
+                case (int)SpecialAction.Exile:
+                    SpecialActions.ExileCards(this, callingPlayer, data[1]);
                     break;
-                case "createtoken":
-                    SpecialActions.CreateTokenCard(this.cardFactory, this.GetPlayer(uuid), string.Join("|", data[1..]));
+                case (int)SpecialAction.CreateToken:
+                    SpecialActions.CreateTokenCard(this.cardFactory, callingPlayer, string.Join("|", data[1..]));
+                    break;
+                case (int)SpecialAction.CopyCard:
+                    SpecialActions.CreateCopyCard(this.cardFactory, data[1]);
+                    break;
+                case (int)SpecialAction.PutCardXFrom:
+                    _ = SpecialActions.PutCardXFromTopOrBottom(this.cardFactory, callingPlayer.GetCardContainer(CardZone.Library), data[1..]);
+                    break;
+                case (int)SpecialAction.Shuffle:
+                    SpecialActions.Shuffle(this, callerUUID);
                     break;
                 default:
                     // Log this

@@ -10,27 +10,45 @@ namespace Sanctum_Core
         public CardContainerCollection? CurrentLocation { get; set; } = null;
         public NetworkAttribute<int> power;
         public NetworkAttribute<int> toughness;
-        public NetworkAttribute<bool> tapped;
+        public NetworkAttribute<bool> isTapped;
         public NetworkAttribute<string> name;
         public NetworkAttribute<bool> isUsingBackSide;
         public NetworkAttribute<bool> isFlipped;
-        public bool ethereal = false;
+        public bool isEthereal = false;
         private readonly NetworkAttributeFactory networkAttributeFactory;
 
-        public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory)
+        public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory, bool isEthereal)
         {
             this.networkAttributeFactory = networkAttributeFactory;
             this.Id = id;
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
+            this.isEthereal = isEthereal;
 
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", false);
             this.isUsingBackSide.valueChange += this.UpdateAttributes;
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
             this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", this.ParsePT(this.CurrentInfo.power));
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
-            this.tapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
+            this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
             this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", "");
+        }
+
+        public Card(int id, NetworkAttributeFactory networkAttributeFactory, Card cardToCopy)
+        {
+            this.Id = id;
+            this.FrontInfo = cardToCopy.FrontInfo;
+            this.BackInfo = cardToCopy.BackInfo;
+            this.isEthereal = cardToCopy.isEthereal;
+            this.networkAttributeFactory = networkAttributeFactory;
+
+            this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", cardToCopy.isUsingBackSide.Value);
+            this.isUsingBackSide.valueChange += this.UpdateAttributes;
+            this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", cardToCopy.isFlipped.Value);
+            this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", cardToCopy.power.Value);
+            this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", cardToCopy.toughness.Value);
+            this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", cardToCopy.isTapped.Value);
+            this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", cardToCopy.name.Value);
         }
 
         /// <summary>

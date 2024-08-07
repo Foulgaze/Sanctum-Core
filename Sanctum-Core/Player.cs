@@ -9,6 +9,7 @@ namespace Sanctum_Core
         public string Uuid { get; }
         public NetworkAttribute<string> DeckListRaw { get; }
         public NetworkAttribute<int> Health { get; }
+        public NetworkAttribute<(List<string>, int?, CardZone zone)> revealCardZone { get; set; }
         public NetworkAttribute<bool> ReadiedUp { get; set; }
         private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new();
         private readonly NetworkAttributeFactory networkAttributeFactory;
@@ -23,6 +24,7 @@ namespace Sanctum_Core
             this.Health = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Uuid}-health", startingHealth);
             this.DeckListRaw = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Uuid}-decklist", "");
             this.ReadiedUp = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-ready", false);
+            this.revealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(List<string>, int ?, CardZone zone)>($"{this.Uuid}-reveal", (new(), null, CardZone.Library));
             this.InitializeBoards();
         }
 
