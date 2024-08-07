@@ -48,7 +48,7 @@ namespace Sanctum_Core
         private void HandleClient(TcpClient client)
         {
             NetworkStream stream = client.GetStream();
-            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), bufferSize);
+            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), bufferSize, timeout: 10000);
             if (command == null)
             {
                 client.Close();
@@ -112,17 +112,10 @@ namespace Sanctum_Core
             Lobby newLobby = new(playerCount, this.GenerateLobbyCode());
             string clientUUID = Guid.NewGuid().ToString();
             SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{clientUUID}|{newLobby.code}");
-            newLobby.concurrentPlayers.Add(new PlayerDescription(data[1], clientUUID, client));
             this._lobbies.Add(newLobby);
-
-            if (newLobby.concurrentPlayers.Count == newLobby.size)
-            {
-                Thread thread = new(newLobby.StartLobby);
-                thread.Start();
-
-            }
+            _ = this.AddPlayerAndCheckIfLobbyIsFull(newLobby, new PlayerDescription(data[1], clientUUID, client));
         }
-        //  Format should be [lobbyCode|name]
+        
         private void AddPlayerToLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
@@ -141,21 +134,36 @@ namespace Sanctum_Core
 
             string clientUUID = Guid.NewGuid().ToString();
             SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, clientUUID);
-            lobby.concurrentPlayers.Add(new PlayerDescription(data[1], clientUUID, client));
 
-            List<string> playerNames = lobby.concurrentPlayers.Select(p => p.name).ToList();
-
-            if (lobby.concurrentPlayers.Count == lobby.size)
+            if (!this.AddPlayerAndCheckIfLobbyIsFull(lobby, new PlayerDescription(data[1], clientUUID, client)))
             {
-                Thread thread = new(lobby.StartLobby);
-                thread.Start();
-                return;
+                this.NotifyPlayersInLobby(lobby);
             }
+        }
+
+        private void NotifyPlayersInLobby(Lobby lobby)
+        {
+            List<string> playerNames = lobby.concurrentPlayers.Select(p => p.name).ToList();
 
             foreach (PlayerDescription player in lobby.concurrentPlayers)
             {
                 SendMessage(player.client.GetStream(), NetworkInstruction.PlayersInLobby, JsonConvert.SerializeObject(playerNames));
             }
+        }
+
+        private bool AddPlayerAndCheckIfLobbyIsFull(Lobby lobby, PlayerDescription player)
+        {
+            lobby.concurrentPlayers.Add(player);
+
+            if (lobby.concurrentPlayers.Count < lobby.size)
+            {
+                return false;
+            }
+
+            // Start the lobby in a new thread if it's full
+            Thread thread = new(lobby.StartLobby);
+            thread.Start();
+            return true;
         }
 
 

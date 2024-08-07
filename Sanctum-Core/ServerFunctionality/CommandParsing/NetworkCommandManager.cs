@@ -58,13 +58,24 @@ namespace Sanctum_Core
         /// <param name="buffer">The buffer used to temporarily store incoming data.</param>
         /// <param name="bufferSize">The size of the buffer for reading data from the stream.</param>
         /// <param name="readUntilData">Indicates whether to continue reading until a valid command is received.</param>
+        /// <param name="timeout">The maximum time (in milliseconds) to wait for a valid command before timing out.</param>
         /// <returns>The next <see cref="NetworkCommand"/> if available, or null if no command can be read.</returns>
-        public static NetworkCommand? GetNextNetworkCommand(Stream stream, StringBuilder buffer, int bufferSize, bool readUntilData = true)
+        public static NetworkCommand? GetNextNetworkCommand(Stream stream, StringBuilder buffer, int bufferSize, bool readUntilData = true, int? timeout = null)
         {
             NetworkCommand? networkCommand;
+            DateTime startTime = DateTime.UtcNow;
+
             do
             {
+                // Check if the timeout has been reached
+                if (timeout != null && (DateTime.UtcNow - startTime).TotalMilliseconds >= timeout)
+                {
+                    // Log timeout event here if needed
+                    return null;
+                }
+
                 NetworkReceiver.ReadSocketData(stream, bufferSize, buffer);
+
                 try
                 {
                     string? rawCommand = ParseSocketData(buffer);
@@ -76,9 +87,10 @@ namespace Sanctum_Core
                 }
                 catch
                 {
-                    // Log this.
+                    // Log this exception if necessary.
                     return null;
                 }
+
                 if (!readUntilData)
                 {
                     return null;
