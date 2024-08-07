@@ -8,7 +8,7 @@ namespace Sanctum_Core
 {
     public enum NetworkInstruction
     {
-        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute, BoardUpdate, CardCreation, SpecialAction
+        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute, BoardUpdate, CardCreation, SpecialAction, Disconnect
     }
 
     public class Server
@@ -19,12 +19,19 @@ namespace Sanctum_Core
         public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Server"/> class.
+        /// </summary>
+        /// <param name="portNumber">The port number on which the server will listen for incoming connections. Default is 51522.</param>
         public Server(int portNumber = 51522)
         {
             this.portNumber = portNumber;
             this._listener = new TcpListener(IPAddress.Any, portNumber);
         }
 
+        /// <summary>
+        /// Starts the TCP listener to accept incoming client connections.
+        /// </summary>
         public void StartListening()
         {
 
@@ -58,7 +65,7 @@ namespace Sanctum_Core
                     this.CreateLobby(networkCommand, client);
                     break;
                 case NetworkInstruction.JoinLobby:
-                    this.AddToLobby(networkCommand, client);
+                    this.AddPlayerToLobby(networkCommand, client);
                     break;
                 default:
                     SendInvalidCommand(client, "Invalid command");
@@ -116,7 +123,7 @@ namespace Sanctum_Core
             }
         }
         //  Format should be [lobbyCode|name]
-        private void AddToLobby(NetworkCommand networkCommand, TcpClient client)
+        private void AddPlayerToLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
             if (data.Length != 2)
@@ -151,12 +158,19 @@ namespace Sanctum_Core
             }
         }
 
+
         private static string AddMessageSize(string message)
         {
             string msgByteSize = message.Length.ToString().PadLeft(4, '0');
             return msgByteSize + message;
         }
 
+        /// <summary>
+        /// Sends a serialized network command over the specified <see cref="NetworkStream"/>.
+        /// </summary>
+        /// <param name="stream">The <see cref="NetworkStream"/> to send the message through.</param>
+        /// <param name="instruction">The <see cref="NetworkInstruction"/> that indicates the type of command being sent.</param>
+        /// <param name="payload">The string payload containing additional data for the command.</param>
         public static void SendMessage(NetworkStream stream, NetworkInstruction instruction, string payload)
         {
             string message = JsonConvert.SerializeObject(new NetworkCommand((int)instruction, payload));

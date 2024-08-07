@@ -81,6 +81,11 @@ namespace Sanctum_Core
             return player != null && this._players.Remove(player);
         }
 
+        /// <summary>
+        /// Handles special actions triggered by players based on the input received.
+        /// </summary>
+        /// <param name="rawInput">The raw input string containing the special action type and associated data.</param>
+        /// <param name="callerUUID">The unique identifier of the player initiating the action.</param>
         public void HandleSpecialAction(string rawInput, string callerUUID)
         {
             string[] data = rawInput.Split('|');

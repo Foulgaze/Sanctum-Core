@@ -15,6 +15,15 @@ namespace Sanctum_Core
         private readonly NetworkAttributeFactory networkAttributeFactory;
         private readonly CardFactory cardFactory;
         public event PropertyChangedEventHandler boardChanged = delegate { };
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Player"/> class.
+        /// </summary>
+        /// <param name="uuid">The unique identifier for the player.</param>
+        /// <param name="name">The name of the player.</param>
+        /// <param name="startingHealth">The starting health of the player.</param>
+        /// <param name="networkAttributeFactory">The factory responsible for creating network attributes.</param>
+        /// <param name="cardFactory">The factory responsible for creating cards.</param>
         public Player(string uuid, string name, int startingHealth, NetworkAttributeFactory networkAttributeFactory, CardFactory cardFactory)
         {
             this.Uuid = uuid;
@@ -44,7 +53,7 @@ namespace Sanctum_Core
             }
         }
 
-        public void BoardChanged(object? o, PropertyChangedEventArgs args)
+        private void BoardChanged(object? o, PropertyChangedEventArgs args)
         {
             boardChanged(o, args);
         }

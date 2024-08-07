@@ -5,11 +5,11 @@ namespace Sanctum_Core
     public class NetworkReceiver
     {
         /// <summary>
-        /// Reads client data into buffer
+        /// Reads data from the specified stream into the provided buffer until no more data is available.
         /// </summary>
-        /// <param name="rwStream"></param>
-        /// <param name="bufferSize"></param>
-        /// <param name="buffer"></param>
+        /// <param name="rwStream">The stream from which to read data.</param>
+        /// <param name="bufferSize">The maximum size of the buffer to read from the stream.</param>
+        /// <param name="buffer">The <see cref="StringBuilder"/> where the read data will be appended.</param>
         public static void ReadSocketData(Stream rwStream, int bufferSize, StringBuilder buffer)
         {
             if(rwStream is null || (rwStream is NetworkStream stream && !stream.DataAvailable) || !rwStream.CanRead)

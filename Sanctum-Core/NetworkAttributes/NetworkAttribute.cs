@@ -13,6 +13,10 @@ namespace Sanctum_Core
 
         public bool outsideSettable { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NetworkAttribute"/> class with the specified identifier.
+        /// </summary>
+        /// <param name="id">The unique identifier of the network attribute.</param>
         protected NetworkAttribute(string id)
         {
             this.Id = id;
@@ -28,7 +32,10 @@ namespace Sanctum_Core
 
         public T Value { get; protected set; }
 
-
+        /// <summary>
+        /// Sets the value of the attribute.
+        /// </summary>
+        /// <param name="value">The value to set.</param>
         public override void SetValue(object value)
         { 
             if(EqualityComparer<T>.Default.Equals((T)value, this.Value))
@@ -50,6 +57,11 @@ namespace Sanctum_Core
 
         public override Type ValueType => typeof(T);
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NetworkAttribute{T}"/> class with the specified identifier and value.
+        /// </summary>
+        /// <param name="id">The unique identifier of the network attribute.</param>
+        /// <param name="value">The initial value of the network attribute.</param>
         public NetworkAttribute(string id, T value) : base(id)
         {
             this.Value = value;
