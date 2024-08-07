@@ -120,10 +120,6 @@ namespace Sanctum_Core
                 case (int)SpecialAction.PutCardXFrom:
                     _ = SpecialActions.PutCardXFromTopOrBottom(this.cardFactory, callingPlayer.GetCardContainer(CardZone.Library), data[1..]);
                     break;
-                case (int)SpecialAction.RevealTopCards:
-                    break;
-                case (int)SpecialAction.RevealLibrary:
-                    break;
                 case (int)SpecialAction.Shuffle:
                     SpecialActions.Shuffle(this, callerUUID);
                     break;
