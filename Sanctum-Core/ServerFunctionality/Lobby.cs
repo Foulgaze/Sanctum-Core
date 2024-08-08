@@ -81,6 +81,7 @@ namespace Sanctum_Core
         {
             if (args == null)
             {
+                Console.WriteLine($"Property changed event args is null for - {sender}");
                 // Log this
                 return;
             }
@@ -92,6 +93,7 @@ namespace Sanctum_Core
             if (sender == null)
             {
                 // Log this
+                Console.WriteLine($"Sender is is null for network board change");
                 return;
             }
             CardContainerCollection cardContainerCollection = (CardContainerCollection)sender;

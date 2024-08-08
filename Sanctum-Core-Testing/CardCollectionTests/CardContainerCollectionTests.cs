@@ -96,6 +96,40 @@ namespace Sanctum_Core_Testing.CardCollectionTests
 
         }
 
+        [Test]
+        public void MoveEtherealCardToLibrary()
+        {
+            Card card = this.GenerateCard();
+            card.isEthereal = true;
+            Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(0));
+            this.cardContainerCollection.InsertCardIntoContainer(null, true, card, null, false);
+
+            List<CardContainer> containers = this.GetCardContainers(this.cardContainerCollection);
+
+            Assert.That(containers.Count, Is.EqualTo(1));
+            Assert.That(containers[0].Cards.Count, Is.EqualTo(0));
+            Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(0));
+
+        }
+
+        [Test]
+        public void MoveEtherealCardToField()
+        {
+            Card card = this.GenerateCard();
+            card.isEthereal = true;
+            this.cardContainerCollection.Zone = CardZone.MainField;
+            Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(0));
+            this.cardContainerCollection.InsertCardIntoContainer(null, true, card, null, false);
+            this.cardContainerCollection.Zone = CardZone.Library;
+
+            List<CardContainer> containers = this.GetCardContainers(this.cardContainerCollection);
+
+            Assert.That(containers.Count, Is.EqualTo(1));
+            Assert.That(containers[0].Cards.Count, Is.EqualTo(1));
+            Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(1));
+
+        }
+
         private Card GenerateCard()
         {
             int id = this.cardId++;

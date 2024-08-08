@@ -71,6 +71,7 @@ namespace Sanctum_Core
                 if (timeout != null && (DateTime.UtcNow - startTime).TotalMilliseconds >= timeout)
                 {
                     // Log timeout event here if needed
+
                     return null;
                 }
 
@@ -85,9 +86,10 @@ namespace Sanctum_Core
                         return networkCommand;
                     }
                 }
-                catch
+                catch (Exception e)
                 {
                     // Log this exception if necessary.
+                    Console.WriteLine($"Error parsing network data - {e}");
                     return null;
                 }
 
