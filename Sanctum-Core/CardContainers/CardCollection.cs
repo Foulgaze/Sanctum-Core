@@ -32,6 +32,10 @@ namespace Sanctum_Core
         /// <param name="networkChange">If set to <c>true</c>, triggers the <see cref="cardsChanged"/> event.</param>
         public void AddCardToContainer(Card card, int? position)
         {
+            if(card.isEthereal && !this.ContainerIsOnField())
+            {
+                return;
+            }
             this.ModifyAddedCard(card);
             int insertPosition = position == null ? this.Cards.Count : position.Value;
             insertPosition = Math.Clamp(insertPosition, 0, this.Cards.Count);
@@ -73,19 +77,19 @@ namespace Sanctum_Core
             return this.maxCardCount != null && this.Cards.Count >= this.maxCardCount;
         }
 
+        private bool ContainerIsOnField()
+        {
+            return this.parentZone is CardZone.MainField or CardZone.RightField or CardZone.LeftField;
+        }
+
         private void ModifyAddedCard(Card card)
         {
-            switch (this.parentZone)
+            if (this.ContainerIsOnField())
             {
-                case CardZone.MainField:
-                case CardZone.LeftField:
-                case CardZone.RightField:
-                    this.ModifyCardForField();
-                    return;
-                default:
-                    this.ModifyCardForPile(card);
-                    return;
+                this.ModifyCardForField();
+                return;
             }
+            this.ModifyCardForPile(card);
         }
 
         private void ModifyCardForField()
