@@ -1,6 +1,9 @@
 ﻿using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.ComponentModel;
+using System.IO;
+using System.Net.Http;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
@@ -27,13 +30,13 @@ namespace Sanctum_Core
         private DateTime lastCheckedTime;
         private readonly double timeToWait;
 
-        public TimeChecker(double timeToWait = 1)
+        public TimeChecker(double timeToWait = 0.5)
         {
             this.lastCheckedTime = DateTime.Now;
             this.timeToWait = timeToWait;
         }
 
-        public bool HasMinutePassed()
+        public bool HasTimerPassed()
         {
             DateTime currentTime = DateTime.Now;
             TimeSpan timeElapsed = currentTime - this.lastCheckedTime;
@@ -49,12 +52,14 @@ namespace Sanctum_Core
     }
     public class Lobby
     {
+        public event Action<Lobby> OnLobbyClosed = delegate { };
         private readonly Playtable playtable;
         public readonly int size;
         private List<PlayerDescription> players = new();
         public readonly string code;
         public ConcurrentBag<PlayerDescription> concurrentPlayers = new();
         private readonly TimeChecker timeChecker = new();
+        public bool GameStarted { get; set; } = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lobby"/> class with the specified size and code.
@@ -113,6 +118,7 @@ namespace Sanctum_Core
 
         private void InitGame()
         {
+            this.GameStarted = true;  
             this.players = this.concurrentPlayers.ToList(); // Ignore concurrent players once lobby starts
             this.players.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
             string lobbyDescription = JsonConvert.SerializeObject(this.players.ToDictionary(player => player.uuid, player => player.name));
@@ -130,8 +136,10 @@ namespace Sanctum_Core
             this.InitGame();
             while (true)
             {
-                if(this.players.Count == 0)
+                if (this.players.Count == 0)
                 {
+                    OnLobbyClosed?.Invoke(this);
+                    Console.WriteLine("Closing");
                     return;
                 }
                 foreach (PlayerDescription playerDescription in this.players)
@@ -139,7 +147,7 @@ namespace Sanctum_Core
                     NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(playerDescription.client.GetStream(), playerDescription.buffer, Server.bufferSize, false);
                     this.HandleCommand(command, playerDescription.uuid);
                 }
-                if(this.timeChecker.HasMinutePassed())
+                if (this.timeChecker.HasTimerPassed())
                 {
                     List<PlayerDescription> closedConnections = this.CheckForClosedConnections();
                     this.players = this.players.Except(closedConnections).ToList();
@@ -155,20 +163,38 @@ namespace Sanctum_Core
 
         private List<PlayerDescription> CheckForClosedConnections()
         {
-            IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
-            TcpConnectionInformation[] tcpConnections = ipProperties.GetActiveTcpConnections();
             List<PlayerDescription> closedConnections = new();
             foreach (PlayerDescription description in this.players)
             {
-                TcpClient client = description.client;
-                TcpConnectionInformation? connectionInfo = tcpConnections.FirstOrDefault(x =>
-                    x.LocalEndPoint.Equals(client.Client.LocalEndPoint) &&
-                    x.RemoteEndPoint.Equals(client.Client.RemoteEndPoint));
+                try
+                {
+                    // Attempt to read a byte from the stream
+                    NetworkStream stream = description.client.GetStream();
 
-                TcpState stateOfConnection = tcpConnections.First().State;
-                if (stateOfConnection != TcpState.Established)
+                    // Set a read timeout (in milliseconds)
+                    /*stream.ReadTimeout = 5000; // 5 seconds*/
+
+                    byte[] buffer = new byte[1];
+                    int bytesRead = stream.Read(buffer, 0, 1);
+                    
+                    // If no bytes were read, the connection is closed
+                    if (bytesRead == 0)
+                    {
+                        closedConnections.Add(description);
+                    }
+                    else
+                    {
+                        _ = description.buffer.Append(System.Text.Encoding.UTF8.GetString(buffer));
+                    }
+                }
+                catch (IOException ex)
                 {
                     closedConnections.Add(description);
+                    Console.WriteLine($"Client has been closed or read timed out: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred: {ex.Message}");
                 }
             }
             return closedConnections;

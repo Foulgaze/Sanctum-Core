@@ -57,6 +57,7 @@ namespace Sanctum_Core_Testing
         public void TestMoveCard()
         {
             List<PlayerDescription> players = this.StartAndSortPlayers(4);
+            Console.WriteLine("Here");
             NetworkAttributeManager nam = new(players);
             InsertCardData cardToMove = new(0, 0, null, true);
             Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");

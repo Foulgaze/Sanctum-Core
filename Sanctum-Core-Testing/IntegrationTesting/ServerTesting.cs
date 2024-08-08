@@ -2,6 +2,7 @@
 using Sanctum_Core;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Text;
 
 namespace Sanctum_Core_Testing
@@ -125,14 +126,15 @@ namespace Sanctum_Core_Testing
             Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
             string p1UUID = data[0];
-            client = new();
-            client.Connect(IPAddress.Loopback, this.server.portNumber);
-            Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
-            command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
+            string lobbyCode = data[1];
+            TcpClient client2 = new();
+            client2.Connect(IPAddress.Loopback, this.server.portNumber);
+            Server.SendMessage(client2.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|Gabe");
+            command = NetworkCommandManager.GetNextNetworkCommand(client2.GetStream(), new StringBuilder(), 4096); //  Skip Get UUID
             Assert.IsNotNull(command);
             data = command.instruction.Split('|');
             string p2UUID = data[0];
-            command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096); // Should be a start lobby call
+            command = NetworkCommandManager.GetNextNetworkCommand(client2.GetStream(), new StringBuilder(), 4096); // Should be a start lobby call
             Assert.IsNotNull(command);
             AssertCommandResults(command, NetworkInstruction.StartGame, null);
             Dictionary<string, string> expectedLobby = new() { { p1UUID, "Gabriel" }, { p2UUID, "Gabe" } };
@@ -147,6 +149,28 @@ namespace Sanctum_Core_Testing
             }
             Assert.IsNotNull(actualDictionary);
             CollectionAssert.AreEqual(expectedLobby, actualDictionary);
+        }
+
+        [Test]
+        public void CloseLobbyTest()
+        {
+            TcpClient client = new();
+            client.Connect(IPAddress.Loopback, this.server.portNumber);
+            Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"1|Gabriel");
+            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            Assert.IsNotNull(command);
+            string[] data = command.instruction.Split('|');
+            string p1UUID = data[0];
+            string lobbyCode = data[1];
+            Console.WriteLine(lobbyCode);
+            client.Close();
+            System.Threading.Thread.Sleep(30000);
+            FieldInfo? lobbiesField = typeof(Server).GetField("_lobbies", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(lobbiesField);
+            List<Lobby>? lobbiesValue = lobbiesField.GetValue(this.server) as List<Lobby>;
+            Assert.IsNotNull(lobbiesValue);
+            Assert.IsFalse(lobbiesValue.Any(lobby => lobby.code == lobbyCode));
+
         }
 
         public static void AssertCommandResults(NetworkCommand? command, NetworkInstruction expectedOpCode, string? expectedPayload)
