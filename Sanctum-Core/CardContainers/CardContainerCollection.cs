@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,13 +13,13 @@ namespace Sanctum_Core
     public class InsertCardData
     {
         public int? insertPosition;
-        public int cardID;
+        public int cardId;
         public int? containerInsertPosition;
         public bool createNewContainer;
         public InsertCardData(int? insertPosition, int cardID, int? containerInsertPosition, bool createNewContainer)
         {
             this.insertPosition = insertPosition;
-            this.cardID = cardID;
+            this.cardId = cardID;
             this.containerInsertPosition = containerInsertPosition;
             this.createNewContainer = createNewContainer;
         }
@@ -198,6 +199,7 @@ namespace Sanctum_Core
             {
                 if (args == null || args.PropertyName == null)
                 {
+                    Console.WriteLine($"Sender is null  {sender} or Property Changed is null {args} ");
                     // Log this
                     return;
                 }
@@ -209,29 +211,32 @@ namespace Sanctum_Core
             }
             if (result == null)
             {
+                Console.WriteLine($"Unable to convert InsertCardData from {sender} - {args}");
                 // Log this
                 return;
             }
             _ = this.ProcessCardInsertion(result, true);
         }
 
-        private bool ProcessCardInsertion(InsertCardData cardChange, bool networkChange)
+        private bool ProcessCardInsertion(InsertCardData cardToBeInserted, bool networkChange)
         {
             if(this.IsFull())
             {
                 // log
+                Console.WriteLine($"Attempted to insert card into full container {cardToBeInserted}");
                 return false;
             }
-            CardContainer destinationContainer = this.DetermineDestinationContainer(cardChange.insertPosition, cardChange.createNewContainer);
-            Card? insertCard = this.CardFactory.GetCard(cardChange.cardID);
+            CardContainer destinationContainer = this.DetermineDestinationContainer(cardToBeInserted.insertPosition, cardToBeInserted.createNewContainer);
+            Card? insertCard = this.CardFactory.GetCard(cardToBeInserted.cardId);
             if (insertCard == null)
             {
                 // Log this
+                Console.WriteLine($"Could not find insert card of id {cardToBeInserted.cardId}");
                 return false;
             }
-            _ = insertCard.CurrentLocation?.RemoveCardFromContainer(cardChange.cardID, networkChange);
+            _ = insertCard.CurrentLocation?.RemoveCardFromContainer(cardToBeInserted.cardId, networkChange);
             insertCard.CurrentLocation = this;
-            destinationContainer.AddCardToContainer(insertCard, cardChange.containerInsertPosition);
+            destinationContainer.AddCardToContainer(insertCard, cardToBeInserted.containerInsertPosition);
             if (networkChange)
             {
                 boardChanged(this, new PropertyChangedEventArgs("Oof"));

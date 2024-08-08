@@ -97,7 +97,7 @@ namespace Sanctum_Core_Testing
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), 4096);
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Need to include Name and Lobby code");
         }
-        // I give up.
+
  /*       [Test]
         public void AddPlayerToLobbyTest()
         {

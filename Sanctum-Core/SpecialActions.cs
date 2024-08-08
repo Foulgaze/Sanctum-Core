@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace Sanctum_Core
 {
@@ -25,11 +26,13 @@ namespace Sanctum_Core
             if (!int.TryParse(rawCardCount, out int cardCount))
             {
                 // Log this
+                Console.WriteLine($"Could not parse moving cards value - {rawCardCount}");
                 return;
             }
             if (cardCount < 0)
             {
                 // Log this
+                Console.WriteLine($"Attempted to move 0 cards - {rawCardCount} ");
                 return;
             }
             Card? cardToBeMoved;
@@ -96,6 +99,7 @@ namespace Sanctum_Core
             if (string.IsNullOrEmpty(rawData))
             {
                 // Log this
+                Console.WriteLine($"Data string is null or empty for creating token card - {rawData} ");
                 return;
             }
 
@@ -111,6 +115,8 @@ namespace Sanctum_Core
             if (!TryGetOriginCard(cardFactory, rawCardOriginID, out Card? originCard))
             {
                 // Log failure to get origin card
+                Console.WriteLine($"Failed to get origin card of id {rawCardOriginID} ");
+
                 return;
             }
 
@@ -118,6 +124,8 @@ namespace Sanctum_Core
             if (tokenCard == null)
             {
                 // Log failure to create token card
+                Console.WriteLine($"Failed to create token card of name - {tokenName} ");
+
                 return;
             }
             InsertTokenCard(player, originCard, tokenCard);
@@ -135,6 +143,8 @@ namespace Sanctum_Core
             if (!int.TryParse(rawCardOriginID, out int cardOriginID))
             {
                 // Log invalid cardOriginID format
+                Console.WriteLine($"Unable to get origin card id - {rawCardOriginID} ");
+
                 return false;
             }
 
@@ -142,6 +152,8 @@ namespace Sanctum_Core
             if (originCard == null)
             {
                 // Log that origin card not found
+                Console.WriteLine($"Origin card could not be found - {cardOriginID}");
+
                 return false;
             }
 
@@ -162,11 +174,14 @@ namespace Sanctum_Core
             if(originCard.CurrentLocation == null)
             {
                 // Log this
+                Console.WriteLine($"Card of id {originCard.Id} currently has no currently location");
+
                 return;
             }
             if(!boardCardZones.Contains(originCard.CurrentLocation.Zone))
             {
                 // Log this
+                Console.WriteLine($"Trying to insert a token somewhere into a non board - {originCard.CurrentLocation.Zone} ");
                 return;
             }
             originCard.CurrentLocation.InsertCardIntoContainerNextToCard(tokenCard, originCard);
@@ -183,6 +198,8 @@ namespace Sanctum_Core
             if (playerWhoIsShuffling is null)
             {
                 // Log this
+                Console.WriteLine($"Could not find player for shuffling with uuid - {uuid}");
+
                 return;
             }
             CardContainerCollection library = playerWhoIsShuffling.GetCardContainer(CardZone.Library);
@@ -200,18 +217,21 @@ namespace Sanctum_Core
             if(!int.TryParse(cardToCopyId, out int cardId))
             {
                 // Log this
+                Console.WriteLine($"Could not parse copy card id {cardToCopyId}");
                 return;
             }
             Card? cardToCopy = cardFactory.GetCard(cardId);
             if(cardToCopy == null)
             {
                 // Log this
+                Console.WriteLine($"Could not copy card id {cardToCopyId}");
                 return;
             }
             Card? cardCopy = cardFactory.CreateCard(cardToCopy);
             if (cardToCopy.CurrentLocation == null || cardCopy == null)
             {
                 // Log this
+                Console.WriteLine($"CopyToCopy has no current location or the copy is null - {cardToCopy.CurrentLocation} {cardCopy}");
                 return;
             }
             cardToCopy.CurrentLocation.InsertCardIntoContainerNextToCard(cardCopy, cardToCopy);
@@ -230,6 +250,7 @@ namespace Sanctum_Core
             if(data.Length != 3)
             {
                 // Log this
+                Console.WriteLine($"Data length is not three - {data}");
                 return false;
             }
             string startingLocation = data[0];
@@ -238,22 +259,26 @@ namespace Sanctum_Core
             if (!int.TryParse(rawCardId, out int cardId))
             {
                 // Log this
+                Console.WriteLine($"Could not parse card id from - {rawCardId}");
                 return false;
             }
             if (!int.TryParse(rawCardDistance, out int cardDistance) || cardDistance < 0)
             {
                 // Log this
+                Console.WriteLine($"Could not parse card distance from {rawCardDistance}");
                 return false;
             }
             if(startingLocation is not "top" and not "bottom")
             {
                 // log this
+                Console.WriteLine($"Starting location is not top or bottom - {startingLocation}");
                 return false;
             }
             Card? card = cardFactory.GetCard(cardId);
             if(card == null)
             {
                 // Log this
+                Console.WriteLine($"Could not get card of id - {cardId} for moving");
                 return false;
             }
             PutCardXFromTopOrBottom(card, cardDistance, startingLocation, library);
