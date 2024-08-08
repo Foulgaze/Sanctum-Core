@@ -45,6 +45,11 @@ namespace Sanctum_Core
             }
         }
 
+        public void RemoveLobby(Lobby lobby)
+        {
+            _ = this._lobbies.Remove(lobby);
+        }
+
         private void HandleClient(TcpClient client)
         {
             NetworkStream stream = client.GetStream();
@@ -110,6 +115,7 @@ namespace Sanctum_Core
             }
 
             Lobby newLobby = new(playerCount, this.GenerateLobbyCode());
+            newLobby.OnLobbyClosed += this.RemoveLobby;
             string clientUUID = Guid.NewGuid().ToString();
             SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{clientUUID}|{newLobby.code}");
             this._lobbies.Add(newLobby);
@@ -129,6 +135,11 @@ namespace Sanctum_Core
             if (lobby == null)
             {
                 SendInvalidCommand(client, "Invalid lobby code");
+                return;
+            }
+            if(lobby.GameStarted)
+            {
+                SendInvalidCommand(client, "Game Already Started");
                 return;
             }
 

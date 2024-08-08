@@ -18,7 +18,7 @@ namespace Sanctum_Core_Testing
             {
                 foreach (PlayerDescription description in this._playerDescriptions)
                 {
-                    NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(description.client.GetStream(), description.buffer, Server.bufferSize);
+                    NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(description.client.GetStream(), description.buffer, Server.bufferSize, timeout:5000);
                     this.HandleCommand(command);
                     /*if(command != null)
                     {
