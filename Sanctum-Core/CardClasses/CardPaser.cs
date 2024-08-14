@@ -28,7 +28,7 @@ namespace Sanctum_Core
                 int spaceIndex = trimmedLine.IndexOf(' ');
                 if (spaceIndex == -1)
                 {
-                    Console.WriteLine($"Invalid space index in decklist - {trimmedLine}");
+                    Logger.LogError($"Invalid space index in decklist - {trimmedLine}");
                     // Log this
                     continue;
                 }
@@ -36,7 +36,7 @@ namespace Sanctum_Core
                 if (!int.TryParse(trimmedLine[..spaceIndex], out int cardCount))
                 {
                     // Log this
-                    Console.WriteLine($"Invalid card count in {trimmedLine} - {trimmedLine[..spaceIndex]} is not a valid number");
+                    Logger.LogError($"Invalid card count in {trimmedLine} - {trimmedLine[..spaceIndex]} is not a valid number");
 
                     continue;
                 }
@@ -44,7 +44,7 @@ namespace Sanctum_Core
                 if (endIndex != -1 && (spaceIndex + 1 > endIndex))
                 {
                     // Log this
-                    Console.WriteLine($"Space index + 1 ({spaceIndex + 1}) is before end index {endIndex}");
+                    Logger.LogError($"Space index + 1 ({spaceIndex + 1}) is before end index {endIndex}");
 
                     continue;
                 }

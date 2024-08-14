@@ -68,7 +68,7 @@ namespace Sanctum_Core
             {
                 // To do
                 // Add logger
-                Console.WriteLine($"Unable to find card from identifier {cardIdentifier} - isToken : {isTokenCard}");
+                Logger.LogError($"Unable to find card from identifier {cardIdentifier} - isToken : {isTokenCard}");
                 return null;
             }
             string frontName;

@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sanctum-Core", "Sanctum-Cor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sanctum-Core-Testing", "Sanctum-Core-Testing\Sanctum-Core-Testing.csproj", "{095525D1-4F58-4E1E-913E-6616A6B61794}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sanctum-Core-Runner", "Sanctum-Core-Runner\Sanctum-Core-Runner.csproj", "{D13ADB58-5D2C-4C69-BD9B-E6571100E01B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{095525D1-4F58-4E1E-913E-6616A6B61794}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{095525D1-4F58-4E1E-913E-6616A6B61794}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{095525D1-4F58-4E1E-913E-6616A6B61794}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D13ADB58-5D2C-4C69-BD9B-E6571100E01B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D13ADB58-5D2C-4C69-BD9B-E6571100E01B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D13ADB58-5D2C-4C69-BD9B-E6571100E01B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D13ADB58-5D2C-4C69-BD9B-E6571100E01B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

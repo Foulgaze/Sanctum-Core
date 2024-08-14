@@ -199,7 +199,7 @@ namespace Sanctum_Core
             {
                 if (args == null || args.PropertyName == null)
                 {
-                    Console.WriteLine($"Sender is null  {sender} or Property Changed is null {args} ");
+                    Logger.LogError($"Sender is null  {sender} or Property Changed is null {args} ");
                     // Log this
                     return;
                 }
@@ -211,7 +211,7 @@ namespace Sanctum_Core
             }
             if (result == null)
             {
-                Console.WriteLine($"Unable to convert InsertCardData from {sender} - {args}");
+                Logger.LogError($"Unable to convert InsertCardData from {sender} - {args}");
                 // Log this
                 return;
             }
@@ -223,7 +223,7 @@ namespace Sanctum_Core
             if(this.IsFull())
             {
                 // log
-                Console.WriteLine($"Attempted to insert card into full container {cardToBeInserted}");
+                Logger.LogError($"Attempted to insert card into full container {cardToBeInserted}");
                 return false;
             }
             CardContainer destinationContainer = this.DetermineDestinationContainer(cardToBeInserted.insertPosition, cardToBeInserted.createNewContainer);
@@ -231,7 +231,7 @@ namespace Sanctum_Core
             if (insertCard == null)
             {
                 // Log this
-                Console.WriteLine($"Could not find insert card of id {cardToBeInserted.cardId}");
+                Logger.LogError($"Could not find insert card of id {cardToBeInserted.cardId}");
                 return false;
             }
             _ = insertCard.CurrentLocation?.RemoveCardFromContainer(cardToBeInserted.cardId, networkChange);

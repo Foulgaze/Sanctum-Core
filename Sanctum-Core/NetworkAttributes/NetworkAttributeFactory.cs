@@ -31,7 +31,7 @@ namespace Sanctum_Core
             if (splitInstruction.Length != 2)
             {
                 // Log Error;
-                Console.WriteLine($"Invalid network attribute, cannot split with \'|\' - {instruction}");
+                Logger.LogError($"Invalid network attribute, cannot split with \'|\' - {instruction}");
                 return;
             }
             string id = splitInstruction[0];
@@ -40,7 +40,7 @@ namespace Sanctum_Core
             if (attribute == null)
             {
                 // Log Error: Attribute with given ID not found
-                Console.WriteLine($"Attribute with id {id} not found");
+                Logger.LogError($"Attribute with id {id} not found");
                 return;
             }
 

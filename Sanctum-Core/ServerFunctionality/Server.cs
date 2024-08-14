@@ -34,7 +34,7 @@ namespace Sanctum_Core
         /// </summary>
         public void StartListening()
         {
-
+            Logger.Log($"Server is now listening on port {this.portNumber}");
             this._listener.Start();
 
             while (true)
@@ -64,6 +64,7 @@ namespace Sanctum_Core
 
         private void HandleCommand(NetworkCommand networkCommand, TcpClient client)
         {
+            Logger.Log($"Server received command {networkCommand}");
             switch ((NetworkInstruction)networkCommand.opCode)
             {
                 case NetworkInstruction.CreateLobby:
@@ -192,6 +193,7 @@ namespace Sanctum_Core
         /// <param name="payload">The string payload containing additional data for the command.</param>
         public static void SendMessage(NetworkStream stream, NetworkInstruction instruction, string payload)
         {
+            Logger.Log($"Sending {new NetworkCommand((int)instruction, payload)}");
             string message = JsonConvert.SerializeObject(new NetworkCommand((int)instruction, payload));
             byte[] data = Encoding.UTF8.GetBytes(AddMessageSize(message));
             stream.Write(data, 0, data.Length);

@@ -92,19 +92,19 @@ namespace Sanctum_Core
             if(data.Length < 2)
             {
                 // Log this
-                Console.WriteLine($"Unablet o handle special action, cannot split data properly - {rawInput}");
+                Logger.LogError($"Unable to handle special action, cannot split data properly - {rawInput}");
                 return;
             }
             if (!int.TryParse(data[0], out int specialAction))
             {
-                Console.WriteLine($"Unable to parse specialinput enum {data[0]} - {rawInput}");
+                Logger.LogError($"Unable to parse specialinput enum {data[0]} - {rawInput}");
                 // Log this
                 return;
             }
             Player? callingPlayer = this.GetPlayer(callerUUID);
             if (callingPlayer == null)
             {
-                Console.WriteLine($"Unable to find player of uuid {callerUUID} (for special action)");
+                Logger.LogError($"Unable to find player of uuid {callerUUID} (for special action)");
                 // Log this
                 return;
             }
@@ -133,7 +133,7 @@ namespace Sanctum_Core
                     break;
                 default:
                     // Log this
-                    Console.WriteLine($"Special action was called with unknown special action enum - {specialAction} - {rawInput}");
+                    Logger.LogError($"Special action was called with unknown special action enum - {specialAction} - {rawInput}");
                     break;
             }
         }

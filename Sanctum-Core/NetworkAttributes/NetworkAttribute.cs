@@ -37,7 +37,7 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="value">The value to set.</param>
         public override void SetValue(object value)
-        { 
+        {
             if(EqualityComparer<T>.Default.Equals((T)value, this.Value))
             {
                 return;

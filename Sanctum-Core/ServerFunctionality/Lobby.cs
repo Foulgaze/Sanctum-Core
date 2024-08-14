@@ -81,7 +81,7 @@ namespace Sanctum_Core
         {
             if (args == null)
             {
-                Console.WriteLine($"Property changed event args is null for - {sender}");
+                Logger.LogError($"Property changed event args is null for - {sender}");
                 // Log this
                 return;
             }
@@ -93,7 +93,7 @@ namespace Sanctum_Core
             if (sender == null)
             {
                 // Log this
-                Console.WriteLine($"Sender is is null for network board change");
+                Logger.LogError($"Sender is is null for network board change");
                 return;
             }
             CardContainerCollection cardContainerCollection = (CardContainerCollection)sender;
@@ -141,7 +141,7 @@ namespace Sanctum_Core
                 if (this.players.Count == 0)
                 {
                     OnLobbyClosed?.Invoke(this);
-                    Console.WriteLine("Closing");
+                    Logger.Log($"Closing lobby {this.code}");
                     return;
                 }
                 foreach (PlayerDescription playerDescription in this.players)
@@ -192,11 +192,11 @@ namespace Sanctum_Core
                 catch (IOException ex)
                 {
                     closedConnections.Add(description);
-                    Console.WriteLine($"Client has been closed or read timed out: {ex.Message}");
+                    Logger.LogError($"Client has been closed or read timed out: {ex.Message}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"An error occurred: {ex.Message}");
+                    Logger.LogError($"An error occurred: {ex.Message}");
                 }
             }
             return closedConnections;
@@ -208,6 +208,7 @@ namespace Sanctum_Core
             {
                 return;
             }
+            Logger.Log($"Received command [{command}]");
             switch (command.opCode)
             {
                 case (int)NetworkInstruction.NetworkAttribute:
