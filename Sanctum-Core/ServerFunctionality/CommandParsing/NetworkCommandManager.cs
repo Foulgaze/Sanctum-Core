@@ -89,7 +89,7 @@ namespace Sanctum_Core
                 catch (Exception e)
                 {
                     // Log this exception if necessary.
-                    Console.WriteLine($"Error parsing network data - {e}");
+                    Logger.LogError($"Error parsing network data - {e}");
                     return null;
                 }
 

@@ -34,12 +34,12 @@ namespace Sanctum_Core
             this.isEthereal = isEthereal;
 
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", false);
-            this.isUsingBackSide.valueChange += this.UpdateAttributes;
+            this.isUsingBackSide.valueChanged += this.UpdateAttributes;
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
             this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", this.ParsePT(this.CurrentInfo.power));
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
             this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
-            this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", "");
+            this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", this.CurrentInfo.name);
         }
 
         /// <summary>
@@ -57,12 +57,12 @@ namespace Sanctum_Core
             this.networkAttributeFactory = networkAttributeFactory;
 
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", cardToCopy.isUsingBackSide.Value);
-            this.isUsingBackSide.valueChange += this.UpdateAttributes;
+            this.isUsingBackSide.valueChanged += this.UpdateAttributes;
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", cardToCopy.isFlipped.Value);
             this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", cardToCopy.power.Value);
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", cardToCopy.toughness.Value);
             this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", cardToCopy.isTapped.Value);
-            this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", cardToCopy.name.Value);
+            this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", this.CurrentInfo.name);
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="sender">The source of the event triggering the update (can be null).</param>
         /// <param name="e">Event arguments associated with the update.</param>
-        public void UpdateAttributes(object? sender, EventArgs e)
+        public void UpdateAttributes(NetworkAttribute? _)
         {
             this.isFlipped.SetValue(false);
             this.isUsingBackSide.SetValue(false);

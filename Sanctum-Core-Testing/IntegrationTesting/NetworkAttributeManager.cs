@@ -20,10 +20,6 @@ namespace Sanctum_Core_Testing
                 {
                     NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(description.client.GetStream(), description.buffer, Server.bufferSize, timeout:5000);
                     this.HandleCommand(command);
-                    /*if(command != null)
-                    {
-                        Console.WriteLine($"Instruction - {command.instruction}");
-                    }*/
                 }
             }
         }

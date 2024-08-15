@@ -26,21 +26,23 @@ namespace Sanctum_Core
             if (!int.TryParse(rawCardCount, out int cardCount))
             {
                 // Log this
-                Console.WriteLine($"Could not parse moving cards value - {rawCardCount}");
+                Logger.LogError($"Could not parse moving cards value - {rawCardCount}");
                 return;
             }
             if (cardCount < 0)
             {
                 // Log this
-                Console.WriteLine($"Attempted to move 0 cards - {rawCardCount} ");
+                Logger.LogError($"Attempted to move 0 cards - {rawCardCount} ");
                 return;
             }
             Card? cardToBeMoved;
             bool loopedAtLeastOnce = false;
+            CardContainerCollection sourceCollection = player.GetCardContainer(sourceZone);
+            List<List<int>> originalCardList = sourceCollection.ToList();
             while (cardCount > 0)
             {
                 loopedAtLeastOnce = true;
-                cardToBeMoved = player.GetCardContainer(sourceZone).GetTopCard();
+                cardToBeMoved = sourceCollection.GetTopCard();
                 if (cardToBeMoved == null)
                 {
                     break;
@@ -50,9 +52,20 @@ namespace Sanctum_Core
             }
             if(loopedAtLeastOnce)
             {
+                List<int> removedCardIds = UpdateRemovedCards(sourceCollection, originalCardList);
+                sourceCollection.removeCardIds.SetValue(removedCardIds);
                 table.UpdateCardZone(player, targetZone);
-                table.UpdateCardZone(player, sourceZone);
             }
+        }
+
+        private static List<int> UpdateRemovedCards(CardContainerCollection sourceCollection,List<List<int>> originalCardList)
+        {
+            List<List<int>> newCardList = sourceCollection.ToList();
+            List<int> newCardListFlat = newCardList.SelectMany(x => x).ToList();
+            List<int> originalCardListFlat = originalCardList.SelectMany(x => x).ToList();
+
+            List<int> removedCards = originalCardListFlat.Except(newCardListFlat).ToList();
+            return removedCards;
         }
 
         /// <summary>
@@ -99,7 +112,7 @@ namespace Sanctum_Core
             if (string.IsNullOrEmpty(rawData))
             {
                 // Log this
-                Console.WriteLine($"Data string is null or empty for creating token card - {rawData} ");
+                Logger.LogError($"Data string is null or empty for creating token card - {rawData} ");
                 return;
             }
 
@@ -115,7 +128,7 @@ namespace Sanctum_Core
             if (!TryGetOriginCard(cardFactory, rawCardOriginID, out Card? originCard))
             {
                 // Log failure to get origin card
-                Console.WriteLine($"Failed to get origin card of id {rawCardOriginID} ");
+                Logger.LogError($"Failed to get origin card of id {rawCardOriginID} ");
 
                 return;
             }
@@ -124,7 +137,7 @@ namespace Sanctum_Core
             if (tokenCard == null)
             {
                 // Log failure to create token card
-                Console.WriteLine($"Failed to create token card of name - {tokenName} ");
+                Logger.LogError($"Failed to create token card of name - {tokenName} ");
 
                 return;
             }
@@ -143,7 +156,7 @@ namespace Sanctum_Core
             if (!int.TryParse(rawCardOriginID, out int cardOriginID))
             {
                 // Log invalid cardOriginID format
-                Console.WriteLine($"Unable to get origin card id - {rawCardOriginID} ");
+                Logger.LogError($"Unable to get origin card id - {rawCardOriginID} ");
 
                 return false;
             }
@@ -152,7 +165,7 @@ namespace Sanctum_Core
             if (originCard == null)
             {
                 // Log that origin card not found
-                Console.WriteLine($"Origin card could not be found - {cardOriginID}");
+                Logger.LogError($"Origin card could not be found - {cardOriginID}");
 
                 return false;
             }
@@ -174,14 +187,14 @@ namespace Sanctum_Core
             if(originCard.CurrentLocation == null)
             {
                 // Log this
-                Console.WriteLine($"Card of id {originCard.Id} currently has no currently location");
+                Logger.LogError($"Card of id {originCard.Id} currently has no currently location");
 
                 return;
             }
             if(!boardCardZones.Contains(originCard.CurrentLocation.Zone))
             {
                 // Log this
-                Console.WriteLine($"Trying to insert a token somewhere into a non board - {originCard.CurrentLocation.Zone} ");
+                Logger.LogError($"Trying to insert a token somewhere into a non board - {originCard.CurrentLocation.Zone} ");
                 return;
             }
             originCard.CurrentLocation.InsertCardIntoContainerNextToCard(tokenCard, originCard);
@@ -198,7 +211,7 @@ namespace Sanctum_Core
             if (playerWhoIsShuffling is null)
             {
                 // Log this
-                Console.WriteLine($"Could not find player for shuffling with uuid - {uuid}");
+                Logger.LogError($"Could not find player for shuffling with uuid - {uuid}");
 
                 return;
             }
@@ -217,21 +230,21 @@ namespace Sanctum_Core
             if(!int.TryParse(cardToCopyId, out int cardId))
             {
                 // Log this
-                Console.WriteLine($"Could not parse copy card id {cardToCopyId}");
+                Logger.LogError($"Could not parse copy card id {cardToCopyId}");
                 return;
             }
             Card? cardToCopy = cardFactory.GetCard(cardId);
             if(cardToCopy == null)
             {
                 // Log this
-                Console.WriteLine($"Could not copy card id {cardToCopyId}");
+                Logger.LogError($"Could not copy card id {cardToCopyId}");
                 return;
             }
             Card? cardCopy = cardFactory.CreateCard(cardToCopy);
             if (cardToCopy.CurrentLocation == null || cardCopy == null)
             {
                 // Log this
-                Console.WriteLine($"CopyToCopy has no current location or the copy is null - {cardToCopy.CurrentLocation} {cardCopy}");
+                Logger.LogError($"CopyToCopy has no current location or the copy is null - {cardToCopy.CurrentLocation} {cardCopy}");
                 return;
             }
             cardToCopy.CurrentLocation.InsertCardIntoContainerNextToCard(cardCopy, cardToCopy);
@@ -250,7 +263,7 @@ namespace Sanctum_Core
             if(data.Length != 3)
             {
                 // Log this
-                Console.WriteLine($"Data length is not three - {data}");
+                Logger.LogError($"Data length is not three - {data}");
                 return false;
             }
             string startingLocation = data[0];
@@ -259,26 +272,26 @@ namespace Sanctum_Core
             if (!int.TryParse(rawCardId, out int cardId))
             {
                 // Log this
-                Console.WriteLine($"Could not parse card id from - {rawCardId}");
+                Logger.LogError($"Could not parse card id from - {rawCardId}");
                 return false;
             }
             if (!int.TryParse(rawCardDistance, out int cardDistance) || cardDistance < 0)
             {
                 // Log this
-                Console.WriteLine($"Could not parse card distance from {rawCardDistance}");
+                Logger.LogError($"Could not parse card distance from {rawCardDistance}");
                 return false;
             }
             if(startingLocation is not "top" and not "bottom")
             {
                 // log this
-                Console.WriteLine($"Starting location is not top or bottom - {startingLocation}");
+                Logger.LogError($"Starting location is not top or bottom - {startingLocation}");
                 return false;
             }
             Card? card = cardFactory.GetCard(cardId);
             if(card == null)
             {
                 // Log this
-                Console.WriteLine($"Could not get card of id - {cardId} for moving");
+                Logger.LogError($"Could not get card of id - {cardId} for moving");
                 return false;
             }
             PutCardXFromTopOrBottom(card, cardDistance, startingLocation, library);

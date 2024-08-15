@@ -77,39 +77,14 @@ namespace Sanctum_Core
             this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
         }
 
-        private void NetworkAttributeChanged(object? sender, PropertyChangedEventArgs? args)
+        private void NetworkAttributeChanged(NetworkAttribute attribute)
         {
-            if (args == null)
-            {
-                Console.WriteLine($"Property changed event args is null for - {sender}");
-                // Log this
-                return;
-            }
-            this.SendMessage(NetworkInstruction.NetworkAttribute, $"{sender}|{args.PropertyName}");
+            this.SendMessage(NetworkInstruction.NetworkAttribute, $"{attribute.Id}|{attribute.SerializedValue}");
         }
 
-        private void NetworkBoardChange(object? sender, PropertyChangedEventArgs? args)
-        {
-            if (sender == null)
-            {
-                // Log this
-                Console.WriteLine($"Sender is is null for network board change");
-                return;
-            }
-            CardContainerCollection cardContainerCollection = (CardContainerCollection)sender;
-            List<List<int>> allCards = cardContainerCollection.ContainerCollectionToList();
-            string cardsSerialized = JsonConvert.SerializeObject(allCards);
-            this.SendMessage(NetworkInstruction.BoardUpdate, $"{cardContainerCollection.Owner}-{(int)cardContainerCollection.Zone}|{cardsSerialized}");
-        }
 
-        private void NetworkCardCreation(object? sender, PropertyChangedEventArgs? args)
+        private void NetworkCardCreation(Card card)
         {
-            if(sender is not Card)
-            {
-                return;
-            }
-            Card card = (Card)sender;
-            // This function should probably only be called by create token. Hence the identifier is the UUID.
             this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}"));
         }
 
@@ -126,7 +101,6 @@ namespace Sanctum_Core
             string lobbyDescription = JsonConvert.SerializeObject(this.players.ToDictionary(player => player.uuid, player => player.name));
             this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
             this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
-            this.playtable.boardChanged += this.NetworkBoardChange;
             this.playtable.cardCreated += this.NetworkCardCreation;
         }
 
@@ -141,7 +115,7 @@ namespace Sanctum_Core
                 if (this.players.Count == 0)
                 {
                     OnLobbyClosed?.Invoke(this);
-                    Console.WriteLine("Closing");
+                    Logger.Log($"Closing lobby {this.code}");
                     return;
                 }
                 foreach (PlayerDescription playerDescription in this.players)
@@ -192,11 +166,11 @@ namespace Sanctum_Core
                 catch (IOException ex)
                 {
                     closedConnections.Add(description);
-                    Console.WriteLine($"Client has been closed or read timed out: {ex.Message}");
+                    Logger.LogError($"Client has been closed or read timed out: {ex.Message}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"An error occurred: {ex.Message}");
+                    Logger.LogError($"An error occurred: {ex.Message}");
                 }
             }
             return closedConnections;
@@ -208,10 +182,11 @@ namespace Sanctum_Core
             {
                 return;
             }
+            Logger.Log($"Received command [{command}]");
             switch (command.opCode)
             {
                 case (int)NetworkInstruction.NetworkAttribute:
-                    this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction, new PropertyChangedEventArgs("instruction"));
+                    this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction);
                     break;
                 case (int)NetworkInstruction.SpecialAction:
                     this.playtable.HandleSpecialAction(command.instruction,uuid);

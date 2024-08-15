@@ -25,7 +25,7 @@ namespace Sanctum_Core_Testing
             Player? player = this.playtable.GetPlayer(playerId.ToString());
             Assert.IsNotNull(player);
             CardContainerCollection container = player.GetCardContainer(expectedZone);
-            Assert.That(container.ContainerCollectionToList(), Is.EqualTo(expectedCards));
+            Assert.That(container.ToList(), Is.EqualTo(expectedCards));
         }
 
         [TestCase(SpecialAction.Draw, 10, CardZone.Hand, 90, 10)]
@@ -45,7 +45,7 @@ namespace Sanctum_Core_Testing
 
         private int GetCardZoneCount(CardContainerCollection collection)
         {
-            List<List<int>> cards = collection.ContainerCollectionToList();
+            List<List<int>> cards = collection.ToList();
             if (cards.Count == 0)
             {
                 return 0;

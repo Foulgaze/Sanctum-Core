@@ -162,7 +162,6 @@ namespace Sanctum_Core_Testing
             string[] data = command.instruction.Split('|');
             string p1UUID = data[0];
             string lobbyCode = data[1];
-            Console.WriteLine(lobbyCode);
             client.Close();
             System.Threading.Thread.Sleep(30000);
             FieldInfo? lobbiesField = typeof(Server).GetField("_lobbies", BindingFlags.NonPublic | BindingFlags.Instance);

@@ -35,7 +35,7 @@ namespace Sanctum_Core_Testing
                 NetworkAttribute<int> attribute = this.networkAttributeFactory.AddNetworkAttribute("test-attribute", 5);
                 string instruction = "test-attribute|10";
 
-                this.networkAttributeFactory.HandleNetworkedAttribute(instruction, new PropertyChangedEventArgs(null));
+                this.networkAttributeFactory.HandleNetworkedAttribute(instruction);
 
                 Assert.That(attribute.Value, Is.EqualTo(10));
             }
@@ -46,7 +46,7 @@ namespace Sanctum_Core_Testing
                 NetworkAttribute<int> attribute = this.networkAttributeFactory.AddNetworkAttribute("test-attribute", 5, false);
                 string instruction = "test-attribute|10";
 
-                this.networkAttributeFactory.HandleNetworkedAttribute(instruction, new PropertyChangedEventArgs(null));
+                this.networkAttributeFactory.HandleNetworkedAttribute(instruction);
 
                 Assert.That(attribute.Value, Is.EqualTo(5));
             }
@@ -56,7 +56,7 @@ namespace Sanctum_Core_Testing
             {
                 string instruction = "invalid-attribute|10";
 
-                Assert.DoesNotThrow(() => this.networkAttributeFactory.HandleNetworkedAttribute(instruction, new PropertyChangedEventArgs(null)));
+                Assert.DoesNotThrow(() => this.networkAttributeFactory.HandleNetworkedAttribute(instruction));
             }
 
             [Test]
@@ -65,7 +65,7 @@ namespace Sanctum_Core_Testing
                 NetworkAttribute<int> attribute = this.networkAttributeFactory.AddNetworkAttribute("test-attribute", 5);
                 string instruction = "invalid-format";
 
-                Assert.DoesNotThrow(() => this.networkAttributeFactory.HandleNetworkedAttribute(instruction, new PropertyChangedEventArgs(null)));
+                Assert.DoesNotThrow(() => this.networkAttributeFactory.HandleNetworkedAttribute(instruction));
             }
 
 
@@ -74,7 +74,7 @@ namespace Sanctum_Core_Testing
             { 
                 bool eventTriggered = false;
                 NetworkAttribute<int> attribute = new("test-attribute", 5);
-                attribute.valueChange += (sender, args) => eventTriggered = true;
+                attribute.valueChanged += (attribute) => eventTriggered = true;
 
                 attribute.SetValue(10);
 
