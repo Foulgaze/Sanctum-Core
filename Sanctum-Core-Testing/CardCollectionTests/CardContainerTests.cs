@@ -36,24 +36,6 @@ namespace Sanctum_Core_Testing.CardCollectionTests
         }
 
         [Test]
-        public void AddCardToContainer_TriggersCardsChangedEvent()
-        {
-            this.container = new CardContainer(null, CardZone.Library);
-            bool eventTriggered = false;
-
-            this.container.cardsChanged += (sender, e) =>
-            {
-                eventTriggered = true;
-                Assert.That(e.PropertyName, Is.EqualTo("added"));
-            };
-
-            this.container.AddCardToContainer(this.GenerateCard(), null);
-
-            Assert.IsTrue(eventTriggered);
-        }
-
-
-        [Test]
         public void GetCardIDs_ReturnsCorrectIDs()
         {
             this.container = new CardContainer(null, CardZone.Library);

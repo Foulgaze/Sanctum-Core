@@ -33,8 +33,9 @@ namespace Sanctum_Core
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
         private readonly NetworkAttribute<InsertCardData> insertCardData;
-        public NetworkAttribute<bool> revealTopCard;
-        public event PropertyChangedEventHandler boardChanged = delegate { };
+        public readonly NetworkAttribute<int> removeCardId;
+        public readonly NetworkAttribute<List<List<int>>> boardState;
+        public readonly NetworkAttribute<bool> revealTopCard;
         private readonly CardFactory CardFactory;
 
         /// <summary>
@@ -55,7 +56,9 @@ namespace Sanctum_Core
             this.Owner = owner;
             this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, false);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
-            this.insertCardData.valueChange += this.NetworkedCardInsert;
+            this.removeCardId = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-removecard", 0);
+            this.boardState = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-boardState", new List<List<int>>());
+            this.insertCardData.valueChanged += this.NetworkedCardInsert;
             this.CardFactory = cardFactory;
         }
 
@@ -81,13 +84,13 @@ namespace Sanctum_Core
         /// <summary>
         /// Removes a card from the first card container that matches ID
         /// </summary>
-        /// <param name="cardID">The id of the card to remove</param>
+        /// <param name="cardId">The id of the card to remove</param>
         /// <returns>true if removed else false</returns>
-        public bool RemoveCardFromContainer(int cardID, bool networkChange = true)
+        public bool RemoveCardFromContainer(int cardId, bool networkChange = true)
         {
             foreach (CardContainer container in this.Containers)
             {
-                Card? cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardID);
+                Card? cardToRemove = container.Cards.FirstOrDefault(card => card.Id == cardId);
                 if (cardToRemove != null)
                 {
                     if (!container.Cards.Remove(cardToRemove))
@@ -100,7 +103,7 @@ namespace Sanctum_Core
                     }
                     if(networkChange)
                     {
-                        boardChanged(this, new PropertyChangedEventArgs("removed"));
+                        this.removeCardId.SetValue(cardId);
                     }
                     return true;
                 }
@@ -192,18 +195,12 @@ namespace Sanctum_Core
         }
 
 
-        private void NetworkedCardInsert(object? sender, PropertyChangedEventArgs? args)
+        private void NetworkedCardInsert(NetworkAttribute cardInsertion)
         {
             InsertCardData? result;
             try
             {
-                if (args == null || args.PropertyName == null)
-                {
-                    Logger.LogError($"Sender is null  {sender} or Property Changed is null {args} ");
-                    // Log this
-                    return;
-                }
-                result = JsonConvert.DeserializeObject<InsertCardData>(args.PropertyName);
+                result = JsonConvert.DeserializeObject<InsertCardData>(cardInsertion.SerializedValue);
             }
             catch
             {
@@ -211,7 +208,7 @@ namespace Sanctum_Core
             }
             if (result == null)
             {
-                Logger.LogError($"Unable to convert InsertCardData from {sender} - {args}");
+                Logger.LogError($"Unable to convert InsertCardData from {cardInsertion.SerializedValue}");
                 // Log this
                 return;
             }
@@ -239,7 +236,7 @@ namespace Sanctum_Core
             destinationContainer.AddCardToContainer(insertCard, cardToBeInserted.containerInsertPosition);
             if (networkChange)
             {
-                boardChanged(this, new PropertyChangedEventArgs("Oof"));
+                this.boardState.SetValue(this.ContainerCollectionToList());
             }
             return true;
         }

@@ -6,13 +6,13 @@ namespace Sanctum_Core
 {
     public class NetworkAttributeFactory
     {
-        public event PropertyChangedEventHandler attributeValueChanged = delegate { };
+        public event Action<NetworkAttribute> attributeValueChanged = delegate { };
         public Dictionary<string, NetworkAttribute> networkAttributes = new();
 
 
-        private void AttributeChangedEventHandler(object? sender, PropertyChangedEventArgs e)
+        private void AttributeChangedEventHandler(NetworkAttribute attribute)
         {
-            attributeValueChanged(sender, e);
+            attributeValueChanged(attribute);
         }
 
         /// <summary>
@@ -20,18 +20,13 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="sender">The instruction containing the attribute ID and the serialized new value.</param>
         /// <param name="e">The event data containing information about the property change.</param>
-        public void HandleNetworkedAttribute(object? sender, PropertyChangedEventArgs e)
+        public void HandleNetworkedAttribute(string serializedNetworkAttribute)
         {
-            if(sender == null)
-            {
-                return;
-            }
-            string instruction = (string)sender;
-            string[] splitInstruction = instruction.Split("|");
+            string[] splitInstruction = serializedNetworkAttribute.Split("|");
             if (splitInstruction.Length != 2)
             {
                 // Log Error;
-                Logger.LogError($"Invalid network attribute, cannot split with \'|\' - {instruction}");
+                Logger.LogError($"Invalid network attribute, cannot split with \'|\' - {serializedNetworkAttribute}");
                 return;
             }
             string id = splitInstruction[0];
@@ -90,7 +85,7 @@ namespace Sanctum_Core
             this.networkAttributes.Add(id, newAttribute);
             if(networkChange)
             {
-                newAttribute.valueChange += this.AttributeChangedEventHandler;
+                newAttribute.valueChanged += this.AttributeChangedEventHandler;
             }
             newAttribute.outsideSettable = outsideSettable;
             return newAttribute;

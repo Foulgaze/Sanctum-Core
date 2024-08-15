@@ -21,7 +21,7 @@ namespace Sanctum_Core
         private readonly List<string> twoSidedCardLayouts = new() { "meld", "transform", "modal_dfc" };
         private readonly Dictionary<int, Card> idToCard = new();
         private readonly NetworkAttributeFactory networkAttributeFactory;
-        public event PropertyChangedEventHandler cardCreated = delegate { };
+        public event Action<Card> cardCreated = delegate { };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CardFactory"/> class with the specified network attribute factory.
@@ -90,7 +90,7 @@ namespace Sanctum_Core
             this.idToCard[newCard.Id] = newCard;
             if(changeShouldBeNetworked)
             {
-                cardCreated(newCard, new PropertyChangedEventArgs(""));
+                cardCreated(newCard);
             }
             return newCard;
         }

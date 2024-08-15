@@ -1,14 +1,12 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.ComponentModel;
-using System.Net.NetworkInformation;
+using System;
+using System.Collections.Generic;
 
 namespace Sanctum_Core
 {
     public abstract class NetworkAttribute
     {
         public string Id { get; }
-        protected readonly bool networkChange;
         public abstract Type ValueType { get; }
 
         public bool outsideSettable { get; set; }
@@ -21,16 +19,35 @@ namespace Sanctum_Core
         {
             this.Id = id;
         }
+
         public abstract void SetValue(object value);
         public abstract void ClearListeners();
+
+        public abstract string SerializedValue { get; }
     }
 
     public class NetworkAttribute<T> : NetworkAttribute
     {
-        public event PropertyChangedEventHandler valueChange = delegate { };
+        public event Action<NetworkAttribute> valueChanged = delegate { };
 
+        private T value;
+        private string serializedValue;
+        private bool isSerializedValueDirty = true;
 
-        public T Value { get; protected set; }
+        public T Value
+        {
+            get => this.value;
+            protected set
+            {
+                if (EqualityComparer<T>.Default.Equals(this.value, value))
+                {
+                    return;   
+                }
+                this.value = value;
+                this.isSerializedValueDirty = true;
+                valueChanged(this);
+            }
+        }
 
         /// <summary>
         /// Sets the value of the attribute.
@@ -38,20 +55,17 @@ namespace Sanctum_Core
         /// <param name="value">The value to set.</param>
         public override void SetValue(object value)
         {
-            if(EqualityComparer<T>.Default.Equals((T)value, this.Value))
-            {
-                return;
-            }
             this.Value = (T)value;
-            
-            this.valueChange(this.Id, new PropertyChangedEventArgs(JsonConvert.SerializeObject(value)));
         }
 
+        /// <summary>
+        /// Clears all listeners on the networkattribute
+        /// </summary>
         public override void ClearListeners()
         {
-            foreach (Delegate d in valueChange.GetInvocationList())
+            foreach (Delegate d in valueChanged.GetInvocationList())
             {
-                valueChange -= (PropertyChangedEventHandler)d;
+                valueChanged -= (Action<NetworkAttribute>)d;
             }
         }
 
@@ -64,7 +78,24 @@ namespace Sanctum_Core
         /// <param name="value">The initial value of the network attribute.</param>
         public NetworkAttribute(string id, T value) : base(id)
         {
-            this.Value = value;
+            this.value = value;
+            this.isSerializedValueDirty = true;
+        }
+
+        /// <summary>
+        /// Gets the serialized value of the attribute.
+        /// </summary>
+        public override string SerializedValue
+        {
+            get
+            {
+                if (this.isSerializedValueDirty)
+                {
+                    this.serializedValue = JsonConvert.SerializeObject(this.value);
+                    this.isSerializedValueDirty = false;
+                }
+                return this.serializedValue;
+            }
         }
     }
 }
