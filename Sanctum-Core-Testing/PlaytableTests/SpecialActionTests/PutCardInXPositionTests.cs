@@ -47,7 +47,7 @@ namespace Sanctum_Core_Testing.PlaytableTests.SpecialActionTests
             // Execute the method
             bool putXCardResult = SpecialActions.PutCardXFromTopOrBottom(this.cardFactory, library, $"{expectedPlacement}|{cardId}|{cardDistance}".Split('|'));
 
-            List<List<int>> librarySerialized = library.ContainerCollectionToList();
+            List<List<int>> librarySerialized = library.ToList();
             Assert.That(librarySerialized.Count, Is.EqualTo(1));
             cardDistance = Math.Clamp(cardDistance, 0, librarySerialized[0].Count - 1);
             int resultPosition = expectedPlacement == "top" ? librarySerialized[0].Count - 1 - cardDistance : 0 + cardDistance;

@@ -37,10 +37,12 @@ namespace Sanctum_Core
             }
             Card? cardToBeMoved;
             bool loopedAtLeastOnce = false;
+            CardContainerCollection sourceCollection = player.GetCardContainer(sourceZone);
+            List<List<int>> originalCardList = sourceCollection.ToList();
             while (cardCount > 0)
             {
                 loopedAtLeastOnce = true;
-                cardToBeMoved = player.GetCardContainer(sourceZone).GetTopCard();
+                cardToBeMoved = sourceCollection.GetTopCard();
                 if (cardToBeMoved == null)
                 {
                     break;
@@ -50,9 +52,20 @@ namespace Sanctum_Core
             }
             if(loopedAtLeastOnce)
             {
+                List<int> removedCardIds = UpdateRemovedCards(sourceCollection, originalCardList);
+                sourceCollection.removeCardIds.SetValue(removedCardIds);
                 table.UpdateCardZone(player, targetZone);
-                table.UpdateCardZone(player, sourceZone);
             }
+        }
+
+        private static List<int> UpdateRemovedCards(CardContainerCollection sourceCollection,List<List<int>> originalCardList)
+        {
+            List<List<int>> newCardList = sourceCollection.ToList();
+            List<int> newCardListFlat = newCardList.SelectMany(x => x).ToList();
+            List<int> originalCardListFlat = originalCardList.SelectMany(x => x).ToList();
+
+            List<int> removedCards = originalCardListFlat.Except(newCardListFlat).ToList();
+            return removedCards;
         }
 
         /// <summary>

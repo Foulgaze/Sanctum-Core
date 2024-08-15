@@ -69,6 +69,17 @@ namespace Sanctum_Core
         }
 
         /// <summary>
+        /// Networks the current state of a cardzone
+        /// </summary>
+        /// <param name="player"> The player whose zone is being updated</param>
+        /// <param name="zone"> The zone that should be networked</param>
+        public void UpdateCardZone(Player player, CardZone zone)
+        {
+            CardContainerCollection collection = player.GetCardContainer(zone);
+            collection.boardState.SetValue(collection.ToList());
+        }
+
+        /// <summary>
         /// Handles special actions triggered by players based on the input received.
         /// </summary>
         /// <param name="rawInput">The raw input string containing the special action type and associated data.</param>

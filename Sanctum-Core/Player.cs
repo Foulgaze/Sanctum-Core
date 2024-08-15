@@ -14,7 +14,6 @@ namespace Sanctum_Core
         private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new();
         private readonly NetworkAttributeFactory networkAttributeFactory;
         private readonly CardFactory cardFactory;
-        public event PropertyChangedEventHandler boardChanged = delegate { };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Player"/> class.
@@ -47,16 +46,8 @@ namespace Sanctum_Core
             this.zoneToContainer[CardZone.MainField] = new CardContainerCollection(CardZone.MainField, this.Uuid, null, 3, true,this.networkAttributeFactory, this.cardFactory);
             this.zoneToContainer[CardZone.LeftField] = new CardContainerCollection(CardZone.LeftField, this.Uuid, null, 3, true,this.networkAttributeFactory, this.cardFactory);
             this.zoneToContainer[CardZone.RightField] = new CardContainerCollection(CardZone.RightField, this.Uuid, null, 3,true, this.networkAttributeFactory, this.cardFactory);
-            foreach(CardContainerCollection collection in this.zoneToContainer.Values)
-            {
-                collection.boardChanged += this.BoardChanged;
-            }
         }
 
-        private void BoardChanged(object? o, PropertyChangedEventArgs args)
-        {
-            boardChanged(o, args);
-        }
 
         /// <summary>
         /// Gets cardzone from player

@@ -61,9 +61,9 @@ namespace Sanctum_Core_Testing
             InsertCardData cardToMove = new(0, 0, null, true);
             Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
             nam.ReadPlayerData(2);
-            string key = $"{players[0].uuid}-{(int)CardZone.Library}|{JsonConvert.SerializeObject(new List<List<int>> { Enumerable.Range(1, 99).ToList() })}";
+            string key = $"{players[0].uuid}-{(int)CardZone.Library}-removecards|{JsonConvert.SerializeObject(new List<int>{0 })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
-            key = $"{players[0].uuid}-{(int)CardZone.Graveyard}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0 } })}";
+            key = $"{players[0].uuid}-{(int)CardZone.Graveyard}-boardstate|{JsonConvert.SerializeObject(new List<List<int>>{ new(){0 } })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
 
@@ -79,7 +79,7 @@ namespace Sanctum_Core_Testing
             }
             nam.ReadPlayerData(8);
 
-            string key = $"{players[0].uuid}-{(int)CardZone.MainField}|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0, 1, 2 }, new() { 3 } })}";
+            string key = $"{players[0].uuid}-{(int)CardZone.MainField}-boardstate|{JsonConvert.SerializeObject(new List<List<int>> { new() { 0, 1, 2 }, new() { 3 } })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
         }
 
@@ -91,9 +91,11 @@ namespace Sanctum_Core_Testing
             nam.ReadPlayerData(2);
         }
 
-        private void AssertNetworkAttributes(NetworkAttributeManager nam, string uuid, CardZone zone, List<int> expectedIds, int playerCount)
+        private void AssertNetworkAttributes(NetworkAttributeManager nam, string uuid, CardZone zone, List<int> expectedIds, int playerCount, bool checkForRemoveCards)
         {
-            string key = $"{uuid}-{(int)zone}|{JsonConvert.SerializeObject(new List<List<int>> { expectedIds })}";
+            string keyCollection = checkForRemoveCards ? "removecards" : "boardstate";
+            string keyValue = checkForRemoveCards ? JsonConvert.SerializeObject(expectedIds) : JsonConvert.SerializeObject(new List<List<int>> { expectedIds });
+            string key = $"{uuid}-{(int)zone}-{keyCollection}|{keyValue}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(playerCount));
         }
 
@@ -105,8 +107,9 @@ namespace Sanctum_Core_Testing
 
             this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Mill}|10");
 
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Graveyard, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(90, 10).ToList(), players.Count, true);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Graveyard, Enumerable.Range(90,10).Reverse().ToList(), players.Count, false);
+
         }
 
         [Test]
@@ -117,8 +120,9 @@ namespace Sanctum_Core_Testing
 
             this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Draw}|10");
 
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Hand, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(90, 10).ToList(), players.Count, true);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Hand, Enumerable.Range(90, 10).Reverse().ToList(), players.Count, false);
+
         }
 
         [Test]
@@ -129,8 +133,9 @@ namespace Sanctum_Core_Testing
 
             this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Exile}|10");
 
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count);
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(0, 90).ToList(), players.Count);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(90, 10).ToList(), players.Count, true);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count, false);
+
         }
 
         [Test]
@@ -253,23 +258,6 @@ namespace Sanctum_Core_Testing
                 {
                     command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
                 } while (command != null && command.opCode != (int)NetworkInstruction.NetworkAttribute);
-            }
-
-            for (int i = 0; i < playerCount; ++i)
-            {
-                string expectedList = JsonConvert.SerializeObject(new List<List<int>>() { Enumerable.Range(i * 100, 100).ToList()});
-                foreach (PlayerDescription player in returnList)
-                {
-                    NetworkCommand? command;
-                    do
-                    {
-                        command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
-                        Assert.IsNotNull(command);
-                    } while (command != null && command.opCode != (int)NetworkInstruction.BoardUpdate);
-                    Assert.IsNotNull(command);
-                    string[] data = command.instruction.Split('|');
-                    Assert.That(expectedList, Is.EqualTo(data[1]));
-                }
             }
             returnList.Sort((x, y) => x.uuid.CompareTo(y.uuid));
             return returnList;

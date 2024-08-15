@@ -33,7 +33,7 @@ namespace Sanctum_Core
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
         private readonly NetworkAttribute<InsertCardData> insertCardData;
-        public readonly NetworkAttribute<int> removeCardId;
+        public readonly NetworkAttribute<List<int>> removeCardIds;
         public readonly NetworkAttribute<List<List<int>>> boardState;
         public readonly NetworkAttribute<bool> revealTopCard;
         private readonly CardFactory CardFactory;
@@ -56,8 +56,8 @@ namespace Sanctum_Core
             this.Owner = owner;
             this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, false);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
-            this.removeCardId = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-removecard", 0);
-            this.boardState = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-boardState", new List<List<int>>());
+            this.removeCardIds = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-removecards", new List<int>());
+            this.boardState = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-boardstate", new List<List<int>>());
             this.insertCardData.valueChanged += this.NetworkedCardInsert;
             this.CardFactory = cardFactory;
         }
@@ -103,7 +103,7 @@ namespace Sanctum_Core
                     }
                     if(networkChange)
                     {
-                        this.removeCardId.SetValue(cardId);
+                        this.removeCardIds.SetValue(new List<int>{ cardId });
                     }
                     return true;
                 }
@@ -125,7 +125,7 @@ namespace Sanctum_Core
         /// Creates a serialized version of the card containers
         /// </summary>
         /// <returns></returns>
-        public List<List<int>> ContainerCollectionToList()
+        public List<List<int>> ToList()
         {
             return this.Containers.Select(container => container.GetCardIDs()).ToList();
         }
@@ -236,7 +236,7 @@ namespace Sanctum_Core
             destinationContainer.AddCardToContainer(insertCard, cardToBeInserted.containerInsertPosition);
             if (networkChange)
             {
-                this.boardState.SetValue(this.ContainerCollectionToList());
+                this.boardState.SetValue(this.ToList());
             }
             return true;
         }

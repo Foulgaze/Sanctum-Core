@@ -1,4 +1,5 @@
-﻿using Sanctum_Core;
+﻿using Newtonsoft.Json;
+using Sanctum_Core;
 using System.Reflection;
 
 namespace Sanctum_Core_Testing.CardCollectionTests
@@ -46,13 +47,13 @@ namespace Sanctum_Core_Testing.CardCollectionTests
         public void RemoveCardFromContainer_ShouldRaiseBoardChangedEvent_WhenCardIsRemoved()
         {
             bool eventRaised = false;
-            this.cardContainerCollection.boardChanged += (sender, args) =>
+            this.cardContainerCollection.removeCardIds.valueChanged += (attribute) =>
             {
                 eventRaised = true;
-                Assert.That(args.PropertyName, Is.EqualTo("removed"));
+                Assert.That(attribute.SerializedValue, Is.EqualTo(JsonConvert.SerializeObject(new List<int>() { 0 })));
             };
             Card card = this.GenerateCard();
-            this.cardContainerCollection.InsertCardIntoContainer(null, true, card, null, false);
+            this.cardContainerCollection.InsertCardIntoContainer(null, true, card, null, true);
 
             _ = this.cardContainerCollection.RemoveCardFromContainer(card.Id);
 

@@ -69,19 +69,6 @@ namespace Sanctum_Core_Tests
         }
 
         [Test]
-        public void UpdateCardZone_ShouldRaiseBoardChangedEvent()
-        {
-            bool eventRaised = false;
-            this.playtable.boardChanged += (sender, args) => eventRaised = true;
-
-            _ = this.playtable.AddPlayer("player1", "Player One");
-            Player player = this.GetPlayer("player1");
-            this.playtable.UpdateCardZone(player, CardZone.Library);
-
-            Assert.IsTrue(eventRaised);
-        }
-
-        [Test]
         public void CheckForStartGame_ShouldStartGame_WhenEnoughPlayersAreReady()
         {
             _ = this.playtable.AddPlayer("player1", "Player One");
