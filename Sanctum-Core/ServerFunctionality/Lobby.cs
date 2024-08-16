@@ -10,14 +10,14 @@ using System.Text;
 
 namespace Sanctum_Core
 {
-    public class PlayerDescription
+    public class LobbyConnection
     {
         public readonly string name;
         public readonly string uuid;
         public readonly TcpClient client;
         public readonly StringBuilder buffer = new();
         public NetworkStream stream => this.client.GetStream();
-        public PlayerDescription(string name, string uuid, TcpClient client)
+        public LobbyConnection(string name, string uuid, TcpClient client)
         {
             this.name = name;
             this.uuid = uuid;
@@ -55,11 +55,10 @@ namespace Sanctum_Core
         public event Action<Lobby> OnLobbyClosed = delegate { };
         private readonly Playtable playtable;
         public readonly int size;
-        private List<PlayerDescription> players = new();
         public readonly string code;
-        public ConcurrentBag<PlayerDescription> concurrentPlayers = new();
+        private List<LobbyConnection> connections = new();
         private readonly TimeChecker timeChecker = new();
-        public bool GameStarted { get; set; } = false;
+        public bool LobbyStarted { get; set; } = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Lobby"/> class with the specified size and code.
@@ -85,21 +84,20 @@ namespace Sanctum_Core
 
         private void NetworkCardCreation(Card card)
         {
-            this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}"));
+            this.connections.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}"));
         }
 
         private void SendMessage(NetworkInstruction instruction, string payload)
         {
-            this.players.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), instruction, payload));
+            this.connections.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), instruction, payload));
         }
 
         private void InitGame()
         {
-            this.GameStarted = true;  
-            this.players = this.concurrentPlayers.ToList(); // Ignore concurrent players once lobby starts
-            this.players.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
-            string lobbyDescription = JsonConvert.SerializeObject(this.players.ToDictionary(player => player.uuid, player => player.name));
-            this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
+            this.LobbyStarted = true;  
+            this.connections.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
+            string lobbyDescription = JsonConvert.SerializeObject(this.connections.ToDictionary(player => player.uuid, player => player.name));
+            this.connections.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
             this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
             this.playtable.cardCreated += this.NetworkCardCreation;
         }
@@ -112,35 +110,53 @@ namespace Sanctum_Core
             this.InitGame();
             while (true)
             {
-                if (this.players.Count == 0)
+                if (this.connections.Count == 0)
                 {
                     OnLobbyClosed?.Invoke(this);
                     Logger.Log($"Closing lobby {this.code}");
                     return;
                 }
-                foreach (PlayerDescription playerDescription in this.players)
+                foreach (LobbyConnection playerDescription in this.connections)
                 {
                     NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(playerDescription.client.GetStream(), playerDescription.buffer, Server.bufferSize, false);
                     this.HandleCommand(command, playerDescription.uuid);
                 }
                 if (this.timeChecker.HasTimerPassed())
                 {
-                    List<PlayerDescription> closedConnections = this.CheckForClosedConnections();
-                    this.players = this.players.Except(closedConnections).ToList();
+                    List<LobbyConnection> closedConnections = this.CheckForClosedConnections();
+                    this.connections = this.connections.Except(closedConnections).ToList();
                     closedConnections.ForEach(this.SendDisconnectMessages);
                 }
             }
         }
 
-        private void SendDisconnectMessages(PlayerDescription disconnectedPlayers)
+        /// <summary>
+        /// Adds a player to the lobby's connection list
+        /// </summary>
+        /// <param name="connection">The lobby connection that is being added</param>
+        public void AddConnection(LobbyConnection connection)
         {
-            this.players.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.Disconnect, disconnectedPlayers.uuid));
+            if (this.LobbyStarted)
+            {
+                return;
+            }
+            this.connections.Add(connection);
+            if (this.connections.Count == this.size)
+            {
+                Thread thread = new(this.StartLobby);
+                thread.Start();
+            }
         }
 
-        private List<PlayerDescription> CheckForClosedConnections()
+        private void SendDisconnectMessages(LobbyConnection disconnectedPlayers)
         {
-            List<PlayerDescription> closedConnections = new();
-            foreach (PlayerDescription description in this.players)
+            this.connections.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.Disconnect, disconnectedPlayers.uuid));
+        }
+
+        private List<LobbyConnection> CheckForClosedConnections()
+        {
+            List<LobbyConnection> closedConnections = new();
+            foreach (LobbyConnection description in this.connections)
             {
                 try
                 {

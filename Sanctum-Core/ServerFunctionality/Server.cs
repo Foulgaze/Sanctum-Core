@@ -45,10 +45,7 @@ namespace Sanctum_Core
             }
         }
 
-        public void RemoveLobby(Lobby lobby)
-        {
-            _ = this._lobbies.Remove(lobby);
-        }
+
 
         private void HandleClient(TcpClient client)
         {
@@ -56,6 +53,7 @@ namespace Sanctum_Core
             NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), bufferSize, timeout: 10000);
             if (command == null)
             {
+                Console.WriteLine("Disconnecting client");
                 client.Close();
                 return;
             }
@@ -79,27 +77,6 @@ namespace Sanctum_Core
             }
         }
 
-        private string GenerateLobbyCode()
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            string finalString;
-
-            do
-            {
-                char[] stringChars = new char[lobbyCodeLength];
-                Random random = new();
-
-                for (int i = 0; i < stringChars.Length; i++)
-                {
-                    stringChars[i] = chars[random.Next(chars.Length)];
-                }
-
-                finalString = new(stringChars);
-            } while (this._lobbies.Any(lobby => lobby.code == finalString));
-
-            return finalString;
-        }
-
         private void CreateLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
@@ -108,7 +85,7 @@ namespace Sanctum_Core
                 SendInvalidCommand(client, "Must include name and lobby code");
                 return;
             }
-
+`
             if (!int.TryParse(data[0], out int playerCount))
             {
                 SendInvalidCommand(client, "Invalid lobby count");
@@ -120,7 +97,7 @@ namespace Sanctum_Core
             string clientUUID = Guid.NewGuid().ToString();
             SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{clientUUID}|{newLobby.code}");
             this._lobbies.Add(newLobby);
-            _ = this.AddPlayerAndCheckIfLobbyIsFull(newLobby, new PlayerDescription(data[1], clientUUID, client));
+            _ = this.AddPlayerAndCheckIfLobbyIsFull(newLobby, new LobbyConnection(data[1], clientUUID, client));
         }
         
         private void AddPlayerToLobby(NetworkCommand networkCommand, TcpClient client)
@@ -138,16 +115,16 @@ namespace Sanctum_Core
                 SendInvalidCommand(client, "Invalid lobby code");
                 return;
             }
-            if(lobby.GameStarted)
+            if(lobby.LobbyStarted)
             {
                 SendInvalidCommand(client, "Game Already Started");
                 return;
             }
 
             string clientUUID = Guid.NewGuid().ToString();
-            SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, clientUUID);
+            SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{clientUUID}|{lobby.size}");
 
-            if (!this.AddPlayerAndCheckIfLobbyIsFull(lobby, new PlayerDescription(data[1], clientUUID, client)))
+            if (!this.AddPlayerAndCheckIfLobbyIsFull(lobby, new LobbyConnection(data[1], clientUUID, client)))
             {
                 this.NotifyPlayersInLobby(lobby);
             }
@@ -155,19 +132,19 @@ namespace Sanctum_Core
 
         private void NotifyPlayersInLobby(Lobby lobby)
         {
-            List<string> playerNames = lobby.concurrentPlayers.Select(p => p.name).ToList();
+            List<string> playerNames = lobby.connections.Select(p => p.name).ToList();
 
-            foreach (PlayerDescription player in lobby.concurrentPlayers)
+            foreach (LobbyConnection player in lobby.connections)
             {
                 SendMessage(player.client.GetStream(), NetworkInstruction.PlayersInLobby, JsonConvert.SerializeObject(playerNames));
             }
         }
 
-        private bool AddPlayerAndCheckIfLobbyIsFull(Lobby lobby, PlayerDescription player)
+        private bool AddPlayerAndCheckIfLobbyIsFull(Lobby lobby, LobbyConnection player)
         {
-            lobby.concurrentPlayers.Add(player);
+            lobby.connections.Add(player);
 
-            if (lobby.concurrentPlayers.Count < lobby.size)
+            if (lobby.connections.Count < lobby.size)
             {
                 return false;
             }
