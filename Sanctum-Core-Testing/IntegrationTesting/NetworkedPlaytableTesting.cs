@@ -24,9 +24,9 @@ namespace Sanctum_Core_Testing
         private void CheckAttribute(List<LobbyConnection> players, NetworkStream stream,string payload)
         {
             Server.SendMessage(stream, NetworkInstruction.NetworkAttribute, payload);
-            foreach(LobbyConnection player in players)
+            foreach(LobbyConnection connection in players)
             {
-                NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                NetworkCommand? command = connection.GetNetworkCommand();
                 Assert.IsNotNull(command);
                 Assert.That(command.instruction, Is.EqualTo(payload));
             }
@@ -216,11 +216,11 @@ namespace Sanctum_Core_Testing
         {
             Server.SendMessage(currentPlayer.client.GetStream(), NetworkInstruction.NetworkAttribute, payload);
             NetworkCommand? command;
-            foreach (LobbyConnection player in allPlayers)
+            foreach (LobbyConnection connection in allPlayers)
             {
                 do
                 {
-                    command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                    command = connection.GetNetworkCommand();
                     Assert.IsNotNull(command);
                 } while (command != null && command.opCode != (int)NetworkInstruction.NetworkAttribute);
             }
@@ -238,12 +238,12 @@ namespace Sanctum_Core_Testing
                 client.Connect(IPAddress.Loopback, this.server.portNumber);
                 returnList.Add(this.AddToLobby($"Player-{i}", lobbyCode));
             }
-            foreach (LobbyConnection player in returnList)
+            foreach (LobbyConnection connection in returnList)
             {
                 NetworkCommand? command = null;
                 do
                 {
-                    command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                    command = connection.GetNetworkCommand();
                     Assert.IsNotNull(command);
                 } while (command != null && command.opCode != (int) NetworkInstruction.StartGame);
             }
