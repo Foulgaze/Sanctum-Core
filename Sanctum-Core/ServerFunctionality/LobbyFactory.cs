@@ -12,6 +12,7 @@ namespace Sanctum_Core
         private readonly List<Lobby> lobbies = new();
         private readonly string lobbyCodeCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private readonly int lobbyCodeLength;
+        public Action<NetworkStream, NetworkInstruction, string> notifyLobbyPlayer = delegate { };
         public LobbyFactory(int lobbyCodeLength) 
         {
             this.lobbyCodeLength = lobbyCodeLength;
@@ -22,12 +23,14 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="lobbySize">Size of lobby created</param>
         /// <param name="connection">New connection for lobby</param>
-        public void CreateLobby(int lobbySize,LobbyConnection connection)
+        public void CreateLobby(int lobbySize,string username, string uuid, TcpClient client)
         {
+            LobbyConnection connection = new(username,uuid,client);
             Lobby newLobby = new(lobbySize, this.GenerateUniqueLobbyCode());
             newLobby.OnLobbyClosed += this.RemoveLobby;
             this.lobbies.Add(newLobby);
             newLobby.AddConnection(connection);
+            this.notifyLobbyPlayer(connection.stream, NetworkInstruction.CreateLobby, $"{uuid}|{newLobby.code}");
         }
 
         /// <summary>
@@ -36,17 +39,25 @@ namespace Sanctum_Core
         /// <param name="lobbyCode">The code of the lobby the connection should be inserted into</param>
         /// <param name="connection">The connection to be inserted</param>
         /// <returns></returns>
-        public bool InsertConnectionIntoLobby(string lobbyCode, LobbyConnection connection)
+        public bool InsertConnectionIntoLobby(string lobbyCode,string username, string uuid, TcpClient client)
         {
-            Lobby? relevantLobby = this.lobbies.FirstOrDefault(lobby => lobby.code == lobbyCode);
-            if(relevantLobby == null)
+            LobbyConnection connection = new(username, uuid, client);
+            Lobby? matchingLobby = this.lobbies.FirstOrDefault(lobby => lobby.code == lobbyCode);
+            if(matchingLobby == null)
             {
                 return false;
             }
-            relevantLobby.AddConnection(connection);
+            matchingLobby.AddConnection(connection);
+            string serializedLobby = matchingLobby.SerializedLobbyNames();
+            this.notifyLobbyPlayer(connection.stream, NetworkInstruction.JoinLobby, $"{uuid}|{matchingLobby.size}");
+            matchingLobby.connections.ForEach(connection => this.notifyLobbyPlayer(connection.stream, NetworkInstruction.PlayersInLobby, serializedLobby));
             return true;
         }
 
+        /// <summary>
+        /// Removes a lobby from the list
+        /// </summary>
+        /// <param name="lobby">Lobby to remove</param>
         public void RemoveLobby(Lobby lobby)
         {
             _ = this.lobbies.Remove(lobby);

@@ -18,14 +18,17 @@ namespace Sanctum_Core
         public int portNumber = 51522; // Change to ENV
         public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
+        private readonly LobbyFactory lobbyFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
         /// </summary>
         /// <param name="portNumber">The port number on which the server will listen for incoming connections. Default is 51522.</param>
-        public Server(int portNumber = 51522)
+        public Server(int portNumber = 51522, int lobbyCodeLength = 4)
         {
             this.portNumber = portNumber;
+            this.lobbyFactory = new(lobbyCodeLength);
+            this.lobbyFactory.notifyLobbyPlayer += Server.SendMessage;
             this._listener = new TcpListener(IPAddress.Any, portNumber);
         }
 
@@ -47,114 +50,63 @@ namespace Sanctum_Core
 
 
 
-        private void HandleClient(TcpClient client)
+        private bool HandleClient(TcpClient client)
         {
-            NetworkStream stream = client.GetStream();
-            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(stream, new StringBuilder(), bufferSize, timeout: 10000);
+            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), bufferSize, timeout: 10000);
             if (command == null)
             {
                 Console.WriteLine("Disconnecting client");
                 client.Close();
-                return;
+                return true;
             }
-            this.HandleCommand(command, client);
+            return this.HandleCommand(command, client);
         }
 
-        private void HandleCommand(NetworkCommand networkCommand, TcpClient client)
+        private bool HandleCommand(NetworkCommand networkCommand, TcpClient client)
         {
             Logger.Log($"Server received command {networkCommand}");
             switch ((NetworkInstruction)networkCommand.opCode)
             {
                 case NetworkInstruction.CreateLobby:
-                    this.CreateLobby(networkCommand, client);
-                    break;
+                    return this.CreateLobby(networkCommand, client);
                 case NetworkInstruction.JoinLobby:
-                    this.AddPlayerToLobby(networkCommand, client);
-                    break;
+                    return this.AddPlayerToLobby(networkCommand, client);
                 default:
                     SendInvalidCommand(client, "Invalid command");
-                    break;
+                    return false;
             }
         }
 
-        private void CreateLobby(NetworkCommand networkCommand, TcpClient client)
+        private bool CreateLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
             if (data.Length != 2)
             {
-                SendInvalidCommand(client, "Must include name and lobby code");
-                return;
+                Logger.LogError("Must include name and lobby code");
+                return false;
             }
-`
             if (!int.TryParse(data[0], out int playerCount))
             {
                 SendInvalidCommand(client, "Invalid lobby count");
-                return;
+                return false;
             }
-
-            Lobby newLobby = new(playerCount, this.GenerateLobbyCode());
-            newLobby.OnLobbyClosed += this.RemoveLobby;
             string clientUUID = Guid.NewGuid().ToString();
-            SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{clientUUID}|{newLobby.code}");
-            this._lobbies.Add(newLobby);
-            _ = this.AddPlayerAndCheckIfLobbyIsFull(newLobby, new LobbyConnection(data[1], clientUUID, client));
+            this.lobbyFactory.CreateLobby(playerCount, data[1], clientUUID, client);
+            return true;
         }
         
-        private void AddPlayerToLobby(NetworkCommand networkCommand, TcpClient client)
+        private bool AddPlayerToLobby(NetworkCommand networkCommand, TcpClient client)
         {
             string[] data = networkCommand.instruction.Split('|');
             if (data.Length != 2)
             {
-                SendInvalidCommand(client, "Need to include Name and Lobby code");
-                return;
-            }
-
-            Lobby? lobby = this._lobbies.FirstOrDefault(l => l.code == data[0]);
-            if (lobby == null)
-            {
-                SendInvalidCommand(client, "Invalid lobby code");
-                return;
-            }
-            if(lobby.LobbyStarted)
-            {
-                SendInvalidCommand(client, "Game Already Started");
-                return;
-            }
-
-            string clientUUID = Guid.NewGuid().ToString();
-            SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{clientUUID}|{lobby.size}");
-
-            if (!this.AddPlayerAndCheckIfLobbyIsFull(lobby, new LobbyConnection(data[1], clientUUID, client)))
-            {
-                this.NotifyPlayersInLobby(lobby);
-            }
-        }
-
-        private void NotifyPlayersInLobby(Lobby lobby)
-        {
-            List<string> playerNames = lobby.connections.Select(p => p.name).ToList();
-
-            foreach (LobbyConnection player in lobby.connections)
-            {
-                SendMessage(player.client.GetStream(), NetworkInstruction.PlayersInLobby, JsonConvert.SerializeObject(playerNames));
-            }
-        }
-
-        private bool AddPlayerAndCheckIfLobbyIsFull(Lobby lobby, LobbyConnection player)
-        {
-            lobby.connections.Add(player);
-
-            if (lobby.connections.Count < lobby.size)
-            {
+                Logger.LogError("Need to include Name and Lobby code");
                 return false;
             }
-
-            // Start the lobby in a new thread if it's full
-            Thread thread = new(lobby.StartLobby);
-            thread.Start();
-            return true;
+            string clientUUID = Guid.NewGuid().ToString();
+            bool insertedIntoLobby = this.lobbyFactory.InsertConnectionIntoLobby(data[0], data[1], clientUUID, client);
+            return insertedIntoLobby;
         }
-
 
         private static string AddMessageSize(string message)
         {

@@ -56,7 +56,7 @@ namespace Sanctum_Core
         private readonly Playtable playtable;
         public readonly int size;
         public readonly string code;
-        private List<LobbyConnection> connections = new();
+        public List<LobbyConnection> connections = new();
         private readonly TimeChecker timeChecker = new();
         public bool LobbyStarted { get; set; } = false;
 
@@ -146,6 +146,11 @@ namespace Sanctum_Core
                 Thread thread = new(this.StartLobby);
                 thread.Start();
             }
+        }
+
+        public string SerializedLobbyNames()
+        {
+            return JsonConvert.SerializeObject(this.connections.Select(connection => connection.name).ToList());
         }
 
         private void SendDisconnectMessages(LobbyConnection disconnectedPlayers)
