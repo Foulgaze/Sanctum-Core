@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Sanctum_Core;
+using Sanctum_Core_Logger;
 
 namespace Sanctum_Core_Server
 {
