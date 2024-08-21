@@ -55,7 +55,7 @@ namespace Sanctum_Core
             if (command == null)
             {
                 Console.WriteLine("Disconnecting client");
-                /*client.Close();*/
+                client.Close();
                 return true;
             }
             return this.HandleCommand(command, client);

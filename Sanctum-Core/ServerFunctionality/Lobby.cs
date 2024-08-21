@@ -95,7 +95,11 @@ namespace Sanctum_Core
                 {
                     continue;
                 }
-                Server.SendMessage(connection.stream, instruction, payload);
+                bool sentData = Server.SendMessage(connection.stream, instruction, payload);
+                if(!sentData)
+                {
+                    this.connections.RemoveAt(i);
+                }
             }
         }
 

@@ -29,8 +29,6 @@ namespace Sanctum_Core
             newLobby.OnLobbyClosed += this.RemoveLobby;
             this.lobbies.Add(newLobby);
             newLobby.AddConnection(connection);
-            NetworkStream? stream = connection.stream;
-
             newLobby.SendMessageToAllPlayers(NetworkInstruction.CreateLobby, $"{uuid}|{newLobby.code}");
         }
 
