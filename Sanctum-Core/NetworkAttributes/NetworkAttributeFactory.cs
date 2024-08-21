@@ -9,7 +9,12 @@ namespace Sanctum_Core
     {
         public event Action<NetworkAttribute> attributeValueChanged = delegate { };
         public Dictionary<string, NetworkAttribute> networkAttributes = new();
+        private readonly bool isSlavePlaytable;
 
+        public NetworkAttributeFactory(bool slavePlaytable = false)
+        {
+            this.isSlavePlaytable = slavePlaytable;
+        }
 
         private void AttributeChangedEventHandler(NetworkAttribute attribute)
         {
@@ -47,7 +52,14 @@ namespace Sanctum_Core
                 {
                     return;
                 }
-                attribute.SetValue(deserializedValue);
+                if(this.isSlavePlaytable)
+                {
+                    attribute.NonNetworkedSet(deserializedValue);
+                }
+                else
+                {
+                    attribute.SetValue(deserializedValue);
+                }
             }
             catch
             {

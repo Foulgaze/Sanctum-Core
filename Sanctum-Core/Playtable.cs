@@ -18,9 +18,9 @@ namespace Sanctum_Core
         /// <param name="playerCount">Number of players present in table</param>
         /// <param name="cardsPath">Path to cards.csv</param>
         /// <param name="tokensPath">Path to tokens.csv</param>
-        public Playtable(int playerCount, string cardsPath, string tokensPath)
+        public Playtable(int playerCount, string cardsPath, string tokensPath, bool isSlavePlaytable = false)
         {
-            this.networkAttributeFactory = new NetworkAttributeFactory();
+            this.networkAttributeFactory = new NetworkAttributeFactory(isSlavePlaytable);
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
             this.cardFactory.cardCreated += this.CardCreated;
             this.readyUpNeeded = playerCount;

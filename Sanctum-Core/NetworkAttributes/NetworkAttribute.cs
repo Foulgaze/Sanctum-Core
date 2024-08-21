@@ -22,6 +22,8 @@ namespace Sanctum_Core
 
         public abstract void SetValue(object value);
         public abstract void ClearListeners();
+        public abstract void NonNetworkedSet(object value);
+
 
         public abstract string SerializedValue { get; }
     }
@@ -29,6 +31,7 @@ namespace Sanctum_Core
     public class NetworkAttribute<T> : NetworkAttribute
     {
         public event Action<NetworkAttribute> valueChanged = delegate { };
+        public event Action<NetworkAttribute> nonNetworkChange = delegate { };
 
         private T value;
         private string serializedValue;
@@ -58,6 +61,13 @@ namespace Sanctum_Core
             this.Value = (T)value;
         }
 
+        public override void NonNetworkedSet(object value)
+        {
+            this.value = (T)value;
+            this.isSerializedValueDirty = true;
+            nonNetworkChange(this);
+        }
+
         /// <summary>
         /// Clears all listeners on the networkattribute
         /// </summary>
@@ -68,6 +78,7 @@ namespace Sanctum_Core
                 valueChanged -= (Action<NetworkAttribute>)d;
             }
         }
+
 
         public override Type ValueType => typeof(T);
 
