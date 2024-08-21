@@ -10,21 +10,6 @@ using System.Text;
 
 namespace Sanctum_Core
 {
-    public class LobbyConnection
-    {
-        public readonly string name;
-        public readonly string uuid;
-        public readonly TcpClient client;
-        public readonly StringBuilder buffer = new();
-        public NetworkStream stream => this.client.GetStream();
-        public LobbyConnection(string name, string uuid, TcpClient client)
-        {
-            this.name = name;
-            this.uuid = uuid;
-            this.client = client;
-        }
-    }
-
     public class TimeChecker
     {
         private DateTime lastCheckedTime;
@@ -84,22 +69,38 @@ namespace Sanctum_Core
 
         private void NetworkCardCreation(Card card)
         {
-            this.connections.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}"));
+            this.SendMessageToAllPlayers(NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}");
         }
 
         private void SendMessage(NetworkInstruction instruction, string payload)
         {
-            this.connections.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), instruction, payload));
+            this.SendMessageToAllPlayers(instruction, payload);
         }
 
         private void InitGame()
         {
-            this.LobbyStarted = true;  
             this.connections.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
             string lobbyDescription = JsonConvert.SerializeObject(this.connections.ToDictionary(player => player.uuid, player => player.name));
-            this.connections.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
+            this.SendMessageToAllPlayers(NetworkInstruction.StartGame, lobbyDescription);
             this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
             this.playtable.cardCreated += this.NetworkCardCreation;
+        }
+
+        public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null) 
+        {
+            for(int i = this.connections.Count - 1; i > -1; --i)
+            {
+                LobbyConnection connection = this.connections[i];
+                if (specificConnection != null && connection != specificConnection)
+                {
+                    continue;
+                }
+                bool sentData = Server.SendMessage(connection.stream, instruction, payload);
+                if(!sentData)
+                {
+                    this.connections.RemoveAt(i);
+                }
+            }
         }
 
         /// <summary>
@@ -110,22 +111,16 @@ namespace Sanctum_Core
             this.InitGame();
             while (true)
             {
+                foreach(LobbyConnection connection in this.connections)
+                {
+                    NetworkCommand? command = connection.GetNetworkCommand(false);
+                    this.HandleCommand(command, connection.uuid);
+                }
                 if (this.connections.Count == 0)
                 {
                     OnLobbyClosed?.Invoke(this);
                     Logger.Log($"Closing lobby {this.code}");
                     return;
-                }
-                foreach (LobbyConnection playerDescription in this.connections)
-                {
-                    NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(playerDescription.client.GetStream(), playerDescription.buffer, Server.bufferSize, false);
-                    this.HandleCommand(command, playerDescription.uuid);
-                }
-                if (this.timeChecker.HasTimerPassed())
-                {
-                    List<LobbyConnection> closedConnections = this.CheckForClosedConnections();
-                    this.connections = this.connections.Except(closedConnections).ToList();
-                    closedConnections.ForEach(this.SendDisconnectMessages);
                 }
             }
         }
@@ -143,7 +138,8 @@ namespace Sanctum_Core
             this.connections.Add(connection);
             if (this.connections.Count == this.size)
             {
-                Thread thread = new(this.StartLobby);
+                this.LobbyStarted = true;
+                Thread thread = new(this.StartLobby) { Name = $"Lobby - {this.code}" };
                 thread.Start();
             }
         }
@@ -151,50 +147,6 @@ namespace Sanctum_Core
         public string SerializedLobbyNames()
         {
             return JsonConvert.SerializeObject(this.connections.Select(connection => connection.name).ToList());
-        }
-
-        private void SendDisconnectMessages(LobbyConnection disconnectedPlayers)
-        {
-            this.connections.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.Disconnect, disconnectedPlayers.uuid));
-        }
-
-        private List<LobbyConnection> CheckForClosedConnections()
-        {
-            List<LobbyConnection> closedConnections = new();
-            foreach (LobbyConnection description in this.connections)
-            {
-                try
-                {
-                    // Attempt to read a byte from the stream
-                    NetworkStream stream = description.client.GetStream();
-
-                    // Set a read timeout (in milliseconds)
-                    /*stream.ReadTimeout = 5000; // 5 seconds*/
-
-                    byte[] buffer = new byte[1];
-                    int bytesRead = stream.Read(buffer, 0, 1);
-                    
-                    // If no bytes were read, the connection is closed
-                    if (bytesRead == 0)
-                    {
-                        closedConnections.Add(description);
-                    }
-                    else
-                    {
-                        _ = description.buffer.Append(System.Text.Encoding.UTF8.GetString(buffer));
-                    }
-                }
-                catch (IOException ex)
-                {
-                    closedConnections.Add(description);
-                    Logger.LogError($"Client has been closed or read timed out: {ex.Message}");
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError($"An error occurred: {ex.Message}");
-                }
-            }
-            return closedConnections;
         }
 
         private void HandleCommand(NetworkCommand? command, string uuid)

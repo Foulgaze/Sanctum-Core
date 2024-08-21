@@ -10,25 +10,43 @@ namespace Sanctum_Core
         /// <param name="rwStream">The stream from which to read data.</param>
         /// <param name="bufferSize">The maximum size of the buffer to read from the stream.</param>
         /// <param name="buffer">The <see cref="StringBuilder"/> where the read data will be appended.</param>
-        public static void ReadSocketData(Stream rwStream, int bufferSize, StringBuilder buffer)
+        /// <returns>If the operation succeded or error'd</returns>
+        public static bool ReadSocketData(NetworkStream rwStream, int bufferSize, StringBuilder buffer, out bool timedOut)
         {
-            if(rwStream is null || (rwStream is NetworkStream stream && !stream.DataAvailable) || !rwStream.CanRead)
-            {
-                return;
-            }
-
-            static bool EndCondition(Stream rwStream, int dataSize)
-            {
-                return rwStream is NetworkStream stream ? stream.DataAvailable : dataSize != 0;
-            }
-
             byte[] data = new byte[bufferSize];
-            int dataSize;
-            do
+            timedOut = false;
+            int amountOfBytesRead;
+
+            try
             {
-                dataSize = rwStream.Read(data, 0, data.Length);
-                _ = buffer.Append(Encoding.UTF8.GetString(data, 0, dataSize));
-            } while (EndCondition(rwStream,dataSize)); 
+                // Check if data is available before reading
+                if (!rwStream.DataAvailable)
+                {
+                    return true; // No data, but not disconnected
+                }
+
+                amountOfBytesRead = rwStream.Read(data, 0, data.Length);
+                _ = buffer.Append(Encoding.UTF8.GetString(data, 0, amountOfBytesRead));
+            }
+            catch (IOException ex) when (ex.InnerException is SocketException socketEx &&
+                                         socketEx.SocketErrorCode == SocketError.TimedOut)
+            {
+                Logger.Log("Read operation timed out.");
+                timedOut = true;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (amountOfBytesRead == 0)
+            {
+                return false;
+            }
+
+            return true;
         }
+
     }
 }

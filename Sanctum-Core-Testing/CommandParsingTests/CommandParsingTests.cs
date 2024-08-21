@@ -41,28 +41,5 @@ namespace Sanctum_Core_Testing
 
             _ = Assert.Throws<Exception>(() => NetworkCommandManager.ParseSocketData(messageBuffer));
         }
-
-        [Test]
-        public void GetNextNetworkCommand_ShouldReturnNetworkCommand_WhenDataIsAvailable()
-        {
-            StringBuilder buffer = new();
-            int bufferSize = 1024;
-            byte[] messageBytes = Encoding.UTF8.GetBytes("0048{\"opCode\": 1, \"instruction\": \"Test Instruction\"}");
-            NetworkCommand? result = NetworkCommandManager.GetNextNetworkCommand(new MemoryStream(messageBytes), buffer, bufferSize, true);
-
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result?.opCode, Is.EqualTo(1));
-            Assert.That(result?.instruction, Is.EqualTo("Test Instruction"));
-        }
-
-        [Test]
-        public void GetNextNetworkCommand_ShouldReturnNull_WhenNoDataAvailable()
-        {
-            StringBuilder buffer = new();
-            int bufferSize = 1024;
-            NetworkCommand? result = NetworkCommandManager.GetNextNetworkCommand(new MemoryStream(0), buffer, bufferSize, false);
-
-            Assert.That(result, Is.Null);
-        }
     }
 }

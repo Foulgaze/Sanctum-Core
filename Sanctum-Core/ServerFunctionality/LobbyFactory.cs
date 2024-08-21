@@ -12,7 +12,6 @@ namespace Sanctum_Core
         private readonly List<Lobby> lobbies = new();
         private readonly string lobbyCodeCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private readonly int lobbyCodeLength;
-        public Action<NetworkStream, NetworkInstruction, string> notifyLobbyPlayer = delegate { };
         public LobbyFactory(int lobbyCodeLength) 
         {
             this.lobbyCodeLength = lobbyCodeLength;
@@ -30,7 +29,7 @@ namespace Sanctum_Core
             newLobby.OnLobbyClosed += this.RemoveLobby;
             this.lobbies.Add(newLobby);
             newLobby.AddConnection(connection);
-            this.notifyLobbyPlayer(connection.stream, NetworkInstruction.CreateLobby, $"{uuid}|{newLobby.code}");
+            newLobby.SendMessageToAllPlayers(NetworkInstruction.CreateLobby, $"{uuid}|{newLobby.code}");
         }
 
         /// <summary>
@@ -47,10 +46,17 @@ namespace Sanctum_Core
             {
                 return false;
             }
+            bool sentData = Server.SendMessage(connection.stream, NetworkInstruction.JoinLobby, $"{uuid}|{matchingLobby.size}");
+            if(!sentData)
+            {
+                return false;
+            }
             matchingLobby.AddConnection(connection);
-            string serializedLobby = matchingLobby.SerializedLobbyNames();
-            this.notifyLobbyPlayer(connection.stream, NetworkInstruction.JoinLobby, $"{uuid}|{matchingLobby.size}");
-            matchingLobby.connections.ForEach(connection => this.notifyLobbyPlayer(connection.stream, NetworkInstruction.PlayersInLobby, serializedLobby));
+            if (!matchingLobby.LobbyStarted)
+            {
+                string serializedLobby = matchingLobby.SerializedLobbyNames();
+                matchingLobby.SendMessageToAllPlayers(NetworkInstruction.PlayersInLobby, serializedLobby);
+            }
             return true;
         }
 
