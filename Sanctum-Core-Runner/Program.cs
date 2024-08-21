@@ -1,4 +1,4 @@
-﻿using Sanctum_Core;
+﻿using Sanctum_Core_Server;
 internal class Program
 {
     private static void Main()

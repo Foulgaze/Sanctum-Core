@@ -1,4 +1,4 @@
-﻿namespace Sanctum_Core
+﻿namespace Sanctum_Core_Server
 {
     public class NetworkCommand
     {

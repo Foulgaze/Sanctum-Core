@@ -1,10 +1,10 @@
 ﻿using Newtonsoft.Json;
-using System.Collections.Concurrent;
+using Sanctum_Core_Logger;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace Sanctum_Core
+namespace Sanctum_Core_Server
 {
     public enum NetworkInstruction
     {

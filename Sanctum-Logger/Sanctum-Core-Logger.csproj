@@ -1,15 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>Sanctum_Core_Runner</RootNamespace>
+    <RootNamespace>Sanctum_Logger</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Sanctum-Core-Server\Sanctum-Core-Server.csproj" />
-  </ItemGroup>
 
 </Project>

@@ -1,14 +1,7 @@
 ﻿using Newtonsoft.Json;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.ComponentModel;
-using System.IO;
-using System.Net.Http;
-using System.Net.NetworkInformation;
-using System.Net.Sockets;
-using System.Text;
+using Sanctum_Core;
 
-namespace Sanctum_Core
+namespace Sanctum_Core_Server
 {
     public class TimeChecker
     {

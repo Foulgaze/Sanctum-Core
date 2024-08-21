@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Sanctum_Core_Logger;
 using System.Net.Sockets;
-using System.Numerics;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace Sanctum_Core
+namespace Sanctum_Core_Server
 {
     public class LobbyConnection
     {
