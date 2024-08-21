@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using Sanctum_Core_Logger;
+using System.ComponentModel;
 
 namespace Sanctum_Core
 {

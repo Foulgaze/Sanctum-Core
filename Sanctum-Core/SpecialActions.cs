@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sanctum_Core_Logger;
+using System;
 using System.Runtime.CompilerServices;
 
 namespace Sanctum_Core
