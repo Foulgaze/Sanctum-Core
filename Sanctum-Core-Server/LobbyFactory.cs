@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sanctum_Core
+namespace Sanctum_Core_Server
 {
     public class LobbyFactory
     {

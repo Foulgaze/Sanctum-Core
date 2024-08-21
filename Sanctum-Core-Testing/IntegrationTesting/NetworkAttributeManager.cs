@@ -1,5 +1,6 @@
 ﻿
-using Sanctum_Core;
+using Sanctum_Core_Logger;
+using Sanctum_Core_Server;
 
 namespace Sanctum_Core_Testing
 {

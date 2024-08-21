@@ -1,15 +1,7 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Reflection.Emit;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace Sanctum_Core
+namespace Sanctum_Core_Server
 {
     public static class NetworkCommandManager
     {

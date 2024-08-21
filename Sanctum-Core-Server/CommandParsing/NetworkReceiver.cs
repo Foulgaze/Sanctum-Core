@@ -1,6 +1,7 @@
-﻿using System.Net.Sockets;
+﻿using Sanctum_Core_Logger;
+using System.Net.Sockets;
 using System.Text;
-namespace Sanctum_Core
+namespace Sanctum_Core_Server
 {
     public class NetworkReceiver
     {
@@ -47,6 +48,5 @@ namespace Sanctum_Core
 
             return true;
         }
-
     }
 }
