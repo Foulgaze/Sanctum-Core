@@ -15,68 +15,41 @@ namespace Sanctum_Core
         public readonly string uuid;
         private readonly TcpClient client;
         private readonly StringBuilder buffer = new();
+        public NetworkStream stream => this.client.GetStream();
         private readonly int bufferSize;
         public bool IsNetworkStreamClosed = false;
-        public LobbyConnection(string name, string uuid, TcpClient client)
+        public LobbyConnection(string name, string uuid, TcpClient client, int bufferSize = 4096)
         {
             this.name = name;
             this.uuid = uuid;
             this.client = client;
-        }
-
-        public NetworkStream? GetStream()
-        {
-            NetworkStream stream;
-            try
-            {
-                stream = this.client.GetStream();
-                return stream;
-            }
-            catch
-            {
-                this.IsNetworkStreamClosed = true;
-                this.client.Close();
-                return null;
-            }
+            this.bufferSize = bufferSize;
         }
 
         public NetworkCommand? GetNetworkCommand(bool readUntilData = true, int? timeout = null)
         {
-            NetworkStream stream;
-            try
-            {
-                stream = this.client.GetStream();
-            }
-            catch
-            {
-                this.IsNetworkStreamClosed = true;
-                this.client.Close();
-                return null;
-            }
+            NetworkStream stream = this.client.GetStream();
+            stream.ReadTimeout = timeout ?? Timeout.Infinite;
 
-            NetworkCommand? networkCommand;
-            DateTime startTime = DateTime.UtcNow;
             do
             {
-                // Check if the timeout has been reached
-                if (timeout != null && (DateTime.UtcNow - startTime).TotalMilliseconds >= timeout)
+                bool readSucceeded = NetworkReceiver.ReadSocketData(stream, this.bufferSize, this.buffer, out bool timedOut);
+                if (!readSucceeded)
                 {
-                    // Log timeout event here if needed
-                    Logger.Log($"Read timed out after {timeout} seconds");
+                    this.HandleStreamClosure();
                     return null;
                 }
 
-                bool readSucceded = NetworkReceiver.ReadSocketData(stream, this.bufferSize, this.buffer);
-                if(!readSucceded)
+                if (timedOut)
                 {
-                    this.IsNetworkStreamClosed = true;
-                    this.client.Close();
                     return null;
                 }
+
                 try
                 {
                     string? rawCommand = NetworkCommandManager.ParseSocketData(this.buffer);
-                    networkCommand = NetworkCommandManager.ParseCommand(rawCommand);
+                    NetworkCommand? networkCommand = NetworkCommandManager.ParseCommand(rawCommand);
+
                     if (networkCommand != null)
                     {
                         return networkCommand;
@@ -84,17 +57,27 @@ namespace Sanctum_Core
                 }
                 catch (Exception e)
                 {
-                    this.IsNetworkStreamClosed = true;
-                    this.client.Close();
-                    Logger.LogError($"Error parsing network data - {e}");
+                    this.HandleStreamError(e);
                     return null;
                 }
-
-                if (!readUntilData)
+                if(!readUntilData)
                 {
                     return null;
                 }
             } while (true);
+        }
+
+        private void HandleStreamClosure()
+        {
+            this.IsNetworkStreamClosed = true;
+            this.client.Close();
+        }
+
+        private void HandleStreamError(Exception e)
+        {
+            this.IsNetworkStreamClosed = true;
+            this.client.Close();
+            Logger.LogError($"Error parsing network data - {e}");
         }
     }
 }

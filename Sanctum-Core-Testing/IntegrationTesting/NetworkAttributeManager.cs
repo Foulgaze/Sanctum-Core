@@ -19,7 +19,7 @@ namespace Sanctum_Core_Testing
                 Logger.Log($"Loop - {i}");
                 foreach (LobbyConnection description in this._playerDescriptions)
                 {
-                    NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(description.client.GetStream(), description.buffer, Server.bufferSize, timeout:5000);
+                    NetworkCommand? command = description.GetNetworkCommand(timeout: 5000);
                     this.HandleCommand(command);
                 }
             }

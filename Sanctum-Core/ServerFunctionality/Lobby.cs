@@ -69,22 +69,34 @@ namespace Sanctum_Core
 
         private void NetworkCardCreation(Card card)
         {
-            this.connections.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}"));
+            this.SendMessageToAllPlayers(NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}");
         }
 
         private void SendMessage(NetworkInstruction instruction, string payload)
         {
-            this.connections.ForEach(playerDescription => Server.SendMessage(playerDescription.client.GetStream(), instruction, payload));
+            this.SendMessageToAllPlayers(instruction, payload);
         }
 
         private void InitGame()
         {
-            this.LobbyStarted = true;  
             this.connections.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
             string lobbyDescription = JsonConvert.SerializeObject(this.connections.ToDictionary(player => player.uuid, player => player.name));
-            this.connections.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.StartGame, lobbyDescription));
+            this.SendMessageToAllPlayers(NetworkInstruction.StartGame, lobbyDescription);
             this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
             this.playtable.cardCreated += this.NetworkCardCreation;
+        }
+
+        public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null) 
+        {
+            for(int i = this.connections.Count - 1; i > -1; --i)
+            {
+                LobbyConnection connection = this.connections[i];
+                if (specificConnection != null && connection != specificConnection)
+                {
+                    continue;
+                }
+                Server.SendMessage(connection.stream, instruction, payload);
+            }
         }
 
         /// <summary>
@@ -95,16 +107,9 @@ namespace Sanctum_Core
             this.InitGame();
             while (true)
             {
-                for(int i = this.connections.Count - 1; i >= 0; --i)
+                foreach(LobbyConnection connection in this.connections)
                 {
-                    LobbyConnection connection = this.connections[i];
-                    NetworkCommand? command = connection.GetNetworkCommand();
-                    if(connection.IsNetworkStreamClosed)
-                    {
-                        this.connections.RemoveAt(i);
-                        this.connections.ForEach(this.SendDisconnectMessages);
-                        continue;
-                    }
+                    NetworkCommand? command = connection.GetNetworkCommand(false);
                     this.HandleCommand(command, connection.uuid);
                 }
                 if (this.connections.Count == 0)
@@ -129,7 +134,8 @@ namespace Sanctum_Core
             this.connections.Add(connection);
             if (this.connections.Count == this.size)
             {
-                Thread thread = new(this.StartLobby);
+                this.LobbyStarted = true;
+                Thread thread = new(this.StartLobby) { Name = $"Lobby - {this.code}" };
                 thread.Start();
             }
         }
@@ -141,7 +147,7 @@ namespace Sanctum_Core
 
         private void SendDisconnectMessages(LobbyConnection disconnectedPlayers)
         {
-            this.connections.ForEach(description => Server.SendMessage(description.client.GetStream(), NetworkInstruction.Disconnect, disconnectedPlayers.uuid));
+            this.SendMessageToAllPlayers(NetworkInstruction.Disconnect, disconnectedPlayers.uuid);
         }
 
         private void HandleCommand(NetworkCommand? command, string uuid)

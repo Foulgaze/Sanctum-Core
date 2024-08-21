@@ -14,7 +14,6 @@ namespace Sanctum_Core
     public class Server
     {
         private readonly TcpListener _listener;
-        private readonly List<Lobby> _lobbies = new();
         public int portNumber = 51522; // Change to ENV
         public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
@@ -28,7 +27,6 @@ namespace Sanctum_Core
         {
             this.portNumber = portNumber;
             this.lobbyFactory = new(lobbyCodeLength);
-            this.lobbyFactory.notifyLobbyPlayer += Server.SendMessage;
             this._listener = new TcpListener(IPAddress.Any, portNumber);
         }
 
@@ -43,7 +41,7 @@ namespace Sanctum_Core
             while (true)
             {
                 TcpClient client = this._listener.AcceptTcpClient();
-                Thread thread = new(() => this.HandleClient(client));
+                Thread thread = new(() => this.HandleClient(client)) { Name = "Handling Client Thread"};
                 thread.Start();
             }
         }
@@ -52,11 +50,12 @@ namespace Sanctum_Core
 
         private bool HandleClient(TcpClient client)
         {
-            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), bufferSize, timeout: 10000);
+            LobbyConnection connection = new("", "", client);
+            NetworkCommand? command = connection.GetNetworkCommand(timeout: 10000);
             if (command == null)
             {
                 Console.WriteLine("Disconnecting client");
-                client.Close();
+                /*client.Close();*/
                 return true;
             }
             return this.HandleCommand(command, client);
@@ -100,11 +99,15 @@ namespace Sanctum_Core
             string[] data = networkCommand.instruction.Split('|');
             if (data.Length != 2)
             {
-                Logger.LogError("Need to include Name and Lobby code");
+                SendInvalidCommand(client, "Need to include Name and Lobby code");
                 return false;
             }
             string clientUUID = Guid.NewGuid().ToString();
             bool insertedIntoLobby = this.lobbyFactory.InsertConnectionIntoLobby(data[0], data[1], clientUUID, client);
+            if (!insertedIntoLobby)
+            {
+                SendInvalidCommand(client, "Invalid Code");
+            }
             return insertedIntoLobby;
         }
 
@@ -120,17 +123,27 @@ namespace Sanctum_Core
         /// <param name="stream">The <see cref="NetworkStream"/> to send the message through.</param>
         /// <param name="instruction">The <see cref="NetworkInstruction"/> that indicates the type of command being sent.</param>
         /// <param name="payload">The string payload containing additional data for the command.</param>
-        public static void SendMessage(NetworkStream stream, NetworkInstruction instruction, string payload)
+        public static bool SendMessage(NetworkStream stream, NetworkInstruction instruction, string payload)
         {
             Logger.Log($"Sending {new NetworkCommand((int)instruction, payload)}");
             string message = JsonConvert.SerializeObject(new NetworkCommand((int)instruction, payload));
             byte[] data = Encoding.UTF8.GetBytes(AddMessageSize(message));
-            stream.Write(data, 0, data.Length);
+            try
+            {
+                stream.Write(data, 0, data.Length);
+
+            }
+            catch (Exception e)
+            {
+                Logger.Log($"Problem sending {payload}. Error - {e}");
+                return false;
+            }
+            return true;
         }
 
         private static void SendInvalidCommand(TcpClient client, string message)
         {
-            SendMessage(client.GetStream(), NetworkInstruction.InvalidCommand, message);
+            _ = SendMessage(client.GetStream(), NetworkInstruction.InvalidCommand, message);
         }
     }
 }

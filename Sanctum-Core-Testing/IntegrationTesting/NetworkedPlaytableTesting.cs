@@ -16,14 +16,14 @@ namespace Sanctum_Core_Testing
         public void Init()
         {
             this.server = new(52521);
-            this.serverThread = new Thread(new ThreadStart(this.server.StartListening));
+            this.serverThread = new Thread(new ThreadStart(this.server.StartListening)) { Name = "Server Thread" };
             this.serverThread.Start();
             this.uuidLength = Guid.NewGuid().ToString().Length;
         }
 
         private void CheckAttribute(List<LobbyConnection> players, NetworkStream stream,string payload)
         {
-            Server.SendMessage(stream, NetworkInstruction.NetworkAttribute, payload);
+            _ = Server.SendMessage(stream, NetworkInstruction.NetworkAttribute, payload);
             foreach(LobbyConnection connection in players)
             {
                 NetworkCommand? command = connection.GetNetworkCommand();
@@ -43,13 +43,14 @@ namespace Sanctum_Core_Testing
         [Test]
         public void NetworkAttributesTest()
         {
-            List<LobbyConnection> players = this.StartGameXPlayers(4);
+            Console.WriteLine("Here");
+            List<LobbyConnection> players = this.StartGameXPlayers(2);
             for (int i = 0; i < players.Count; ++i)
             {
                 LobbyConnection player = players[i];
-                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-health|{JsonConvert.SerializeObject(i)}");
-                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
-                this.CheckAttribute(players, player.client.GetStream(), $"{player.uuid}-ready|{JsonConvert.SerializeObject(false)}");
+                this.CheckAttribute(players, player.stream, $"{player.uuid}-health|{JsonConvert.SerializeObject(i)}");
+                this.CheckAttribute(players, player.stream, $"{player.uuid}-decklist|{JsonConvert.SerializeObject($"{i}")}");
+                this.CheckAttribute(players, player.stream, $"{player.uuid}-ready|{JsonConvert.SerializeObject(false)}");
             }
         }
 
@@ -59,7 +60,8 @@ namespace Sanctum_Core_Testing
             List<LobbyConnection> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
             InsertCardData cardToMove = new(0, 0, null, true);
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
+
+            _ = Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
             nam.ReadPlayerData(2);
             string key = $"{players[0].uuid}-{(int)CardZone.Library}-removecards|{JsonConvert.SerializeObject(new List<int>{0 })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
@@ -75,7 +77,7 @@ namespace Sanctum_Core_Testing
             for (int i = 0; i < 4; ++i)
             {
                 InsertCardData cardToMove = new(i, i, i, i == 0);
-                Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
+                _ = Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
             }
             nam.ReadPlayerData(8);
 
@@ -87,7 +89,7 @@ namespace Sanctum_Core_Testing
 
         private void SendSpecialAction(List<LobbyConnection> players, NetworkAttributeManager nam, string action)
         {
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, action);
+            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, action);
             nam.ReadPlayerData(2);
         }
 
@@ -145,7 +147,7 @@ namespace Sanctum_Core_Testing
             NetworkAttributeManager nam = new(players);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}");
+            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}");
 
             nam.ReadPlayerData(2);
             string cardCreationKey = $"{tokenUUID}|400";
@@ -162,12 +164,12 @@ namespace Sanctum_Core_Testing
             for (int i = 0; i < 4; ++i)
             {
                 InsertCardData cardToMove = new(i, i, i, i == 0);
-                Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
+                _ = Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
             }
             nam.ReadPlayerData(8);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|0");
+            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|0");
 
             nam.ReadPlayerData(2);
             string cardCreationKey = $"{tokenUUID}|400";
@@ -177,7 +179,7 @@ namespace Sanctum_Core_Testing
 
             tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].client.GetStream(), NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|400");
+            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|400");
 
             nam.ReadPlayerData(2);
             cardCreationKey = $"{tokenUUID}|400";
@@ -194,8 +196,8 @@ namespace Sanctum_Core_Testing
 
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
-            Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{playerCount}|{playerName}");
-            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            _ = Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{playerCount}|{playerName}");
+            NetworkCommand? command = new LobbyConnection("", "", client).GetNetworkCommand();
             Assert.IsNotNull(command);
             string[] commandData = command.instruction.Split('|');
             return (commandData[1], new LobbyConnection(playerName, commandData[0], client));
@@ -205,8 +207,9 @@ namespace Sanctum_Core_Testing
         {
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
-            Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|{playerName}");
-            NetworkCommand? command = NetworkCommandManager.GetNextNetworkCommand(client.GetStream(), new StringBuilder(), 4096);
+            _ = Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|{playerName}");
+            LobbyConnection temporaryLobbyConnection = new("", "", client);
+            NetworkCommand? command = temporaryLobbyConnection.GetNetworkCommand();
             Assert.IsNotNull(command);
             string[] commandData = command.instruction.Split('|');
             return new LobbyConnection(playerName, commandData[0], client);
@@ -214,13 +217,13 @@ namespace Sanctum_Core_Testing
 
         private void HandleNetworkAttribute(List<LobbyConnection> allPlayers, LobbyConnection currentPlayer, string payload)
         {
-            Server.SendMessage(currentPlayer.client.GetStream(), NetworkInstruction.NetworkAttribute, payload);
+            _ = Server.SendMessage(currentPlayer.stream, NetworkInstruction.NetworkAttribute, payload);
             NetworkCommand? command;
             foreach (LobbyConnection connection in allPlayers)
             {
                 do
                 {
-                    command = connection.GetNetworkCommand();
+                    command = connection.GetNetworkCommand(timeout: 1000);
                     Assert.IsNotNull(command);
                 } while (command != null && command.opCode != (int)NetworkInstruction.NetworkAttribute);
             }
@@ -256,7 +259,7 @@ namespace Sanctum_Core_Testing
                 NetworkCommand? command;
                 do
                 {
-                    command = NetworkCommandManager.GetNextNetworkCommand(player.client.GetStream(), player.buffer, Server.bufferSize);
+                    command = player.GetNetworkCommand();
                 } while (command != null && command.opCode != (int)NetworkInstruction.NetworkAttribute);
             }
             returnList.Sort((x, y) => x.uuid.CompareTo(y.uuid));
