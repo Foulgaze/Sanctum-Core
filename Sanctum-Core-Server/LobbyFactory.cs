@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -9,7 +10,7 @@ namespace Sanctum_Core_Server
 {
     public class LobbyFactory
     {
-        private readonly List<Lobby> lobbies = new();
+        private readonly ConcurrentDictionary<string,Lobby> lobbies = new();
         private readonly string lobbyCodeCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         private readonly int lobbyCodeLength;
         public LobbyFactory(int lobbyCodeLength) 
@@ -26,10 +27,15 @@ namespace Sanctum_Core_Server
         {
             LobbyConnection connection = new(username,uuid,client);
             Lobby newLobby = new(lobbySize, this.GenerateUniqueLobbyCode());
+            newLobby.OnLobbyPlayersChanged += this.SendPlayersInLobby;
             newLobby.OnLobbyClosed += this.RemoveLobby;
-            this.lobbies.Add(newLobby);
+            this.lobbies[newLobby.code] = newLobby;
+            Server.SendMessage(connection.stream, NetworkInstruction.CreateLobby, $"{uuid}|{newLobby.code}");
+            if(!connection.Connected)
+            {
+                return;
+            }
             newLobby.AddConnection(connection);
-            newLobby.SendMessageToAllPlayers(NetworkInstruction.CreateLobby, $"{uuid}|{newLobby.code}");
         }
 
         /// <summary>
@@ -41,22 +47,17 @@ namespace Sanctum_Core_Server
         public bool InsertConnectionIntoLobby(string lobbyCode,string username, string uuid, TcpClient client)
         {
             LobbyConnection connection = new(username, uuid, client);
-            Lobby? matchingLobby = this.lobbies.FirstOrDefault(lobby => lobby.code == lobbyCode);
-            if(matchingLobby == null)
+            if(!this.lobbies.TryGetValue(lobbyCode, out Lobby? matchingLobby))
             {
+                Console.WriteLine($"Could not find lobby of code - {lobbyCode}");
                 return false;
             }
-            bool sentData = Server.SendMessage(connection.stream, NetworkInstruction.JoinLobby, $"{uuid}|{matchingLobby.size}");
-            if(!sentData)
+            Server.SendMessage(connection.stream, NetworkInstruction.JoinLobby, $"{uuid}|{matchingLobby.size}"); 
+            if(!connection.Connected)
             {
                 return false;
             }
             matchingLobby.AddConnection(connection);
-            if (!matchingLobby.LobbyStarted)
-            {
-                string serializedLobby = matchingLobby.SerializedLobbyNames();
-                matchingLobby.SendMessageToAllPlayers(NetworkInstruction.PlayersInLobby, serializedLobby);
-            }
             return true;
         }
 
@@ -66,7 +67,14 @@ namespace Sanctum_Core_Server
         /// <param name="lobby">Lobby to remove</param>
         public void RemoveLobby(Lobby lobby)
         {
-            _ = this.lobbies.Remove(lobby);
+            _ = this.lobbies.TryRemove(lobby.code, out Lobby? _);
+        }
+
+        public void CheckForDeadLobbies(double allowedIdleTime)
+        {
+            DateTime currentTime = DateTime.Now;
+            List<Lobby> currentLobbies = this.lobbies.Values.Where(lobby => !lobby.LobbyStarted && lobby.CheckLobbyTimeout(currentTime, allowedIdleTime)).ToList();
+            currentLobbies.ForEach(lobby => this.lobbies.TryRemove(lobby.code, out Lobby? _));
         }
 
         private string GenerateUniqueLobbyCode()
@@ -83,9 +91,15 @@ namespace Sanctum_Core_Server
                 }
 
                 newCode = new(stringChars);
-            } while (this.lobbies.Any(lobby => lobby.code == newCode));
+            } while (this.lobbies.ContainsKey(newCode));
 
             return newCode;
+        }
+
+        private void SendPlayersInLobby(Lobby lobby)
+        {
+            string serializedLobby = lobby.SerializedLobbyNames();
+            lobby.SendMessageToAllPlayers(NetworkInstruction.PlayersInLobby, serializedLobby);
         }
     }
 }

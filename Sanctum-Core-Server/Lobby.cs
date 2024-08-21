@@ -1,34 +1,11 @@
 ﻿using Newtonsoft.Json;
 using Sanctum_Core;
 using Sanctum_Core_Logger;
+using System.Diagnostics;
+using System.Net.Sockets;
 
 namespace Sanctum_Core_Server
 {
-    public class TimeChecker
-    {
-        private DateTime lastCheckedTime;
-        private readonly double timeToWait;
-
-        public TimeChecker(double timeToWait = 0.5)
-        {
-            this.lastCheckedTime = DateTime.Now;
-            this.timeToWait = timeToWait;
-        }
-
-        public bool HasTimerPassed()
-        {
-            DateTime currentTime = DateTime.Now;
-            TimeSpan timeElapsed = currentTime - this.lastCheckedTime;
-
-            if (timeElapsed.TotalMinutes >= this.timeToWait)
-            {
-                this.lastCheckedTime = currentTime;
-                return true;
-            }
-
-            return false;
-        }
-    }
     public class Lobby
     {
         public event Action<Lobby> OnLobbyClosed = delegate { };
@@ -36,7 +13,10 @@ namespace Sanctum_Core_Server
         public readonly int size;
         public readonly string code;
         public List<LobbyConnection> connections = new();
-        private readonly TimeChecker timeChecker = new();
+        public event Action<Lobby> OnLobbyPlayersChanged = delegate { };
+        public DateTime timeSinceLastInteracted { get; private set; }
+        private readonly TimeChecker disconnectedPlayerCheck;
+
         public bool LobbyStarted { get; set; } = false;
 
         /// <summary>
@@ -47,12 +27,14 @@ namespace Sanctum_Core_Server
         /// <remarks>
         /// The constructor sets up the playtable for the lobby, loading the card and token data from CSV files located in the designated assets directory.
         /// </remarks>
-        public Lobby(int lobbySize, string lobbyCode)
+        public Lobby(int lobbySize, string lobbyCode, double disconnectedPlayerCheckTime = 0.1)
         {
             this.size = lobbySize;
             this.code = lobbyCode;
             string path = Path.GetFullPath(@"..\..\..\..\Sanctum-Core\Assets\");
             this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
+            this.timeSinceLastInteracted = DateTime.Now;
+            this.disconnectedPlayerCheck = new(disconnectedPlayerCheckTime);
         }
 
         private void NetworkAttributeChanged(NetworkAttribute attribute)
@@ -76,12 +58,14 @@ namespace Sanctum_Core_Server
             this.connections.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
             string lobbyDescription = JsonConvert.SerializeObject(this.connections.ToDictionary(player => player.uuid, player => player.name));
             this.SendMessageToAllPlayers(NetworkInstruction.StartGame, lobbyDescription);
-            this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
+            this.playtable.networkAttributeFactory.attributeValueChanged  += this.NetworkAttributeChanged;
             this.playtable.cardCreated += this.NetworkCardCreation;
         }
 
         public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null) 
         {
+            this.timeSinceLastInteracted = DateTime.Now;
+            bool removedPlayers = false;
             for(int i = this.connections.Count - 1; i > -1; --i)
             {
                 LobbyConnection connection = this.connections[i];
@@ -89,11 +73,16 @@ namespace Sanctum_Core_Server
                 {
                     continue;
                 }
-                bool sentData = Server.SendMessage(connection.stream, instruction, payload);
-                if(!sentData)
+                Server.SendMessage(connection.stream, instruction, payload);
+                if (!connection.Connected)
                 {
+                    removedPlayers = true;
                     this.connections.RemoveAt(i);
                 }
+            }
+            if(removedPlayers)
+            {
+                OnLobbyPlayersChanged(this);
             }
         }
 
@@ -105,10 +94,22 @@ namespace Sanctum_Core_Server
             this.InitGame();
             while (true)
             {
-                foreach(LobbyConnection connection in this.connections)
+                bool checkForDisconnectedPlayers = this.disconnectedPlayerCheck.HasTimerPassed();
+                for (int i = this.connections.Count - 1; i > -1; --i)
                 {
-                    NetworkCommand? command = connection.GetNetworkCommand(false);
+                    LobbyConnection connection = this.connections[i];
+                    if (!connection.Connected)
+                    {
+                        this.connections.RemoveAt(i);
+                        continue;
+                    }
+                    NetworkCommand? command = connection.GetNetworkCommand(readUntilData : false);
+                    if(checkForDisconnectedPlayers)
+                    {
+                        this.CheckForConnectivity(connection);
+                    }
                     this.HandleCommand(command, connection.uuid);
+
                 }
                 if (this.connections.Count == 0)
                 {
@@ -130,11 +131,16 @@ namespace Sanctum_Core_Server
                 return;
             }
             this.connections.Add(connection);
+            this.timeSinceLastInteracted = DateTime.Now;
             if (this.connections.Count == this.size)
             {
                 this.LobbyStarted = true;
                 Thread thread = new(this.StartLobby) { Name = $"Lobby - {this.code}" };
                 thread.Start();
+            }
+            else
+            {
+                OnLobbyPlayersChanged(this);
             }
         }
 
@@ -143,6 +149,23 @@ namespace Sanctum_Core_Server
             return JsonConvert.SerializeObject(this.connections.Select(connection => connection.name).ToList());
         }
 
+        public bool CheckLobbyTimeout(DateTime currentTime, double allowedIdleTime)
+        {
+            return (currentTime - this.timeSinceLastInteracted).TotalMinutes > allowedIdleTime;
+        }
+
+        private void CheckForConnectivity(LobbyConnection connection)
+        {
+            try
+            {
+                connection.stream.Write(new byte[0], 0, 0);
+            }
+            catch
+            {
+                Logger.LogError($"Player {connection.name} has disconnected");
+            }
+            return;
+        }
         private void HandleCommand(NetworkCommand? command, string uuid)
         {
             if (command == null)

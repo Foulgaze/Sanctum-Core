@@ -18,16 +18,20 @@ namespace Sanctum_Core_Server
         public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
         private readonly LobbyFactory lobbyFactory;
+        private readonly TimeChecker? deadLobbyClock;
+        private readonly double allowedLobbyIdleTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
         /// </summary>
         /// <param name="portNumber">The port number on which the server will listen for incoming connections. Default is 51522.</param>
-        public Server(int portNumber = 51522, int lobbyCodeLength = 4)
+        public Server(int portNumber = 51522, int lobbyCodeLength = 4, double? deadLobbyCheckTimer = 5, double allowedLobbyIdleDuration = 5)
         {
             this.portNumber = portNumber;
             this.lobbyFactory = new(lobbyCodeLength);
             this._listener = new TcpListener(IPAddress.Any, portNumber);
+            this.deadLobbyClock = deadLobbyCheckTimer == null ? null : new TimeChecker((double)deadLobbyCheckTimer);
+            this.allowedLobbyIdleTime = allowedLobbyIdleDuration;
         }
 
         /// <summary>
@@ -40,13 +44,15 @@ namespace Sanctum_Core_Server
 
             while (true)
             {
+                if(this.deadLobbyClock != null && this.deadLobbyClock.HasTimerPassed())
+                {
+                    this.lobbyFactory.CheckForDeadLobbies(this.allowedLobbyIdleTime);
+                }
                 TcpClient client = this._listener.AcceptTcpClient();
                 Thread thread = new(() => this.HandleClient(client)) { Name = "Handling Client Thread"};
                 thread.Start();
             }
         }
-
-
 
         private bool HandleClient(TcpClient client)
         {
@@ -123,7 +129,7 @@ namespace Sanctum_Core_Server
         /// <param name="stream">The <see cref="NetworkStream"/> to send the message through.</param>
         /// <param name="instruction">The <see cref="NetworkInstruction"/> that indicates the type of command being sent.</param>
         /// <param name="payload">The string payload containing additional data for the command.</param>
-        public static bool SendMessage(NetworkStream stream, NetworkInstruction instruction, string payload)
+        public static void SendMessage(NetworkStream stream, NetworkInstruction instruction, string payload)
         {
             Logger.Log($"Sending {new NetworkCommand((int)instruction, payload)}");
             string message = JsonConvert.SerializeObject(new NetworkCommand((int)instruction, payload));
@@ -136,14 +142,12 @@ namespace Sanctum_Core_Server
             catch (Exception e)
             {
                 Logger.Log($"Problem sending {payload}. Error - {e}");
-                return false;
             }
-            return true;
         }
 
         private static void SendInvalidCommand(TcpClient client, string message)
         {
-            _ = SendMessage(client.GetStream(), NetworkInstruction.InvalidCommand, message);
+            SendMessage(client.GetStream(), NetworkInstruction.InvalidCommand, message);
         }
     }
 }
