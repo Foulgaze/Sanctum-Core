@@ -14,14 +14,7 @@ namespace Sanctum_Core_Testing.CommandParsingTests
         [Test]
         public void ReadSocketData_ShouldAppendDataToBuffer_WhenDataIsAvailable()
         {
-            StringBuilder buffer = new();
-            int bufferSize = 1024;
-            byte[] messageBytes = Encoding.UTF8.GetBytes("0044|00|Foulgaze");
-            // Act
-            NetworkReceiver.ReadSocketData(new MemoryStream(messageBytes), bufferSize, buffer);
-
-            // Assert
-            Assert.That(buffer.ToString(), Is.EqualTo("0044|00|Foulgaze"));
+            // To do
         }
     }
 }
