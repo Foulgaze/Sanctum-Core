@@ -18,19 +18,19 @@ namespace Sanctum_Core_Server
         public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
         private readonly LobbyFactory lobbyFactory;
-        private readonly TimeChecker deadLobbyClock;
+        private readonly TimeChecker? deadLobbyClock;
         private readonly double allowedLobbyIdleTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
         /// </summary>
         /// <param name="portNumber">The port number on which the server will listen for incoming connections. Default is 51522.</param>
-        public Server(int portNumber = 51522, int lobbyCodeLength = 4, double deadLobbyCheckTimer = 5, double allowedLobbyIdleDuration = 5)
+        public Server(int portNumber = 51522, int lobbyCodeLength = 4, double? deadLobbyCheckTimer = 5, double allowedLobbyIdleDuration = 5)
         {
             this.portNumber = portNumber;
             this.lobbyFactory = new(lobbyCodeLength);
             this._listener = new TcpListener(IPAddress.Any, portNumber);
-            this.deadLobbyClock = new TimeChecker(deadLobbyCheckTimer);
+            this.deadLobbyClock = deadLobbyCheckTimer == null ? null : new TimeChecker((double)deadLobbyCheckTimer);
             this.allowedLobbyIdleTime = allowedLobbyIdleDuration;
         }
 
@@ -44,7 +44,7 @@ namespace Sanctum_Core_Server
 
             while (true)
             {
-                if(this.deadLobbyClock.HasTimerPassed())
+                if(this.deadLobbyClock != null && this.deadLobbyClock.HasTimerPassed())
                 {
                     this.lobbyFactory.CheckForDeadLobbies(this.allowedLobbyIdleTime);
                 }
