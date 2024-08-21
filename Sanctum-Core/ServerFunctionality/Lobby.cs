@@ -149,11 +149,6 @@ namespace Sanctum_Core
             return JsonConvert.SerializeObject(this.connections.Select(connection => connection.name).ToList());
         }
 
-        private void SendDisconnectMessages(LobbyConnection disconnectedPlayers)
-        {
-            this.SendMessageToAllPlayers(NetworkInstruction.Disconnect, disconnectedPlayers.uuid);
-        }
-
         private void HandleCommand(NetworkCommand? command, string uuid)
         {
             if (command == null)
