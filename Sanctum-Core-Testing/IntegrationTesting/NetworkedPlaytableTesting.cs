@@ -22,7 +22,7 @@ namespace Sanctum_Core_Testing
 
         private void CheckAttribute(List<LobbyConnection> players, NetworkStream stream,string payload)
         {
-            _ = Server.SendMessage(stream, NetworkInstruction.NetworkAttribute, payload);
+            Server.SendMessage(stream, NetworkInstruction.NetworkAttribute, payload);
             foreach(LobbyConnection connection in players)
             {
                 NetworkCommand? command = connection.GetNetworkCommand();
@@ -60,7 +60,7 @@ namespace Sanctum_Core_Testing
             NetworkAttributeManager nam = new(players);
             InsertCardData cardToMove = new(0, 0, null, true);
 
-            _ = Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
+            Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-1-insert|{JsonConvert.SerializeObject(cardToMove)}");
             nam.ReadPlayerData(2);
             string key = $"{players[0].uuid}-{(int)CardZone.Library}-removecards|{JsonConvert.SerializeObject(new List<int>{0 })}";
             Assert.That(nam.networkAttributes.Count(item => key == item), Is.EqualTo(players.Count));
@@ -76,7 +76,7 @@ namespace Sanctum_Core_Testing
             for (int i = 0; i < 4; ++i)
             {
                 InsertCardData cardToMove = new(i, i, i, i == 0);
-                _ = Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
+                Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
             }
             nam.ReadPlayerData(8);
 
@@ -88,7 +88,7 @@ namespace Sanctum_Core_Testing
 
         private void SendSpecialAction(List<LobbyConnection> players, NetworkAttributeManager nam, string action)
         {
-            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, action);
+            Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, action);
             nam.ReadPlayerData(2);
         }
 
@@ -146,7 +146,7 @@ namespace Sanctum_Core_Testing
             NetworkAttributeManager nam = new(players);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}");
+            Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}");
 
             nam.ReadPlayerData(2);
             string cardCreationKey = $"{tokenUUID}|400";
@@ -163,12 +163,12 @@ namespace Sanctum_Core_Testing
             for (int i = 0; i < 4; ++i)
             {
                 InsertCardData cardToMove = new(i, i, i, i == 0);
-                _ = Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
+                Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"{players[0].uuid}-{(int)CardZone.MainField}-insert|{JsonConvert.SerializeObject(cardToMove)}");
             }
             nam.ReadPlayerData(8);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|0");
+            Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|0");
 
             nam.ReadPlayerData(2);
             string cardCreationKey = $"{tokenUUID}|400";
@@ -178,7 +178,7 @@ namespace Sanctum_Core_Testing
 
             tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            _ = Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|400");
+            Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|400");
 
             nam.ReadPlayerData(2);
             cardCreationKey = $"{tokenUUID}|400";
@@ -195,7 +195,7 @@ namespace Sanctum_Core_Testing
 
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
-            _ = Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{playerCount}|{playerName}");
+            Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"{playerCount}|{playerName}");
             NetworkCommand? command = new LobbyConnection("", "", client).GetNetworkCommand();
             Assert.IsNotNull(command);
             string[] commandData = command.instruction.Split('|');
@@ -206,7 +206,7 @@ namespace Sanctum_Core_Testing
         {
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
-            _ = Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|{playerName}");
+            Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|{playerName}");
             LobbyConnection temporaryLobbyConnection = new("", "", client);
             NetworkCommand? command = temporaryLobbyConnection.GetNetworkCommand();
             Assert.IsNotNull(command);
@@ -216,7 +216,7 @@ namespace Sanctum_Core_Testing
 
         private void HandleNetworkAttribute(List<LobbyConnection> allPlayers, LobbyConnection currentPlayer, string payload)
         {
-            _ = Server.SendMessage(currentPlayer.stream, NetworkInstruction.NetworkAttribute, payload);
+            Server.SendMessage(currentPlayer.stream, NetworkInstruction.NetworkAttribute, payload);
             NetworkCommand? command;
             foreach (LobbyConnection connection in allPlayers)
             {

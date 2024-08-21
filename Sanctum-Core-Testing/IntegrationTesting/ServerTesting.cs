@@ -32,7 +32,7 @@ namespace Sanctum_Core_Testing
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
-            _ = Server.SendMessage(stream, NetworkInstruction.CreateLobby, $"4|Gabriel");
+            Server.SendMessage(stream, NetworkInstruction.CreateLobby, $"4|Gabriel");
             NetworkCommand? command = new LobbyConnection("", "", client).GetNetworkCommand();
             Assert.IsNotNull(command);
             Assert.That(command.instruction.Length == (this.uuidLength + 1 + Server.lobbyCodeLength)); // 36 UUID | 4 Lobby Code = 41
@@ -48,7 +48,7 @@ namespace Sanctum_Core_Testing
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
-            _ = Server.SendMessage(stream, NetworkInstruction.CreateLobby, "Asd|Asd");
+            Server.SendMessage(stream, NetworkInstruction.CreateLobby, "Asd|Asd");
             NetworkCommand? command = new LobbyConnection("", "", client).GetNetworkCommand();
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Invalid lobby count");
         }
@@ -59,13 +59,13 @@ namespace Sanctum_Core_Testing
 
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
-            _ = Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"4|Gabriel");
+            Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"4|Gabriel");
             NetworkCommand? command = new LobbyConnection("", "", client).GetNetworkCommand();
             Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
             client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
-            _ = Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
+            Server.SendMessage(client.GetStream(), NetworkInstruction.JoinLobby, $"{data[1]}|Gabe");
             command = new LobbyConnection("", "", client).GetNetworkCommand();
             Assert.IsNotNull(command);
             AssertCommandResults(command, NetworkInstruction.JoinLobby, null);
@@ -79,7 +79,7 @@ namespace Sanctum_Core_Testing
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
             NetworkStream stream = client.GetStream();
-            _ = Server.SendMessage(stream, NetworkInstruction.JoinLobby, $"Spaghetti & Meatballs");
+            Server.SendMessage(stream, NetworkInstruction.JoinLobby, $"Spaghetti & Meatballs");
             NetworkCommand? command = new LobbyConnection("", "", client).GetNetworkCommand();
             AssertCommandResults(command, NetworkInstruction.InvalidCommand, "Need to include Name and Lobby code");
         }
@@ -107,7 +107,7 @@ namespace Sanctum_Core_Testing
 
             TcpClient client = new();
             client.Connect(IPAddress.Loopback, this.server.portNumber);
-            _ = Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"2|Gabriel");
+            Server.SendMessage(client.GetStream(), NetworkInstruction.CreateLobby, $"2|Gabriel");
             NetworkCommand? command = new LobbyConnection("", "", client).GetNetworkCommand();
             Assert.IsNotNull(command);
             string[] data = command.instruction.Split('|');
@@ -115,11 +115,13 @@ namespace Sanctum_Core_Testing
             string lobbyCode = data[1];
             TcpClient client2 = new();
             client2.Connect(IPAddress.Loopback, this.server.portNumber);
-            _ = Server.SendMessage(client2.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|Gabe");
+            Server.SendMessage(client2.GetStream(), NetworkInstruction.JoinLobby, $"{lobbyCode}|Gabe");
             command = new LobbyConnection("", "", client2).GetNetworkCommand();
             Assert.IsNotNull(command);
             data = command.instruction.Split('|');
             string p2UUID = data[0];
+            command = new LobbyConnection("", "", client).GetNetworkCommand();
+            Assert.IsNotNull(command);
             command = new LobbyConnection("", "", client).GetNetworkCommand();
             Assert.IsNotNull(command);
             AssertCommandResults(command, NetworkInstruction.StartGame, null);

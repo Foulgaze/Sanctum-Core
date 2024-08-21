@@ -11,6 +11,7 @@ namespace Sanctum_Core_Server
         private readonly TcpClient client;
         private readonly StringBuilder buffer = new();
         public NetworkStream stream => this.client.GetStream();
+        public bool Connected => this.client.Connected;
         private readonly int bufferSize;
         public bool IsNetworkStreamClosed = false;
         public LobbyConnection(string name, string uuid, TcpClient client, int bufferSize = 4096)

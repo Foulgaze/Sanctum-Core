@@ -4,31 +4,6 @@ using Sanctum_Core_Logger;
 
 namespace Sanctum_Core_Server
 {
-    public class TimeChecker
-    {
-        private DateTime lastCheckedTime;
-        private readonly double timeToWait;
-
-        public TimeChecker(double timeToWait = 0.5)
-        {
-            this.lastCheckedTime = DateTime.Now;
-            this.timeToWait = timeToWait;
-        }
-
-        public bool HasTimerPassed()
-        {
-            DateTime currentTime = DateTime.Now;
-            TimeSpan timeElapsed = currentTime - this.lastCheckedTime;
-
-            if (timeElapsed.TotalMinutes >= this.timeToWait)
-            {
-                this.lastCheckedTime = currentTime;
-                return true;
-            }
-
-            return false;
-        }
-    }
     public class Lobby
     {
         public event Action<Lobby> OnLobbyClosed = delegate { };
@@ -36,7 +11,8 @@ namespace Sanctum_Core_Server
         public readonly int size;
         public readonly string code;
         public List<LobbyConnection> connections = new();
-        private readonly TimeChecker timeChecker = new();
+        public event Action<Lobby> OnLobbyPlayersChanged = delegate { };
+        public DateTime timeSinceLastInteracted { get; private set; }
         public bool LobbyStarted { get; set; } = false;
 
         /// <summary>
@@ -53,6 +29,7 @@ namespace Sanctum_Core_Server
             this.code = lobbyCode;
             string path = Path.GetFullPath(@"..\..\..\..\Sanctum-Core\Assets\");
             this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
+            this.timeSinceLastInteracted = DateTime.Now;
         }
 
         private void NetworkAttributeChanged(NetworkAttribute attribute)
@@ -76,12 +53,14 @@ namespace Sanctum_Core_Server
             this.connections.ForEach(description => this.playtable.AddPlayer(description.uuid, description.name));
             string lobbyDescription = JsonConvert.SerializeObject(this.connections.ToDictionary(player => player.uuid, player => player.name));
             this.SendMessageToAllPlayers(NetworkInstruction.StartGame, lobbyDescription);
-            this.playtable.networkAttributeFactory.attributeValueChanged += this.NetworkAttributeChanged;
+            this.playtable.networkAttributeFactory.attributeValueChanged  += this.NetworkAttributeChanged;
             this.playtable.cardCreated += this.NetworkCardCreation;
         }
 
         public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null) 
         {
+            this.timeSinceLastInteracted = DateTime.Now;
+            bool removedPlayers = false;
             for(int i = this.connections.Count - 1; i > -1; --i)
             {
                 LobbyConnection connection = this.connections[i];
@@ -89,11 +68,16 @@ namespace Sanctum_Core_Server
                 {
                     continue;
                 }
-                bool sentData = Server.SendMessage(connection.stream, instruction, payload);
-                if(!sentData)
+                Server.SendMessage(connection.stream, instruction, payload);
+                if (!connection.Connected)
                 {
+                    removedPlayers = true;
                     this.connections.RemoveAt(i);
                 }
+            }
+            if(removedPlayers)
+            {
+                OnLobbyPlayersChanged(this);
             }
         }
 
@@ -116,6 +100,8 @@ namespace Sanctum_Core_Server
                     Logger.Log($"Closing lobby {this.code}");
                     return;
                 }
+                /*this.connections[0].stream.Write(Array.Empty<byte>(), 0,0);*/
+                /*this.SendMessageToAllPlayers(NetworkInstruction.CardCreation, "1");*/
             }
         }
 
@@ -130,11 +116,16 @@ namespace Sanctum_Core_Server
                 return;
             }
             this.connections.Add(connection);
+            this.timeSinceLastInteracted = DateTime.Now;
             if (this.connections.Count == this.size)
             {
                 this.LobbyStarted = true;
                 Thread thread = new(this.StartLobby) { Name = $"Lobby - {this.code}" };
                 thread.Start();
+            }
+            else
+            {
+                OnLobbyPlayersChanged(this);
             }
         }
 
@@ -143,6 +134,10 @@ namespace Sanctum_Core_Server
             return JsonConvert.SerializeObject(this.connections.Select(connection => connection.name).ToList());
         }
 
+        public bool CheckLobbyTimeout(DateTime currentTime, double allowedIdleTime)
+        {
+            return (currentTime - this.timeSinceLastInteracted).TotalMinutes > allowedIdleTime;
+        }
         private void HandleCommand(NetworkCommand? command, string uuid)
         {
             if (command == null)
