@@ -1,11 +1,14 @@
-﻿using Sanctum_Core_Logger;
+﻿//using Sanctum_Core_Logger;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace Sanctum_Core
 {
     public class Playtable
     {
-        private readonly List<Player> _players = new();
+        private readonly List<Player> _players = new List<Player>();
         public readonly int readyUpNeeded;
         public readonly NetworkAttribute<bool> GameStarted;
         private readonly CardFactory cardFactory;
@@ -42,7 +45,7 @@ namespace Sanctum_Core
             {
                 return false;
             }
-            Player player = new(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
+            Player player = new Player(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
             player.ReadiedUp.valueChanged += this.CheckForStartGame;
             this._players.Add(player);
             return true;

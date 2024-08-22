@@ -1,5 +1,7 @@
-﻿using Sanctum_Core_Logger;
+﻿////using Sanctum_Core_Logger;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Sanctum_Core
@@ -7,7 +9,7 @@ namespace Sanctum_Core
     public enum SpecialAction { Draw, Mill, Exile, CreateToken, CopyCard, PutCardXFrom, Shuffle}
     public static class SpecialActions
     {
-        private static readonly List<CardZone> boardCardZones = new()
+        private static readonly List<CardZone> boardCardZones = new List<CardZone>
         {
                 CardZone.MainField,
                 CardZone.LeftField,
@@ -282,7 +284,7 @@ namespace Sanctum_Core
                 Logger.LogError($"Could not parse card distance from {rawCardDistance}");
                 return false;
             }
-            if(startingLocation is not "top" and not "bottom")
+            if(startingLocation != "top" && startingLocation != "bottom")
             {
                 // log this
                 Logger.LogError($"Starting location is not top or bottom - {startingLocation}");

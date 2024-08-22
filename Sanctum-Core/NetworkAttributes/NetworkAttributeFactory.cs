@@ -1,14 +1,16 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Sanctum_Core_Logger;
+////using Sanctum_Core_Logger;
 
 namespace Sanctum_Core
 {
     public class NetworkAttributeFactory
     {
         public event Action<NetworkAttribute> attributeValueChanged = delegate { };
-        public Dictionary<string, NetworkAttribute> networkAttributes = new();
+        public Dictionary<string, NetworkAttribute> networkAttributes = new Dictionary<string, NetworkAttribute>();
         private readonly bool isSlavePlaytable;
 
         public NetworkAttributeFactory(bool slavePlaytable = false)
@@ -94,7 +96,7 @@ namespace Sanctum_Core
             {
                 throw new Exception($"{id} already present in dictionary");
             }
-            NetworkAttribute<T> newAttribute = new(id, value);
+            NetworkAttribute<T> newAttribute = new NetworkAttribute<T>(id, value);
             this.networkAttributes.Add(id, newAttribute);
             if(networkChange)
             {

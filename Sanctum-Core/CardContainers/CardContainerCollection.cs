@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using Sanctum_Core_Logger;
+//using Sanctum_Core_Logger;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -30,7 +30,7 @@ namespace Sanctum_Core
 
         public CardZone Zone { get; set; }
         public string Owner { get; }
-        private readonly List<CardContainer> Containers = new();
+        private readonly List<CardContainer> Containers = new List<CardContainer>();
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
         private readonly NetworkAttribute<InsertCardData> insertCardData;
@@ -76,7 +76,7 @@ namespace Sanctum_Core
 
             if (changeShouldBeNetworked)
             {
-                InsertCardData newCardData = new(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
+                InsertCardData newCardData = new InsertCardData(insertPosition, cardToInsert.Id, cardContainerPosition, createNewContainer);
                 this.insertCardData.SetValue(newCardData);
                 return;
             }
@@ -258,7 +258,7 @@ namespace Sanctum_Core
             {
                 return this.FindFirstEmptyContainer() ?? throw new Exception("Max container count reached, with all containers full");
             }
-            CardContainer container = new(this.maxCardCountPerContainer, this.Zone);
+            CardContainer container = new CardContainer(this.maxCardCountPerContainer, this.Zone);
             this.Containers.Insert(insertPosition, container);
             return container;
         }

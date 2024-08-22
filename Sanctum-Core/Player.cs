@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace Sanctum_Core
 {
@@ -11,7 +12,7 @@ namespace Sanctum_Core
         public NetworkAttribute<int> Health { get; }
         public NetworkAttribute<(List<string>, int?, CardZone zone)> revealCardZone { get; set; }
         public NetworkAttribute<bool> ReadiedUp { get; set; }
-        private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new();
+        private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new Dictionary<CardZone, CardContainerCollection>();
         private readonly NetworkAttributeFactory networkAttributeFactory;
         private readonly CardFactory cardFactory;
 
@@ -32,7 +33,7 @@ namespace Sanctum_Core
             this.Health = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Uuid}-health", startingHealth);
             this.DeckListRaw = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Uuid}-decklist", "");
             this.ReadiedUp = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-ready", false);
-            this.revealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(List<string>, int ?, CardZone zone)>($"{this.Uuid}-reveal", (new(), null, CardZone.Library));
+            this.revealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(List<string>, int ?, CardZone zone)>($"{this.Uuid}-reveal", (new List<string>(), null, CardZone.Library));
             this.InitializeBoards();
         }
 

@@ -1,14 +1,17 @@
 ﻿using CsvHelper;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 
 namespace Sanctum_Core
 {
     public static class CardData
     {
-        private static readonly Dictionary<string, CardInfo> nameToInfoStandardCards = new();
-        private static readonly Dictionary<string, CardInfo> uuidToInfoTokenCards = new();
+        private static readonly Dictionary<string, CardInfo> nameToInfoStandardCards = new Dictionary<string, CardInfo>();
+        private static readonly Dictionary<string, CardInfo> uuidToInfoTokenCards = new Dictionary<string, CardInfo>();
 
-        private static readonly HashSet<string> filesLoaded = new();
+        private static readonly HashSet<string> filesLoaded = new HashSet<string>();
 
         /// <summary>
         /// Loads card names and information from a CSV file into the appropriate dictionary.
@@ -28,8 +31,8 @@ namespace Sanctum_Core
             }
             Dictionary<string, CardInfo> cardData = isLoadingTokens ? uuidToInfoTokenCards : nameToInfoStandardCards;
             _ = filesLoaded.Add(filePath);
-            using StreamReader reader = new(filePath);
-            using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+            using StreamReader reader = new StreamReader(filePath);
+            using CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture);
             _ = csv.Read();
             _ = csv.ReadHeader();
             while (csv.Read())

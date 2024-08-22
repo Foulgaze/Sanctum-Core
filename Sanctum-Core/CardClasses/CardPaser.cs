@@ -1,4 +1,4 @@
-﻿using Sanctum_Core_Logger;
+﻿//using Sanctum_Core_Logger;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +16,7 @@ namespace Sanctum_Core
         /// <returns>(List of Successfully parsed names, List of Error Lines)</returns>
         public static List<string> ParseDeckList(string deckList)
         {
-            List<string> cardNames = new();
+            List<string> cardNames = new List<string>();
 
             foreach (string cardLine in deckList.Split('\n'))
             {

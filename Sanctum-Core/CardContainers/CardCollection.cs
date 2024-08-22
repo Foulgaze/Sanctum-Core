@@ -1,10 +1,13 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 
 namespace Sanctum_Core
 {
     public class CardContainer
     {
-        public List<Card> Cards { get; } = new();
+        public List<Card> Cards { get; } = new List<Card>();
         private readonly int? maxCardCount;
         private readonly CardZone parentZone;
 
@@ -42,7 +45,7 @@ namespace Sanctum_Core
         /// </summary>
         public void Shuffle()
         {
-            Random rng = new();
+            Random rng = new Random();
             int n = this.Cards.Count;
             while (n > 1)
             {
@@ -72,7 +75,7 @@ namespace Sanctum_Core
 
         private bool ContainerIsOnField()
         {
-            return this.parentZone is CardZone.MainField or CardZone.RightField or CardZone.LeftField;
+            return this.parentZone == CardZone.MainField || this.parentZone == CardZone.RightField || this.parentZone == CardZone.LeftField;
         }
 
         private void ModifyAddedCard(Card card)
