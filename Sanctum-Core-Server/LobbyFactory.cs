@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Sanctum_Core_Logger;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,7 +75,11 @@ namespace Sanctum_Core_Server
         {
             DateTime currentTime = DateTime.Now;
             List<Lobby> currentLobbies = this.lobbies.Values.Where(lobby => !lobby.LobbyStarted && lobby.CheckLobbyTimeout(currentTime, allowedIdleTime)).ToList();
-            currentLobbies.ForEach(lobby => this.lobbies.TryRemove(lobby.code, out Lobby? _));
+            currentLobbies.ForEach(lobby =>
+            {
+                Logger.Log($"Removing lobby {lobby.code} due to idle"); 
+                _ = this.lobbies.TryRemove(lobby.code, out _);
+            });
         }
 
         private string GenerateUniqueLobbyCode()
