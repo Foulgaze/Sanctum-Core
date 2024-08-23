@@ -170,6 +170,7 @@ namespace Sanctum_Core
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
                 List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
                 cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
+                this.UpdateCardZone(player, CardZone.Library);
             }
         }
     }
