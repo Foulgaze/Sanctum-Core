@@ -1,4 +1,4 @@
-﻿using Sanctum_Core_Logger;
+﻿//using Sanctum_Core_Logger;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -18,9 +18,9 @@ namespace Sanctum_Core
                 return this.cardID++;
             }
         }
-        private readonly CardIdCounter cardIdCounter = new();
-        private readonly List<string> twoSidedCardLayouts = new() { "meld", "transform", "modal_dfc" };
-        private readonly Dictionary<int, Card> idToCard = new();
+        private readonly CardIdCounter cardIdCounter = new CardIdCounter();
+        private readonly List<string> twoSidedCardLayouts = new List<string>() { "meld", "transform", "modal_dfc" };
+        private readonly Dictionary<int, Card> idToCard = new Dictionary<int, Card>();
         private readonly NetworkAttributeFactory networkAttributeFactory;
         public event Action<Card> cardCreated = delegate { };
 
@@ -41,7 +41,7 @@ namespace Sanctum_Core
         /// <returns>A list of <see cref="Card"/> objects created from the provided card names.</returns>
         public List<Card> LoadCardNames(List<string> cardNames)
         {
-            List<Card> cards = new();
+            List<Card> cards = new List<Card>();
             foreach (string cardName in cardNames)
             {
                 Card? newCard = this.CreateCard(cardName);
@@ -87,7 +87,7 @@ namespace Sanctum_Core
             {
                 return null;
             }
-            Card newCard = new(this.cardIdCounter.GetNextCardId(), frontInfo, backInfo, this.networkAttributeFactory, isTokenCard);
+            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), frontInfo, backInfo, this.networkAttributeFactory, isTokenCard);
             this.idToCard[newCard.Id] = newCard;
             if(changeShouldBeNetworked)
             {
@@ -125,7 +125,11 @@ namespace Sanctum_Core
             int doubleSlashIndex = fullName.IndexOf("//");
             if (doubleSlashIndex == -1)
             {
-                return isTokenCard ? (info.uuid, null) : (fullName, null);
+                if(isTokenCard)
+                {
+                    return (info.uuid, null);
+                }
+                return (fullName, null);
             }
             string frontName = fullName[..doubleSlashIndex];
             string backName = fullName[doubleSlashIndex..];

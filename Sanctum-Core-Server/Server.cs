@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Sanctum_Core_Logger;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -41,16 +42,24 @@ namespace Sanctum_Core_Server
         {
             Logger.Log($"Server is now listening on port {this.portNumber}");
             this._listener.Start();
-
+            Thread lobbyClean = new(this.LobbyCleaning) { Name = "Lobby Cleaning Thread"};
+            lobbyClean.Start();
             while (true)
             {
-                if(this.deadLobbyClock != null && this.deadLobbyClock.HasTimerPassed())
-                {
-                    this.lobbyFactory.CheckForDeadLobbies(this.allowedLobbyIdleTime);
-                }
                 TcpClient client = this._listener.AcceptTcpClient();
                 Thread thread = new(() => this.HandleClient(client)) { Name = "Handling Client Thread"};
                 thread.Start();
+            }
+        }
+
+        public void LobbyCleaning()
+        {
+            while(true)
+            {
+                if (this.deadLobbyClock != null && this.deadLobbyClock.HasTimerPassed())
+                {
+                    this.lobbyFactory.CheckForDeadLobbies(this.allowedLobbyIdleTime);
+                }
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Sanctum_Core;
 using Sanctum_Core_Logger;
+using System;
 using System.Diagnostics;
 using System.Net.Sockets;
 
@@ -92,32 +93,70 @@ namespace Sanctum_Core_Server
         public void StartLobby()
         {
             this.InitGame();
+            this.RunLobbyLoop();
+        }
+
+        /// <summary>
+        /// Continuously listens for player commands and checks for disconnected players.
+        /// </summary>
+        private void RunLobbyLoop()
+        {
             while (true)
             {
                 bool checkForDisconnectedPlayers = this.disconnectedPlayerCheck.HasTimerPassed();
-                for (int i = this.connections.Count - 1; i > -1; --i)
-                {
-                    LobbyConnection connection = this.connections[i];
-                    if (!connection.Connected)
-                    {
-                        this.connections.RemoveAt(i);
-                        continue;
-                    }
-                    NetworkCommand? command = connection.GetNetworkCommand(readUntilData : false);
-                    if(checkForDisconnectedPlayers)
-                    {
-                        this.CheckForConnectivity(connection);
-                    }
-                    this.HandleCommand(command, connection.uuid);
 
-                }
+                this.ProcessConnections(checkForDisconnectedPlayers);
+
                 if (this.connections.Count == 0)
                 {
-                    OnLobbyClosed?.Invoke(this);
-                    Logger.Log($"Closing lobby {this.code}");
-                    return;
+                    this.CloseLobby();
+                    break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Processes all player connections, handles commands, and checks connectivity.
+        /// </summary>
+        /// <param name="checkForDisconnectedPlayers">Flag to indicate if connectivity should be checked.</param>
+        private void ProcessConnections(bool checkForDisconnectedPlayers)
+        {
+            for (int i = this.connections.Count - 1; i >= 0; --i)
+            {
+                LobbyConnection connection = this.connections[i];
+
+                if(checkForDisconnectedPlayers)
+                {
+                    this.CheckForConnectivity(connection);
+                }
+
+                if (!connection.Connected)
+                {
+                    this.connections.RemoveAt(i);
+                    continue;
+                }
+
+                this.HandleConnectionCommands(connection);
+            }
+        }
+
+        /// <summary>
+        /// Handles the network commands and connectivity check for a single connection.
+        /// </summary>
+        /// <param name="connection">The lobby connection to process.</param>
+        private void HandleConnectionCommands(LobbyConnection connection)
+        {
+            NetworkCommand? command = connection.GetNetworkCommand(readUntilData: false);
+            this.HandleCommand(command, connection.uuid);
+        }
+
+        /// <summary>
+        /// Closes the lobby and logs the closure.
+        /// </summary>
+        private void CloseLobby()
+        {
+            OnLobbyClosed?.Invoke(this);
+            Logger.Log($"Closing lobby {this.code}");
         }
 
         /// <summary>
@@ -164,7 +203,6 @@ namespace Sanctum_Core_Server
             {
                 Logger.LogError($"Player {connection.name} has disconnected");
             }
-            return;
         }
         private void HandleCommand(NetworkCommand? command, string uuid)
         {
