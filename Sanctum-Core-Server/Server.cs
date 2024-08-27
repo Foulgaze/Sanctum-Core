@@ -99,7 +99,7 @@ namespace Sanctum_Core_Server
                 Logger.LogError("Must include name and lobby code");
                 return false;
             }
-            if (!int.TryParse(data[0], out int playerCount))
+            if (!int.TryParse(data[0], out int playerCount) || playerCount < 1)
             {
                 SendInvalidCommand(client, "Invalid lobby count");
                 return false;

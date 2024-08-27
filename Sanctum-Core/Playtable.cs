@@ -11,25 +11,30 @@ namespace Sanctum_Core
         private readonly List<Player> _players = new List<Player>();
         public readonly int readyUpNeeded;
         public readonly NetworkAttribute<bool> GameStarted;
-        private readonly CardFactory cardFactory;
+        public readonly CardFactory cardFactory;
         public readonly NetworkAttributeFactory networkAttributeFactory;
         public event Action<Card> cardCreated = delegate { };
-
+        private readonly bool isSlave;
         /// <summary>
         /// Creates playtable
         /// </summary>
         /// <param name="playerCount">Number of players present in table</param>
         /// <param name="cardsPath">Path to cards.csv</param>
         /// <param name="tokensPath">Path to tokens.csv</param>
-        public Playtable(int playerCount, string cardsPath, string tokensPath, bool isSlavePlaytable = false)
+        public Playtable(int playerCount, string cardsPath, string tokensPath, bool isSlave = false)
         {
-            this.networkAttributeFactory = new NetworkAttributeFactory(isSlavePlaytable);
+            this.networkAttributeFactory = new NetworkAttributeFactory(isSlave);
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
             this.cardFactory.cardCreated += this.CardCreated;
             this.readyUpNeeded = playerCount;
+            this.isSlave = isSlave;
             CardData.LoadCardNames(cardsPath);
             CardData.LoadCardNames(tokensPath, true);
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
+            if(isSlave) // If slave playtable, then ignore checking for readiness, and just listen to main playtable for ready message.
+            {
+                this.GameStarted.nonNetworkChange += (_) => this.StartGame(); 
+            }
         }
 
         
@@ -46,7 +51,10 @@ namespace Sanctum_Core
                 return false;
             }
             Player player = new Player(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
-            player.ReadiedUp.valueChanged += this.CheckForStartGame;
+            if(!this.isSlave)
+            {
+                player.ReadiedUp.valueChanged += this.CheckForStartGame;
+            }
             this._players.Add(player);
             return true;
         }
@@ -169,8 +177,11 @@ namespace Sanctum_Core
                 cardNames.Sort();
                 CardContainerCollection library = player.GetCardContainer(CardZone.Library);
                 List<Card> cards = this.cardFactory.LoadCardNames(cardNames);
-                cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
-                this.UpdateCardZone(player, CardZone.Library);
+                if(!this.isSlave)
+                {
+                    cards.ForEach(card => library.InsertCardIntoContainer(0, true, card, null, false));
+                    this.UpdateCardZone(player, CardZone.Library);
+                }
             }
         }
     }

@@ -12,6 +12,7 @@ namespace Sanctum_Core
         public NetworkAttribute<int> Health { get; }
         public NetworkAttribute<(List<string>, int?, CardZone zone)> revealCardZone { get; set; }
         public NetworkAttribute<bool> ReadiedUp { get; set; }
+        public NetworkAttribute<bool> isIncreasingHealth { get; set; }
         private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new Dictionary<CardZone, CardContainerCollection>();
         private readonly NetworkAttributeFactory networkAttributeFactory;
         private readonly CardFactory cardFactory;
@@ -34,7 +35,15 @@ namespace Sanctum_Core
             this.DeckListRaw = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Uuid}-decklist", "");
             this.ReadiedUp = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-ready", false);
             this.revealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(List<string>, int ?, CardZone zone)>($"{this.Uuid}-reveal", (new List<string>(), null, CardZone.Library));
+            this.isIncreasingHealth = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-healthchange", false, setWithoutEqualityCheck: true);
+            this.isIncreasingHealth.valueChanged += this.ChangeHealth;
             this.InitializeBoards();
+        }
+
+        private void ChangeHealth(NetworkAttribute attribute)
+        {
+            int changeValue = ((NetworkAttribute<bool>)attribute).Value ? 1 : -1;
+            this.Health.SetValue(this.Health.Value + changeValue);
         }
 
         private void InitializeBoards()

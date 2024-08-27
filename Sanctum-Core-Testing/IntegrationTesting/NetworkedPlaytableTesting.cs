@@ -261,6 +261,13 @@ namespace Sanctum_Core_Testing
                     command = player.GetNetworkCommand();
                 } while (command != null && command.opCode != (int)NetworkInstruction.NetworkAttribute);
             }
+            foreach (LobbyConnection player in returnList) // Get the boardstate
+            {
+                for(int i = 0; i < playerCount; ++i)
+                {
+                    _ = player.GetNetworkCommand();
+                }
+            }
             returnList.Sort((x, y) => x.uuid.CompareTo(y.uuid));
             return returnList;
         }

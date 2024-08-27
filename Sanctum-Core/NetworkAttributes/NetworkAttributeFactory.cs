@@ -90,13 +90,13 @@ namespace Sanctum_Core
         /// <param name="networkChange">Indicates whether changes to the attribute should be networked (default is true).</param>
         /// <returns>The created <see cref="NetworkAttribute{T}"/> instance.</returns>
         /// <exception cref="Exception">Thrown if the attribute ID is already present in the dictionary.</exception>
-        public NetworkAttribute<T> AddNetworkAttribute<T>(string id, T value, bool outsideSettable = true, bool networkChange = true)
+        public NetworkAttribute<T> AddNetworkAttribute<T>(string id, T value, bool outsideSettable = true, bool networkChange = true, bool setWithoutEqualityCheck = false)
         {
             if(this.networkAttributes.ContainsKey(id))
             {
                 throw new Exception($"{id} already present in dictionary");
             }
-            NetworkAttribute<T> newAttribute = new NetworkAttribute<T>(id, value);
+            NetworkAttribute<T> newAttribute = new NetworkAttribute<T>(id, value, setWithoutEqualityCheck);
             this.networkAttributes.Add(id, newAttribute);
             if(networkChange)
             {
