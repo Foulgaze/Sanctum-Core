@@ -10,14 +10,16 @@ namespace Sanctum_Core
         public abstract Type ValueType { get; }
 
         public bool outsideSettable { get; set; }
+        protected readonly bool setWithoutEqualityCheck;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NetworkAttribute"/> class with the specified identifier.
         /// </summary>
         /// <param name="id">The unique identifier of the network attribute.</param>
-        protected NetworkAttribute(string id)
+        protected NetworkAttribute(string id, bool setWithoutEqualityCheck = false)
         {
             this.Id = id;
+            this.setWithoutEqualityCheck = setWithoutEqualityCheck;
         }
 
         public abstract void SetValue(object value);
@@ -42,7 +44,7 @@ namespace Sanctum_Core
             get => this.value;
             protected set
             {
-                if (EqualityComparer<T>.Default.Equals(this.value, value))
+                if (!this.setWithoutEqualityCheck && EqualityComparer<T>.Default.Equals(this.value, value))
                 {
                     return;   
                 }
@@ -87,7 +89,7 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="id">The unique identifier of the network attribute.</param>
         /// <param name="value">The initial value of the network attribute.</param>
-        public NetworkAttribute(string id, T value) : base(id)
+        public NetworkAttribute(string id, T value, bool setWithoutEqualityCheck = false) : base(id, setWithoutEqualityCheck)
         {
             this.value = value;
             this.isSerializedValueDirty = true;
