@@ -50,7 +50,7 @@ namespace Sanctum_Core
             {
                 return false;
             }
-            Player player = new Player(uuid, name, 40, this.networkAttributeFactory, this.cardFactory);
+            Player player = new Player(uuid, name, 40, this.networkAttributeFactory, this.cardFactory, this.isSlave);
             if(!this.isSlave)
             {
                 player.ReadiedUp.valueChanged += this.CheckForStartGame;

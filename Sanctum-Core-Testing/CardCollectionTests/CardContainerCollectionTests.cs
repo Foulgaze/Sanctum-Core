@@ -25,7 +25,7 @@ namespace Sanctum_Core_Testing.CardCollectionTests
                 5,
                 false,
                 this.networkAttributeFactory,
-                this.cardFactory);
+                this.cardFactory, false);
             this.cardId = 0;
         }
 
