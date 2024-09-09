@@ -33,7 +33,7 @@ namespace Sanctum_Core
         private readonly List<CardContainer> Containers = new List<CardContainer>();
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
-        private readonly NetworkAttribute<InsertCardData> insertCardData;
+        public readonly NetworkAttribute<InsertCardData> insertCardData;
         public readonly NetworkAttribute<List<int>> removeCardIds;
         public readonly NetworkAttribute<List<List<int>>> boardState;
         public readonly NetworkAttribute<bool> revealTopCard;
@@ -49,17 +49,20 @@ namespace Sanctum_Core
         /// <param name="revealTopCard">Indicates whether the top card of each container should be revealed.</param>
         /// <param name="networkAttributeManager">The factory for managing network attributes.</param>
         /// <param name="cardFactory">The factory for creating cards.</param>
-        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, bool revealTopCard, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory)
+        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, bool revealTopCard, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory, bool isSlave = false)
         {
             this.maxCardCountPerContainer = maxContainerCardCount;
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, false);
+            this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, networkChange : isSlave);
             this.revealTopCard = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
             this.removeCardIds = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-removecards", new List<int>());
             this.boardState = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-boardstate", new List<List<int>>());
-            this.insertCardData.valueChanged += this.NetworkedCardInsert;
+            if(!isSlave)
+            {
+                this.insertCardData.valueChanged += this.NetworkedCardInsert;
+            }
             this.CardFactory = cardFactory;
         }
 
@@ -224,7 +227,6 @@ namespace Sanctum_Core
                 Logger.LogError($"Attempted to insert card into full container {cardToBeInserted}");
                 return false;
             }
-            CardContainer destinationContainer = this.DetermineDestinationContainer(cardToBeInserted.insertPosition, cardToBeInserted.createNewContainer);
             Card? insertCard = this.CardFactory.GetCard(cardToBeInserted.cardId);
             if (insertCard == null)
             {
@@ -234,6 +236,7 @@ namespace Sanctum_Core
             }
             _ = insertCard.CurrentLocation?.RemoveCardFromContainer(cardToBeInserted.cardId, networkChange);
             insertCard.CurrentLocation = this;
+            CardContainer destinationContainer = this.DetermineDestinationContainer(cardToBeInserted.insertPosition, cardToBeInserted.createNewContainer);
             destinationContainer.AddCardToContainer(insertCard, cardToBeInserted.containerInsertPosition);
             if (networkChange)
             {
