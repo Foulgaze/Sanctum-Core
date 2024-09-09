@@ -10,9 +10,9 @@ namespace Sanctum_Core
         public string Uuid { get; }
         public NetworkAttribute<string> DeckListRaw { get; }
         public NetworkAttribute<int> Health { get; }
-        public NetworkAttribute<(List<string>, int?, CardZone zone)> revealCardZone { get; set; }
         public NetworkAttribute<bool> ReadiedUp { get; set; }
         public NetworkAttribute<bool> isIncreasingHealth { get; set; }
+        public NetworkAttribute<(CardZone, int?)> RevealCardZone { get; set; } 
         private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new Dictionary<CardZone, CardContainerCollection>();
         private readonly NetworkAttributeFactory networkAttributeFactory;
         private readonly CardFactory cardFactory;
@@ -34,8 +34,8 @@ namespace Sanctum_Core
             this.Health = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Uuid}-health", startingHealth);
             this.DeckListRaw = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Uuid}-decklist", "");
             this.ReadiedUp = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-ready", false);
-            this.revealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(List<string>, int ?, CardZone zone)>($"{this.Uuid}-reveal", (new List<string>(), null, CardZone.Library));
             this.isIncreasingHealth = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-healthchange", false, setWithoutEqualityCheck: true);
+            this.RevealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(CardZone,int?)>($"{this.Uuid}-reveal",(0, null), setWithoutEqualityCheck: true);
             this.isIncreasingHealth.valueChanged += this.ChangeHealth;
             this.InitializeBoards(isSlave);
         }
