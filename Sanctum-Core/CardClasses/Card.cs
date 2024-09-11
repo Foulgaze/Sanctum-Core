@@ -84,6 +84,7 @@ namespace Sanctum_Core
         {
             this.isFlipped.SetValue(false);
             this.isUsingBackSide.SetValue(false);
+            this.isTapped.SetValue(false);
             this.power.SetValue(this.ParsePT(this.CurrentInfo.power));
             this.toughness.SetValue(this.ParsePT(this.CurrentInfo.toughness));
             this.name.SetValue(this.CurrentInfo.name);
