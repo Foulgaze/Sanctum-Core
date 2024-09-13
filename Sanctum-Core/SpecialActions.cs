@@ -120,13 +120,13 @@ namespace Sanctum_Core
             }
 
             string[] data = rawData.Split('|');
-            string tokenName = data[0];
+            string tokenUUID = data[0];
             string? rawCardOriginID = data.Length > 1 ? data[1] : null;
 
-            CreateTokenCard(cardFactory, player, tokenName, rawCardOriginID);
+            CreateTokenCard(cardFactory, player, tokenUUID, rawCardOriginID);
         }
 
-        private static void CreateTokenCard(CardFactory cardFactory, Player player, string tokenName, string? rawCardOriginID)
+        private static void CreateTokenCard(CardFactory cardFactory, Player player, string tokenUUID, string? rawCardOriginID)
         {
             if (!TryGetOriginCard(cardFactory, rawCardOriginID, out Card? originCard))
             {
@@ -136,11 +136,11 @@ namespace Sanctum_Core
                 return;
             }
 
-            Card? tokenCard = cardFactory.CreateCard(tokenName,true, true);
+            Card? tokenCard = cardFactory.CreateCard(tokenUUID,true, true);
             if (tokenCard == null)
             {
                 // Log failure to create token card
-                Logger.LogError($"Failed to create token card of name - {tokenName} ");
+                Logger.LogError($"Failed to create token card of name - {tokenUUID} ");
 
                 return;
             }
@@ -232,14 +232,12 @@ namespace Sanctum_Core
         {
             if(!int.TryParse(cardToCopyId, out int cardId))
             {
-                // Log this
                 Logger.LogError($"Could not parse copy card id {cardToCopyId}");
                 return;
             }
             Card? cardToCopy = cardFactory.GetCard(cardId);
             if(cardToCopy == null)
             {
-                // Log this
                 Logger.LogError($"Could not copy card id {cardToCopyId}");
                 return;
             }
@@ -261,8 +259,9 @@ namespace Sanctum_Core
         /// <param name="library">The card container collection representing the library.</param>
         /// <param name="data">An array of strings containing the starting location ("top" or "bottom"), card ID, and card distance.</param>
         /// <returns>True if the operation is successful, otherwise false.</returns>
-        public static bool PutCardXFromTopOrBottom(CardFactory cardFactory,CardContainerCollection library,string[] data)
+        public static bool PutCardXFromTopOrBottom(CardFactory cardFactory,CardContainerCollection library,string rawData)
         {
+            string[] data = rawData.Split('|');
             if(data.Length != 3)
             {
                 // Log this

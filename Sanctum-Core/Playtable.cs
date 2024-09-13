@@ -13,7 +13,7 @@ namespace Sanctum_Core
         public readonly NetworkAttribute<bool> GameStarted;
         public readonly CardFactory cardFactory;
         public readonly NetworkAttributeFactory networkAttributeFactory;
-        public event Action<Card> cardCreated = delegate { };
+        public readonly NetworkAttribute<(string,string,SpecialAction)> specialAction;
         private readonly bool isSlave;
         /// <summary>
         /// Creates playtable
@@ -25,7 +25,11 @@ namespace Sanctum_Core
         {
             this.networkAttributeFactory = new NetworkAttributeFactory(isSlave);
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
-            this.cardFactory.cardCreated += this.CardCreated;
+            this.specialAction = this.networkAttributeFactory.AddNetworkAttribute<(string,string,SpecialAction)>("playtable-specialaction", (string.Empty,string.Empty,0), networkChange: isSlave, setWithoutEqualityCheck: true);
+            if(!isSlave)
+            {
+                this.specialAction.valueChanged += this.HandleSpecialAction;
+            }
             this.readyUpNeeded = playerCount;
             this.isSlave = isSlave;
             CardData.LoadCardNames(cardsPath);
@@ -33,7 +37,9 @@ namespace Sanctum_Core
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
             if(isSlave) // If slave playtable, then ignore checking for readiness, and just listen to main playtable for ready message.
             {
-                this.GameStarted.nonNetworkChange += (_) => this.StartGame(); 
+                this.GameStarted.nonNetworkChange += (_) => this.StartGame();
+                this.cardFactory.copyCardCreated.nonNetworkChange += this.HandleCardCopy;
+                this.cardFactory.tokenCardCreation.nonNetworkChange += this.HandleCardToken;
             }
         }
 
@@ -96,21 +102,9 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="rawInput">The raw input string containing the special action type and associated data.</param>
         /// <param name="callerUUID">The unique identifier of the player initiating the action.</param>
-        public void HandleSpecialAction(string rawInput, string callerUUID)
+        public void HandleSpecialAction(NetworkAttribute attribute)
         {
-            string[] data = rawInput.Split('|');
-            if(data.Length < 2)
-            {
-                // Log this
-                Logger.LogError($"Unable to handle special action, cannot split data properly - {rawInput}");
-                return;
-            }
-            if (!int.TryParse(data[0], out int specialAction))
-            {
-                Logger.LogError($"Unable to parse specialinput enum {data[0]} - {rawInput}");
-                // Log this
-                return;
-            }
+            (string rawInput, string callerUUID, SpecialAction action) = ((NetworkAttribute<(string,string,SpecialAction)>)attribute).Value;
             Player? callingPlayer = this.GetPlayer(callerUUID);
             if (callingPlayer == null)
             {
@@ -118,39 +112,52 @@ namespace Sanctum_Core
                 // Log this
                 return;
             }
-            switch (specialAction)
+            switch ((int)action)
             {
                 case (int)SpecialAction.Draw:
-                    SpecialActions.DrawCards(this, callingPlayer, data[1]);
+                    SpecialActions.DrawCards(this, callingPlayer, rawInput);
                     break;
                 case (int)SpecialAction.Mill:
-                    SpecialActions.MillCards(this, callingPlayer, data[1]);
+                    SpecialActions.MillCards(this, callingPlayer, rawInput);
                     break;
                 case (int)SpecialAction.Exile:
-                    SpecialActions.ExileCards(this, callingPlayer, data[1]);
+                    SpecialActions.ExileCards(this, callingPlayer, rawInput);
                     break;
                 case (int)SpecialAction.CreateToken:
-                    SpecialActions.CreateTokenCard(this.cardFactory, callingPlayer, string.Join("|", data[1..]));
+                    SpecialActions.CreateTokenCard(this.cardFactory, callingPlayer, rawInput);
                     break;
-                case (int)SpecialAction.CopyCard:
-                    SpecialActions.CreateCopyCard(this.cardFactory, data[1]);
+                case (int)SpecialAction.CopyCard:       
+                    SpecialActions.CreateCopyCard(this.cardFactory, rawInput);
                     break;
                 case (int)SpecialAction.PutCardXFrom:
-                    _ = SpecialActions.PutCardXFromTopOrBottom(this.cardFactory, callingPlayer.GetCardContainer(CardZone.Library), data[1..]);
+                    _ = SpecialActions.PutCardXFromTopOrBottom(this.cardFactory, callingPlayer.GetCardContainer(CardZone.Library), rawInput);
                     break;
                 case (int)SpecialAction.Shuffle:
                     SpecialActions.Shuffle(this, callerUUID);
                     break;
                 default:
                     // Log this
-                    Logger.LogError($"Special action was called with unknown special action enum - {specialAction} - {rawInput}");
+                    Logger.LogError($"Special action was called with unknown special action enum - {action} - {rawInput}");
                     break;
             }
         }
 
-        private void CardCreated(Card card)
+        private void HandleCardCopy(NetworkAttribute attribute)
         {
-            cardCreated(card);
+            int cardId = ((NetworkAttribute<int>)attribute).Value;
+            Card? card = this.cardFactory.GetCard(cardId);
+            if(card == null)
+            {
+                Logger.LogError($"Unable to find card of id {cardId}");
+                return;
+            }
+            _ = this.cardFactory.CreateCard(card);
+        }
+
+        private void HandleCardToken(NetworkAttribute attribute)
+        {
+            string tokenUUID = ((NetworkAttribute<string>)attribute).Value;
+            _ = this.cardFactory.CreateCard(tokenUUID, isTokenCard: true, changeShouldBeNetworked: false);
         }
 
         private void CheckForStartGame(NetworkAttribute _)
