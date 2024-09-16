@@ -1,4 +1,6 @@
 ﻿
+using System.Reflection;
+
 namespace Sanctum_Core
 {
     public class Card
@@ -14,6 +16,10 @@ namespace Sanctum_Core
         public NetworkAttribute<string> name;
         public NetworkAttribute<bool> isUsingBackSide;
         public NetworkAttribute<bool> isFlipped;
+        public NetworkAttribute<(int, int, int)> changeCounters;
+        public NetworkAttribute<int> redCounters;
+        public NetworkAttribute<int> blueCounters;
+        public NetworkAttribute<int> greenCounters;
         public NetworkAttribute<bool> isIncreasingPower { get; set; }
         public NetworkAttribute<bool> isIncreasingToughness { get; set; }
 
@@ -55,6 +61,11 @@ namespace Sanctum_Core
             this.isIncreasingPower.valueChanged += this.ChangePower;
             this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true);
             this.isIncreasingToughness.valueChanged += this.ChangeToughness;
+            this.redCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-redcounters", 0);
+            this.blueCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-bluecounters", 0);
+            this.greenCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-greencounters", 0);
+            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0,0,0), setWithoutEqualityCheck: true );
+            this.changeCounters.valueChanged += this.HandleCounterChange;
         }
 
 
@@ -90,6 +101,11 @@ namespace Sanctum_Core
             this.isIncreasingPower.valueChanged += this.ChangePower;
             this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true);
             this.isIncreasingToughness.valueChanged += this.ChangeToughness;
+            this.redCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-redcounters", cardToCopy.redCounters.Value);
+            this.blueCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-bluecounters", cardToCopy.blueCounters.Value);
+            this.greenCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-greencounters", cardToCopy.greenCounters.Value);
+            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0, 0, 0), setWithoutEqualityCheck: true);
+            this.changeCounters.valueChanged += this.HandleCounterChange;
         }
 
         /// <summary>
@@ -117,6 +133,9 @@ namespace Sanctum_Core
                 this.isUsingBackSide.SetValue(false);
             }
             this.isTapped.SetValue(false);
+            this.redCounters.SetValue(0);
+            this.blueCounters.SetValue(0);
+            this.greenCounters.SetValue(0);
             this.power.SetValue(this.ParsePT(this.CurrentInfo.power));
             this.toughness.SetValue(this.ParsePT(this.CurrentInfo.toughness));
             this.name.SetValue(this.CurrentInfo.name);
@@ -132,6 +151,21 @@ namespace Sanctum_Core
             int incriment = this.isIncreasingToughness.Value ? 1 : -1;
             this.toughness.SetValue(this.toughness.Value + incriment);
         }
+
+        private void HandleCounterChange(NetworkAttribute _)
+        {
+            (int redChange, int greenChange, int blueChange) = this.changeCounters.Value;
+
+            this.UpdateCounter(redChange, this.redCounters);
+            this.UpdateCounter(greenChange, this.greenCounters);
+            this.UpdateCounter(blueChange, this.blueCounters);
+        }
+
+        private void UpdateCounter(int changeValue, NetworkAttribute<int> counter)
+        {
+            counter.SetValue(counter.Value + changeValue);
+        }
+
 
         private int ParsePT(string value)
         {
