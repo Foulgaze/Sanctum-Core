@@ -133,6 +133,9 @@ namespace Sanctum_Core
                 this.isUsingBackSide.SetValue(false);
             }
             this.isTapped.SetValue(false);
+            this.redCounters.SetValue(0);
+            this.blueCounters.SetValue(0);
+            this.greenCounters.SetValue(0);
             this.power.SetValue(this.ParsePT(this.CurrentInfo.power));
             this.toughness.SetValue(this.ParsePT(this.CurrentInfo.toughness));
             this.name.SetValue(this.CurrentInfo.name);
@@ -151,11 +154,11 @@ namespace Sanctum_Core
 
         private void HandleCounterChange(NetworkAttribute _)
         {
-            (int redChange, int blueChange, int greenChange) = this.changeCounters.Value;
+            (int redChange, int greenChange, int blueChange) = this.changeCounters.Value;
 
             this.UpdateCounter(redChange, this.redCounters);
-            this.UpdateCounter(blueChange, this.blueCounters);
             this.UpdateCounter(greenChange, this.greenCounters);
+            this.UpdateCounter(blueChange, this.blueCounters);
         }
 
         private void UpdateCounter(int changeValue, NetworkAttribute<int> counter)
