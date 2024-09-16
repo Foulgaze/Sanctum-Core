@@ -77,7 +77,7 @@ namespace Sanctum_Core
                 return null;
             }
             string frontName;
-            if (this.twoSidedCardLayouts.Contains(info.layout))
+            if (this.twoSidedCardLayouts.Contains(info.layout) && info.otherFace.Length != 0)
             {
                 (frontName, backName) = this.GetFrontBackNames(info, isTokenCard);
             }
@@ -128,23 +128,14 @@ namespace Sanctum_Core
         private (string, string?) GetFrontBackNames(CardInfo info, bool isTokenCard = false)
         {
             string fullName = info.name.Trim();
-
-            int doubleSlashIndex = fullName.IndexOf("//");
-            if (doubleSlashIndex == -1)
-            {
-                if(isTokenCard)
-                {
-                    return (info.uuid, null);
-                }
-                return (fullName, null);
-            }
-            string frontName = fullName[..doubleSlashIndex];
-            string backName = fullName[doubleSlashIndex..];
+            string backName = CardData.GetBackSide(info.otherFace).name;
             if (isTokenCard) // This basically assumes that you'll only create tokens starting with front face
             {
                 return (info.uuid, info.otherFace);
             }
-            return (frontName, backName);
+            return (fullName, backName);
         }
+
+        
     }
 }
