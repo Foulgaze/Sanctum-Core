@@ -42,13 +42,6 @@ namespace Sanctum_Core_Server
         {
             this.SendMessage(NetworkInstruction.NetworkAttribute, $"{attribute.Id}|{attribute.SerializedValue}");
         }
-
-
-        private void NetworkCardCreation(Card card)
-        {
-            this.SendMessageToAllPlayers(NetworkInstruction.CardCreation, $"{card.CurrentInfo.uuid}|{card.Id}");
-        }
-
         private void SendMessage(NetworkInstruction instruction, string payload)
         {
             this.SendMessageToAllPlayers(instruction, payload);
@@ -60,7 +53,6 @@ namespace Sanctum_Core_Server
             string lobbyDescription = JsonConvert.SerializeObject(this.connections.ToDictionary(player => player.uuid, player => player.name));
             this.SendMessageToAllPlayers(NetworkInstruction.StartGame, lobbyDescription);
             this.playtable.networkAttributeFactory.attributeValueChanged  += this.NetworkAttributeChanged;
-            this.playtable.cardCreated += this.NetworkCardCreation;
         }
 
         public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null) 
@@ -147,7 +139,7 @@ namespace Sanctum_Core_Server
         private void HandleConnectionCommands(LobbyConnection connection)
         {
             NetworkCommand? command = connection.GetNetworkCommand(readUntilData: false);
-            this.HandleCommand(command, connection.uuid);
+            this.HandleCommand(command);
         }
 
         /// <summary>
@@ -204,7 +196,7 @@ namespace Sanctum_Core_Server
                 Logger.LogError($"Player {connection.name} has disconnected");
             }
         }
-        private void HandleCommand(NetworkCommand? command, string uuid)
+        private void HandleCommand(NetworkCommand? command)
         {
             if (command == null)
             {
@@ -215,9 +207,6 @@ namespace Sanctum_Core_Server
             {
                 case (int)NetworkInstruction.NetworkAttribute:
                     this.playtable.networkAttributeFactory.HandleNetworkedAttribute(command.instruction);
-                    break;
-                case (int)NetworkInstruction.SpecialAction:
-                    this.playtable.HandleSpecialAction(command.instruction,uuid);
                     break;
                 default:
                     // Ignore!

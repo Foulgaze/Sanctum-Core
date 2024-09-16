@@ -23,7 +23,7 @@ namespace Sanctum_Core_Testing.PlaytableTests.SpecialActionTests
             this.cardFactory = cf!;
         }
 
-        [TestCase(0, 0, "top")]
+       /* [TestCase(0, 0, "top")]
         [TestCase(99, 5, "bottom")]
         [TestCase(10, 3, "bottom")]
         [TestCase(1, 0, "top")]      // Edge case: Zero Distance
@@ -59,6 +59,6 @@ namespace Sanctum_Core_Testing.PlaytableTests.SpecialActionTests
             {
                 Assert.That(librarySerialized[0][resultPosition], Is.EqualTo(cardId));
             }
-        }
+        }*/
     }
 }

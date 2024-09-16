@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 
 namespace Sanctum_Core
 {
@@ -10,6 +11,7 @@ namespace Sanctum_Core
     {
         private static readonly Dictionary<string, CardInfo> nameToInfoStandardCards = new Dictionary<string, CardInfo>();
         private static readonly Dictionary<string, CardInfo> uuidToInfoTokenCards = new Dictionary<string, CardInfo>();
+        private static readonly Dictionary<string, string> uuidToInfoCardName = new Dictionary<string, string>();
 
         private static readonly HashSet<string> filesLoaded = new HashSet<string>();
 
@@ -29,7 +31,6 @@ namespace Sanctum_Core
             {
                 throw new Exception($"Could not find filePath : {filePath}");
             }
-            Dictionary<string, CardInfo> cardData = isLoadingTokens ? uuidToInfoTokenCards : nameToInfoStandardCards;
             _ = filesLoaded.Add(filePath);
             using StreamReader reader = new StreamReader(filePath);
             using CsvReader csv = new CsvReader(reader, CultureInfo.InvariantCulture);
@@ -40,28 +41,12 @@ namespace Sanctum_Core
                 CardInfo currentCardInfo = csv.GetRecord<CardInfo>();
                 if(isLoadingTokens)
                 {
-                    cardData[currentCardInfo.uuid] = currentCardInfo;
+                    uuidToInfoTokenCards[currentCardInfo.uuid] = currentCardInfo;
                     continue;
                 }
-                cardData[currentCardInfo.name] = currentCardInfo;
+                uuidToInfoCardName[currentCardInfo.uuid] = currentCardInfo.name;
+                nameToInfoStandardCards[currentCardInfo.name] = currentCardInfo;
             }
-        }
-
-        /// <summary>
-        /// Checks if a card with the specified identifier exists in the loaded data.
-        /// </summary>
-        /// <param name="cardIdentifier">The name or UUID of the card to check.</param>
-        /// <param name="isToken">Indicates whether to check in the token cards dictionary. Default is false.</param>
-        /// <returns>True if the card exists, otherwise false.</returns>
-        /// <exception cref="Exception">Thrown if no card data has been loaded.</exception>
-        public static bool DoesCardExist(string cardIdentifier, bool isToken = false)
-        {
-            if (filesLoaded.Count == 0)
-            {
-                throw new Exception("Must load cardnames");
-            }
-
-            return isToken ? uuidToInfoTokenCards.ContainsKey(cardIdentifier) : nameToInfoStandardCards.ContainsKey(cardIdentifier);
         }
 
         /// <summary>
@@ -78,6 +63,52 @@ namespace Sanctum_Core
             }
             Dictionary<string, CardInfo> searchDict = isToken ? uuidToInfoTokenCards : nameToInfoStandardCards;
             return !searchDict.ContainsKey(cardIdentifier) ? null : searchDict[cardIdentifier];
+        }
+
+        /// <summary>
+        /// Gets the backside of the card based on the uuid
+        /// </summary>
+        /// <param name="frontsideUUID"> The uuid of the front side</param>
+        /// <returns> Cardinfo of the backside </returns>
+        /// <exception cref="Exception"> Breaks if not present </exception>
+        public static CardInfo GetBackSide(string frontsideUUID)
+        {
+
+            if(!uuidToInfoCardName.ContainsKey(frontsideUUID))
+            {
+                throw new Exception($"Unable to find of uuid {frontsideUUID}");
+            }
+            string cardName = uuidToInfoCardName[frontsideUUID];
+            if (!nameToInfoStandardCards.ContainsKey(cardName))
+            {
+                throw new Exception($"Unable to find of card name {cardName}");
+            }
+            return nameToInfoStandardCards[cardName];
+        }
+
+        private static string GetTokenName(string uuid)
+        {
+            CardInfo info = uuidToInfoTokenCards[uuid];
+            return info.name;
+            if(info.power == string.Empty && info.toughness == string.Empty)
+            {
+                return info.name;
+            }
+            string power = info.power == string.Empty ? "0" : info.power;
+            string toughness = info.toughness == string.Empty ? "0" : info.toughness;
+            return $"{info.name} - ({power}/{toughness})";
+        }
+
+        public static List<(string, string)> GetTokenUUINamePairs()
+        {
+            List<(string, string)> pairs = new List<(string,string)>();
+            foreach (string uuid in uuidToInfoTokenCards.Keys)
+            {
+                pairs.Add((uuid, GetTokenName(uuid)));
+            }
+            return pairs.GroupBy(pair => pair.Item2)   // Group by the name (Item2)
+            .Select(group => group.First()) // Select the first pair in each group
+            .OrderBy(kvp => kvp.Item2).ToList();
         }
     }
 }

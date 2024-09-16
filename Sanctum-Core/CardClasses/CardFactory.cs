@@ -21,6 +21,8 @@ namespace Sanctum_Core
         private readonly CardIdCounter cardIdCounter = new CardIdCounter();
         private readonly List<string> twoSidedCardLayouts = new List<string>() { "meld", "transform", "modal_dfc" };
         private readonly Dictionary<int, Card> idToCard = new Dictionary<int, Card>();
+        public readonly NetworkAttribute<string> tokenCardCreation;
+        public readonly NetworkAttribute<int> copyCardCreated;
         private readonly NetworkAttributeFactory networkAttributeFactory;
         public event Action<Card> cardCreated = delegate { };
 
@@ -31,6 +33,8 @@ namespace Sanctum_Core
         public CardFactory(NetworkAttributeFactory networkAttributeFactory)
         {
             this.networkAttributeFactory = networkAttributeFactory;
+            this.tokenCardCreation = networkAttributeFactory.AddNetworkAttribute<string>($"factory-token", string.Empty, setWithoutEqualityCheck: true);
+            this.copyCardCreated = networkAttributeFactory.AddNetworkAttribute<int>($"factory-copy",0, setWithoutEqualityCheck: true);
         }
 
 
@@ -73,7 +77,7 @@ namespace Sanctum_Core
                 return null;
             }
             string frontName;
-            if (this.twoSidedCardLayouts.Contains(info.layout))
+            if (this.twoSidedCardLayouts.Contains(info.layout) && info.otherFace.Length != 0)
             {
                 (frontName, backName) = this.GetFrontBackNames(info, isTokenCard);
             }
@@ -91,7 +95,7 @@ namespace Sanctum_Core
             this.idToCard[newCard.Id] = newCard;
             if(changeShouldBeNetworked)
             {
-                cardCreated(newCard);
+                this.tokenCardCreation.SetValue(cardIdentifier);
             }
             return newCard;
         }
@@ -103,7 +107,10 @@ namespace Sanctum_Core
         /// <returns>The created <see cref="Card"/> object, or null if the card could not be created.</returns>
         public Card? CreateCard(Card cardToCopy)
         {
-            return new Card(this.cardIdCounter.GetNextCardId(),this.networkAttributeFactory, cardToCopy);
+            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), this.networkAttributeFactory, cardToCopy);
+            this.idToCard[newCard.Id] = newCard;
+            this.copyCardCreated.SetValue(cardToCopy.Id);
+            return newCard;
         }
 
         /// <summary>
@@ -121,23 +128,14 @@ namespace Sanctum_Core
         private (string, string?) GetFrontBackNames(CardInfo info, bool isTokenCard = false)
         {
             string fullName = info.name.Trim();
-
-            int doubleSlashIndex = fullName.IndexOf("//");
-            if (doubleSlashIndex == -1)
-            {
-                if(isTokenCard)
-                {
-                    return (info.uuid, null);
-                }
-                return (fullName, null);
-            }
-            string frontName = fullName[..doubleSlashIndex];
-            string backName = fullName[doubleSlashIndex..];
+            string backName = CardData.GetBackSide(info.otherFace).name;
             if (isTokenCard) // This basically assumes that you'll only create tokens starting with front face
             {
                 return (info.uuid, info.otherFace);
             }
-            return (frontName, backName);
+            return (fullName, backName);
         }
+
+        
     }
 }

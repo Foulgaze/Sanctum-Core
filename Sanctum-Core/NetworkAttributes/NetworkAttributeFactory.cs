@@ -30,15 +30,14 @@ namespace Sanctum_Core
         /// <param name="e">The event data containing information about the property change.</param>
         public void HandleNetworkedAttribute(string serializedNetworkAttribute)
         {
-            string[] splitInstruction = serializedNetworkAttribute.Split("|");
-            if (splitInstruction.Length != 2)
+            int splitIndex = serializedNetworkAttribute.IndexOf('|');
+            if (splitIndex == -1)
             {
-                // Log Error;
                 Logger.LogError($"Invalid network attribute, cannot split with \'|\' - {serializedNetworkAttribute}");
                 return;
             }
-            string id = splitInstruction[0];
-            string serializedNewValue = splitInstruction[1];
+            string id = serializedNetworkAttribute[..splitIndex];
+            string serializedNewValue = serializedNetworkAttribute[(splitIndex + 1)..];
             NetworkAttribute? attribute = this.networkAttributes.GetValueOrDefault(id);
             if (attribute == null)
             {
