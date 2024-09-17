@@ -139,7 +139,7 @@ namespace Sanctum_Core
                     SpecialActions.Mulligan(this, callingPlayer);
                     break;
                 case (int)SpecialAction.MoveContainerCardsTo:
-                    SpecialActions.MoveContainerCards()
+                    SpecialActions.MoveContainerCards(this, callingPlayer, rawInput);
                     break;
                 default:
                     // Log this
