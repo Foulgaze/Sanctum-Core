@@ -1,12 +1,13 @@
 ﻿////using Sanctum_Core_Logger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Sanctum_Core
 {
-    public enum SpecialAction { Draw, Mill, Exile, CreateToken, CopyCard, PutCardXFrom, Shuffle}
+    public enum SpecialAction { Draw, Mill, Exile, CreateToken, CopyCard, PutCardXFrom, Shuffle, Mulligan, MoveContainerCardsTo}
     public static class SpecialActions
     {
         private static readonly List<CardZone> boardCardZones = new List<CardZone>
@@ -309,6 +310,30 @@ namespace Sanctum_Core
             }
             int insertPosition = startingLocation == "top" ? zoneCount - cardDistance : 0 + cardDistance;
             zone.InsertCardIntoContainer(0, false, cardToMove, insertPosition, true);
+        }
+
+        public static void Mulligan(Playtable table, Player clientPlayer)
+        {
+            MoveAllCardsFromSourceToDestinationZone(CardZone.Hand, CardZone.Library, clientPlayer,null, table);
+            Shuffle(table,clientPlayer.Uuid);
+            DrawCards(table, clientPlayer, "7");
+        }
+
+        private static void MoveAllCardsFromSourceToDestinationZone(CardZone sourceZone, CardZone destinationZone, Player clientPlayer, int? insertPosition, Playtable table)
+        {
+            CardContainerCollection destinationCollection = clientPlayer.GetCardContainer(destinationZone);
+            CardContainerCollection sourceCollection = clientPlayer.GetCardContainer(sourceZone);
+            List<Card> allCards = sourceCollection.ToCardList().SelectMany(sublist => sublist).ToList();
+            foreach(Card card in allCards)
+            {
+                destinationCollection.InsertCardIntoContainer(insertPosition : null, createNewContainer : false, cardToInsert:card, cardContainerPosition: insertPosition, changeShouldBeNetworked: false);
+            }
+            if(allCards.Count != 0)
+            {
+                sourceCollection.removeCardIds.SetValue(allCards.Select(card => card.Id).ToList());
+                table.UpdateCardZone(clientPlayer, destinationZone);
+            }
+            
         }
     }
 }

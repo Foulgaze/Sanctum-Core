@@ -135,6 +135,12 @@ namespace Sanctum_Core
                 case (int)SpecialAction.Shuffle:
                     SpecialActions.Shuffle(this, callerUUID);
                     break;
+                case (int)SpecialAction.Mulligan:
+                    SpecialActions.Mulligan(this, callingPlayer);
+                    break;
+                case (int)SpecialAction.MoveContainerCardsTo:
+                    SpecialActions.MoveContainerCards()
+                    break;
                 default:
                     // Log this
                     Logger.LogError($"Special action was called with unknown special action enum - {action} - {rawInput}");
