@@ -319,6 +319,33 @@ namespace Sanctum_Core
             DrawCards(table, clientPlayer, "7");
         }
 
+        public static void MoveContainerCards(Playtable table, Player clientPlayer, string rawData)
+        {
+            string[] data = rawData.Split("|");
+            if (data.Length < 2)
+            {
+                Logger.LogError($"Couldn't parse data for moving container cards - {rawData}");
+                return;
+            }
+            if (!int.TryParse(data[0], out int sourceZone) || !int.TryParse(data[1], out int destinationZone))
+            {
+                Logger.LogError($"Couldn't parse source zone {data[0]} or dest zone {data[1]} from {rawData}");
+                return;
+            }
+            if(!Enum.IsDefined(typeof(CardZone), sourceZone) || !Enum.IsDefined(typeof(CardZone), destinationZone))
+            {
+                Logger.LogError($"Undefined enum for [{sourceZone}] or dest zone [{destinationZone}]");
+                return;
+            }
+            int? insertPosition = null;
+            if (data.Length == 3 && data[2] == "bottom")
+            {
+                insertPosition = 0;
+            }
+            MoveAllCardsFromSourceToDestinationZone((CardZone)sourceZone, (CardZone)destinationZone, clientPlayer, insertPosition, table);
+
+        }
+
         private static void MoveAllCardsFromSourceToDestinationZone(CardZone sourceZone, CardZone destinationZone, Player clientPlayer, int? insertPosition, Playtable table)
         {
             CardContainerCollection destinationCollection = clientPlayer.GetCardContainer(destinationZone);
