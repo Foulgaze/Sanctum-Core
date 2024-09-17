@@ -12,6 +12,8 @@ namespace Sanctum_Core
         public NetworkAttribute<int> Health { get; }
         public NetworkAttribute<bool> ReadiedUp { get; set; }
         public NetworkAttribute<bool> isIncreasingHealth { get; set; }
+        public NetworkAttribute<int> commandTax { get; set; }
+        public NetworkAttribute<bool> isIncreasingCommandTax { get; set; }
         public NetworkAttribute<(CardZone,string, int?)> RevealCardZone { get; set; } 
         private readonly Dictionary<CardZone, CardContainerCollection> zoneToContainer = new Dictionary<CardZone, CardContainerCollection>();
         private readonly NetworkAttributeFactory networkAttributeFactory;
@@ -34,12 +36,23 @@ namespace Sanctum_Core
             this.Health = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Uuid}-health", startingHealth);
             this.DeckListRaw = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Uuid}-decklist", "");
             this.ReadiedUp = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-ready", false);
-            this.isIncreasingHealth = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-healthchange", false, setWithoutEqualityCheck: true);
+            this.isIncreasingHealth = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-healthchange", false, setWithoutEqualityCheck: true, networkChange: isSlave);
             this.RevealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(CardZone,string,int?)>($"{this.Uuid}-reveal",(0,string.Empty,null), setWithoutEqualityCheck: true);
-            this.isIncreasingHealth.valueChanged += this.ChangeHealth;
+            this.commandTax = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-commandtax", 0, outsideSettable: isSlave,networkChange: true);
+            this.isIncreasingCommandTax = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Uuid}-commandtaxchange", false, outsideSettable: true,networkChange: isSlave, setWithoutEqualityCheck:true);
+            if(!isSlave)
+            {
+                this.isIncreasingCommandTax.valueChanged += this.ChangeCommandTax;
+                this.isIncreasingHealth.valueChanged += this.ChangeHealth;
+            }
             this.InitializeBoards(isSlave);
         }
 
+        private void ChangeCommandTax(NetworkAttribute attribute)
+        {
+            int changeValue = ((NetworkAttribute<bool>)attribute).Value ? 1 : -1;
+            this.commandTax.SetValue(this.commandTax.Value + changeValue);
+        }
         private void ChangeHealth(NetworkAttribute attribute)
         {
             int changeValue = ((NetworkAttribute<bool>)attribute).Value ? 1 : -1;
