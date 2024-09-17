@@ -65,6 +65,15 @@ namespace Sanctum_Core
         }
 
         /// <summary>
+        /// Gets the cards
+        /// </summary>
+        /// <returns>A list of all the card</returns>
+        public List<Card> GetCards()
+        {
+            return this.Cards;
+        }
+
+        /// <summary>
         /// Checks if collection is full
         /// </summary>
         /// <returns>Returns if container is full</returns>

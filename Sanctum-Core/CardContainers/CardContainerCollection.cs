@@ -134,6 +134,11 @@ namespace Sanctum_Core
             return this.Containers.Select(container => container.GetCardIDs()).ToList();
         }
 
+        public List<List<Card>> ToCardList()
+        {
+            return this.Containers.Select(container => container.GetCards()).ToList();
+        }
+
         /// <summary>
         /// Gets the top card
         /// </summary>
