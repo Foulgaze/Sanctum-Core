@@ -273,7 +273,7 @@ namespace Sanctum_Core
 
         private CardContainer? FindFirstEmptyContainer()
         {
-            return this.Containers.LastOrDefault(container => !container.IsFull());
+            return this.Containers.FirstOrDefault(container => !container.IsFull());
         }
 
         private CardContainer DetermineDestinationContainer(int? targetContainerIndex, bool createNewContainer)
