@@ -33,8 +33,8 @@ namespace Sanctum_Core
         public CardFactory(NetworkAttributeFactory networkAttributeFactory)
         {
             this.networkAttributeFactory = networkAttributeFactory;
-            this.tokenCardCreation = networkAttributeFactory.AddNetworkAttribute<string>($"factory-token", string.Empty, setWithoutEqualityCheck: true);
-            this.copyCardCreated = networkAttributeFactory.AddNetworkAttribute<int>($"factory-copy",0, setWithoutEqualityCheck: true);
+            this.tokenCardCreation = networkAttributeFactory.AddNetworkAttribute<string>("factory-token", string.Empty, setWithoutEqualityCheck: true);
+            this.copyCardCreated = networkAttributeFactory.AddNetworkAttribute<int>("factory-copy",0, setWithoutEqualityCheck: true);
         }
 
 
@@ -71,8 +71,6 @@ namespace Sanctum_Core
             string? backName = null;
             if (info == null)
             {
-                // To do
-                // Add logger
                 Logger.LogError($"Unable to find card from identifier {cardIdentifier} - isToken : {isTokenCard}");
                 return null;
             }
