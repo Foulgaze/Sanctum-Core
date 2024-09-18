@@ -11,7 +11,7 @@ namespace Sanctum_Core_Testing.PlaytableTests.SpecialActionTests
     internal class PutCardInXPositionTests
     {
         private readonly Playtable playtable = SpecialActionHelper.CreatePlaytable(2);
-        private CardFactory cardFactory;
+        private readonly CardFactory cardFactory;
 
 
         [TestCase(0, 0, "top")]

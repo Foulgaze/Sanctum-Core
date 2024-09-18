@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using Newtonsoft.Json;
 using Sanctum_Core_Server;
+using System;
 
 namespace Sanctum_Core_Testing
 {
@@ -86,9 +87,12 @@ namespace Sanctum_Core_Testing
 
 
 
-/*        private void SendSpecialAction(List<LobbyConnection> players, NetworkAttributeManager nam, SpecialAction action, string payload)
+        private void SendSpecialAction(List<LobbyConnection> players, NetworkAttributeManager nam, SpecialAction action, string payload)
         {
-            NetworkInstruction instruction = new NetworkInstruction();
+            foreach (LobbyConnection connection in players)
+            {
+                Server.SendMessage(connection.stream, NetworkInstruction.NetworkAttribute, $"playtable-specialaction|{JsonConvert.SerializeObject((payload, connection.uuid, action))}");
+            }
             nam.ReadPlayerData(2);
         }
 
@@ -106,10 +110,10 @@ namespace Sanctum_Core_Testing
             List<LobbyConnection> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
 
-            this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Mill}|10");
+            this.SendSpecialAction(players, nam,SpecialAction.Mill,10.ToString());
 
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(90, 10).ToList(), players.Count, true);
-            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Graveyard, Enumerable.Range(90,10).Reverse().ToList(), players.Count, false);
+            this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Graveyard, Enumerable.Range(90, 10).Reverse().ToList(), players.Count, false);
 
         }
 
@@ -119,7 +123,7 @@ namespace Sanctum_Core_Testing
             List<LobbyConnection> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
 
-            this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Draw}|10");
+            this.SendSpecialAction(players, nam,SpecialAction.Draw,10.ToString());
 
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(90, 10).ToList(), players.Count, true);
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Hand, Enumerable.Range(90, 10).Reverse().ToList(), players.Count, false);
@@ -132,31 +136,31 @@ namespace Sanctum_Core_Testing
             List<LobbyConnection> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
 
-            this.SendSpecialAction(players, nam, $"{(int)SpecialAction.Exile}|10");
+            this.SendSpecialAction(players, nam,SpecialAction.Exile,10.ToString());
 
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Library, Enumerable.Range(90, 10).ToList(), players.Count, true);
             this.AssertNetworkAttributes(nam, players[0].uuid, CardZone.Exile, Enumerable.Range(90, 10).Reverse().ToList(), players.Count, false);
 
-        }*/
+        }
 
-/*        [Test]
+        [Test]
         public void TestCreateToken()
         {
             List<LobbyConnection> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}");
+            Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"playtable-specialaction|{JsonConvert.SerializeObject((tokenUUID, players[0].uuid, SpecialAction.CreateToken))}");
 
-            nam.ReadPlayerData(2);
-            string cardCreationKey = $"{tokenUUID}|400";
+            nam.ReadPlayerData(1);
+            string cardCreationKey = $"factory-token|\"{tokenUUID}\"";
             Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
             string fieldKey = $"{players[0].uuid}-{(int)CardZone.MainField}|[[400]]";
             Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
-        }*/
+        }
 
-        /*[Test]*/
-/*        public void TestCreateTokenNextToCard()
+        [Test]
+        public void TestCreateTokenNextToCard()
         {
             List<LobbyConnection> players = this.StartAndSortPlayers(4);
             NetworkAttributeManager nam = new(players);
@@ -167,26 +171,26 @@ namespace Sanctum_Core_Testing
             }
             nam.ReadPlayerData(8);
             string tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
-
-            Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|0");
+            Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"playtable-specialaction|{JsonConvert.SerializeObject(($"{tokenUUID}|0", players[0].uuid, SpecialAction.CreateToken))}");
 
             nam.ReadPlayerData(2);
-            string cardCreationKey = $"{tokenUUID}|400";
+            string cardCreationKey = $"factory-token|\"{tokenUUID}\"";
             Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
             string fieldKey = $"{players[0].uuid}-{(int)CardZone.MainField}|[[3,400]]";
             Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
 
             tokenUUID = "5450889c-b58f-5974-955c-b5f0d88d1338";
 
-            Server.SendMessage(players[0].stream, NetworkInstruction.SpecialAction, $"{(int)SpecialAction.CreateToken}|{tokenUUID}|400");
+            Server.SendMessage(players[0].stream, NetworkInstruction.NetworkAttribute, $"playtable-specialaction|{JsonConvert.SerializeObject(($"{tokenUUID}|400", players[0].uuid, SpecialAction.CreateToken))}");
+
 
             nam.ReadPlayerData(2);
-            cardCreationKey = $"{tokenUUID}|400";
-            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
+            cardCreationKey = $"factory-token|\"{tokenUUID}\"";
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count*2));
             fieldKey = $"{players[0].uuid}-{(int)CardZone.MainField}|[[3,400,401]]";
-            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count));
+            Assert.That(nam.networkAttributes.Count(item => cardCreationKey == item), Is.EqualTo(players.Count*2));
 
-        }*/
+        }
 
 
         // Returns Lobby Code, UUID, Network Stream
