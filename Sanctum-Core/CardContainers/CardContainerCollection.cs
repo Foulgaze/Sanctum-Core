@@ -10,7 +10,9 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core
 {
-
+    /// <summary>
+    /// Class that is a wrapper for data about inserting a card. Null insertposition means insert at end. 
+    /// </summary>
     public class InsertCardData
     {
         public int? insertPosition;
@@ -33,10 +35,10 @@ namespace Sanctum_Core
         private readonly List<CardContainer> Containers = new List<CardContainer>();
         private readonly int? maxContainerCount;
         private readonly int? maxCardCountPerContainer;
-        public readonly NetworkAttribute<InsertCardData> insertCardData;
-        public readonly NetworkAttribute<List<int>> removeCardIds;
-        public readonly NetworkAttribute<List<List<int>>> boardState;
-        public readonly NetworkAttribute<bool> revealTopCard;
+        public  NetworkAttribute<InsertCardData> insertCardData;
+        public  NetworkAttribute<List<int>> removeCardIds;
+        public  NetworkAttribute<List<List<int>>> boardState;
+        public  NetworkAttribute<bool> revealTopCard;
         private readonly CardFactory CardFactory;
 
         /// <summary>
@@ -47,23 +49,28 @@ namespace Sanctum_Core
         /// <param name="maxContainerCount">The maximum number of containers allowed (nullable).</param>
         /// <param name="maxContainerCardCount">The maximum number of cards allowed per container (nullable).</param>
         /// <param name="revealTopCard">Indicates whether the top card of each container should be revealed.</param>
-        /// <param name="networkAttributeManager">The factory for managing network attributes.</param>
+        /// <param name="networkAttributeFactory">The factory for managing network attributes.</param>
         /// <param name="cardFactory">The factory for creating cards.</param>
-        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, bool revealTopCard, NetworkAttributeFactory networkAttributeManager, CardFactory cardFactory, bool isSlave = false)
+        public CardContainerCollection(CardZone zone, string owner, int? maxContainerCount, int? maxContainerCardCount, bool revealTopCard, NetworkAttributeFactory networkAttributeFactory, CardFactory cardFactory, bool isSlave = false)
         {
             this.maxCardCountPerContainer = maxContainerCardCount;
             this.maxContainerCount = maxContainerCount;
             this.Zone = zone;
             this.Owner = owner;
-            this.insertCardData = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, networkChange : isSlave);
-            this.revealTopCard = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-reveal", revealTopCard);
-            this.removeCardIds = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-removecards", new List<int>());
-            this.boardState = networkAttributeManager.AddNetworkAttribute($"{owner}-{(int)this.Zone}-boardstate", new List<List<int>>());
+            this.CardFactory = cardFactory;
+            this.InitializeAttributes(networkAttributeFactory, revealTopCard, isSlave);
             if(!isSlave)
             {
                 this.insertCardData.valueChanged += this.NetworkedCardInsert;
             }
-            this.CardFactory = cardFactory;
+        }
+
+        private void InitializeAttributes(NetworkAttributeFactory networkAttributeFactory, bool revealTopCard, bool isSlave)
+        {
+            this.insertCardData = networkAttributeFactory.AddNetworkAttribute($"{this.Owner}-{(int)this.Zone}-insert", new InsertCardData(null, 0, null, false), true, networkChange: isSlave);
+            this.revealTopCard = networkAttributeFactory.AddNetworkAttribute($"{this.Owner}-{(int)this.Zone}-reveal", revealTopCard);
+            this.removeCardIds = networkAttributeFactory.AddNetworkAttribute($"{this.Owner}-{(int)this.Zone}-removecards", new List<int>());
+            this.boardState = networkAttributeFactory.AddNetworkAttribute($"{this.Owner}-{(int)this.Zone}-boardstate", new List<List<int>>());
         }
 
         /// <summary>
@@ -89,7 +96,7 @@ namespace Sanctum_Core
         /// Removes a card from the first card container that matches ID
         /// </summary>
         /// <param name="cardId">The id of the card to remove</param>
-        /// <returns>true if removed else false</returns>
+        /// <returns>if removal was successfull</returns>
         public bool RemoveCardFromContainer(int cardId, bool networkChange = true)
         {
             foreach (CardContainer container in this.Containers)
@@ -126,14 +133,18 @@ namespace Sanctum_Core
         }
 
         /// <summary>
-        /// Creates a serialized version of the card containers
+        /// Aggregates all the card ids in the container in list of list form
         /// </summary>
-        /// <returns></returns>
+        /// <returns> list of list of all card ids</returns>
         public List<List<int>> ToList()
         {
             return this.Containers.Select(container => container.GetCardIDs()).ToList();
         }
 
+        /// <summary>
+        /// Aggregates all the cards in the container in list of list form 
+        /// </summary>
+        /// <returns>A list of list containing cards</returns>
         public List<List<Card>> ToCardList()
         {
             return this.Containers.Select(container => container.GetCards()).ToList();

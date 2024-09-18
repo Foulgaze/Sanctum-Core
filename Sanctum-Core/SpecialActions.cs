@@ -258,7 +258,7 @@ namespace Sanctum_Core
         /// </summary>
         /// <param name="cardFactory">The card factory to get the card.</param>
         /// <param name="library">The card container collection representing the library.</param>
-        /// <param name="data">An array of strings containing the starting location ("top" or "bottom"), card ID, and card distance.</param>
+        /// <param name="data">String containing the starting location ("top" or "bottom"), card ID, and card distance.</param>
         /// <returns>True if the operation is successful, otherwise false.</returns>
         public static bool PutCardXFromTopOrBottom(CardFactory cardFactory,CardContainerCollection library,string rawData)
         {
@@ -312,14 +312,25 @@ namespace Sanctum_Core
             zone.InsertCardIntoContainer(0, false, cardToMove, insertPosition, true);
         }
 
-        public static void Mulligan(Playtable table, Player clientPlayer)
+        /// <summary>
+        /// Performs a mulligan. This means discarding hand and drawing 7
+        /// </summary>
+        /// <param name="table">Playtable</param>
+        /// <param name="callingPlayer">Player who is calling action</param>
+        public static void Mulligan(Playtable table, Player callingPlayer)
         {
-            MoveAllCardsFromSourceToDestinationZone(CardZone.Hand, CardZone.Library, clientPlayer,null, table);
-            Shuffle(table,clientPlayer.Uuid);
-            DrawCards(table, clientPlayer, "7");
+            MoveAllCardsFromSourceToDestinationZone(CardZone.Hand, CardZone.Library, callingPlayer,null, table);
+            Shuffle(table,callingPlayer.Uuid);
+            DrawCards(table, callingPlayer, "7");
         }
 
-        public static void MoveContainerCards(Playtable table, Player clientPlayer, string rawData)
+        /// <summary>
+        /// Moves all cards from one container to another
+        /// </summary>
+        /// <param name="table">Playtable</param>
+        /// <param name="callingPlayer">Player who is calling the action</param>
+        /// <param name="rawData">The data about the call, containing source zone, dest zone, and start position</param>
+        public static void MoveContainerCards(Playtable table, Player callingPlayer, string rawData)
         {
             string[] data = rawData.Split("|");
             if (data.Length < 2)
@@ -342,7 +353,7 @@ namespace Sanctum_Core
             {
                 insertPosition = 0;
             }
-            MoveAllCardsFromSourceToDestinationZone((CardZone)sourceZone, (CardZone)destinationZone, clientPlayer, insertPosition, table);
+            MoveAllCardsFromSourceToDestinationZone((CardZone)sourceZone, (CardZone)destinationZone, callingPlayer, insertPosition, table);
 
         }
 
@@ -360,7 +371,6 @@ namespace Sanctum_Core
                 sourceCollection.removeCardIds.SetValue(allCards.Select(card => card.Id).ToList());
                 table.UpdateCardZone(clientPlayer, destinationZone);
             }
-            
         }
     }
 }

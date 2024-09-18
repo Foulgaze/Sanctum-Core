@@ -16,6 +16,10 @@ namespace Sanctum_Core_Logger
             Console.WriteLine(message);
         }
 
+        /// <summary>
+        /// Logs an error message
+        /// </summary>
+        /// <param name="message"></param>
         public static void LogError(string message)
         {
             errorLogger.WriteLine(message);

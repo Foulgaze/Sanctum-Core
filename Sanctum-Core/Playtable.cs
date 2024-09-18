@@ -10,10 +10,10 @@ namespace Sanctum_Core
     {
         private readonly List<Player> _players = new List<Player>();
         public readonly int readyUpNeeded;
-        public readonly NetworkAttribute<bool> GameStarted;
+        public NetworkAttribute<bool> GameStarted;
         public readonly CardFactory cardFactory;
         public readonly NetworkAttributeFactory networkAttributeFactory;
-        public readonly NetworkAttribute<(string,string,SpecialAction)> specialAction;
+        public NetworkAttribute<(string,string,SpecialAction)> specialAction;
         private readonly bool isSlave;
         /// <summary>
         /// Creates playtable
@@ -25,21 +25,31 @@ namespace Sanctum_Core
         {
             this.networkAttributeFactory = new NetworkAttributeFactory(isSlave);
             this.cardFactory = new CardFactory(this.networkAttributeFactory);
-            this.specialAction = this.networkAttributeFactory.AddNetworkAttribute<(string,string,SpecialAction)>("playtable-specialaction", (string.Empty,string.Empty,0), networkChange: isSlave, setWithoutEqualityCheck: true);
-            if(!isSlave)
-            {
-                this.specialAction.valueChanged += this.HandleSpecialAction;
-            }
             this.readyUpNeeded = playerCount;
             this.isSlave = isSlave;
             CardData.LoadCardNames(cardsPath);
             CardData.LoadCardNames(tokensPath, true);
+            this.InitializeAttributes();
+            this.RegisterListeners(isSlave);
+        }
+
+        private void InitializeAttributes()
+        {
             this.GameStarted = this.networkAttributeFactory.AddNetworkAttribute("main-started", false);
-            if(isSlave) // If slave playtable, then ignore checking for readiness, and just listen to main playtable for ready message.
+            this.specialAction = this.networkAttributeFactory.AddNetworkAttribute<(string, string, SpecialAction)>("playtable-specialaction", (string.Empty, string.Empty, 0), networkChange: this.isSlave, setWithoutEqualityCheck: true);
+        }
+
+        private void RegisterListeners(bool isSlave)
+        {
+            if (isSlave) // If slave playtable, then ignore checking for readiness, and just listen to main playtable for ready message.
             {
                 this.GameStarted.nonNetworkChange += (_) => this.StartGame();
                 this.cardFactory.copyCardCreated.nonNetworkChange += this.HandleCardCopy;
                 this.cardFactory.tokenCardCreation.nonNetworkChange += this.HandleCardToken;
+            }
+            else
+            {
+                this.specialAction.valueChanged += this.HandleSpecialAction;
             }
         }
 

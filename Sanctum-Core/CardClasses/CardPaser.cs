@@ -13,7 +13,7 @@ namespace Sanctum_Core
         /// Parses a decklist assuming its in MTGArena format. 
         /// </summary>
         /// <param name="deckList">The raw decklist string</param>
-        /// <returns>(List of Successfully parsed names, List of Error Lines)</returns>
+        /// <returns>List of Successfully parsed names</returns>
         public static List<string> ParseDeckList(string deckList)
         {
             List<string> cardNames = new List<string>();

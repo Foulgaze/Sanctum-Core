@@ -42,33 +42,25 @@ namespace Sanctum_Core
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
             this.isEthereal = isEthereal;
+            this.InitializeAttributes();
+            this.RegisterListeners();
+        }
 
+        private void InitializeAttributes()
+        {
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", false);
-            this.isUsingBackSide.valueChanged += this.UpdateAttributes;
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
-            this.isFlipped.valueChanged += (attribute) => 
-            { 
-                if (!((NetworkAttribute<bool>)attribute).Value) 
-                { 
-                    this.UpdateAttributes(null); 
-                } 
-            };
             this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", this.ParsePT(this.CurrentInfo.power));
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
             this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
             this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", this.CurrentInfo.name);
             this.isIncreasingPower = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-powerchange", false, setWithoutEqualityCheck: true);
-            this.isIncreasingPower.valueChanged += this.ChangePower;
             this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true);
-            this.isIncreasingToughness.valueChanged += this.ChangeToughness;
             this.redCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-redcounters", 0);
             this.blueCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-bluecounters", 0);
             this.greenCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-greencounters", 0);
-            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0,0,0), setWithoutEqualityCheck: true );
-            this.changeCounters.valueChanged += this.HandleCounterChange;
+            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0, 0, 0), setWithoutEqualityCheck: true);
         }
-
-
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Card"/> class as a copy of an existing card, with a new identifier.
@@ -84,29 +76,47 @@ namespace Sanctum_Core
             this.isEthereal = true;
             this.networkAttributeFactory = networkAttributeFactory;
 
+            this.InitializeAttributes(cardToCopy);
+            this.RegisterListeners();
+        }
+
+        private void InitializeAttributes(Card cardToCopy)
+        {
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", cardToCopy.isUsingBackSide.Value);
-            this.isUsingBackSide.valueChanged += this.UpdateAttributes;
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", cardToCopy.isFlipped.Value);
-            this.isFlipped.valueChanged += (attribute) => {
-                if (!((NetworkAttribute<bool>)attribute).Value) 
-                { 
-                    this.UpdateAttributes(null); 
-                } 
-            };
             this.power = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-power", cardToCopy.power.Value);
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", cardToCopy.toughness.Value);
             this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", cardToCopy.isTapped.Value);
             this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", this.CurrentInfo.name);
             this.isIncreasingPower = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-powerchange", false, setWithoutEqualityCheck: true);
-            this.isIncreasingPower.valueChanged += this.ChangePower;
             this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true);
-            this.isIncreasingToughness.valueChanged += this.ChangeToughness;
             this.redCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-redcounters", cardToCopy.redCounters.Value);
             this.blueCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-bluecounters", cardToCopy.blueCounters.Value);
             this.greenCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-greencounters", cardToCopy.greenCounters.Value);
             this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0, 0, 0), setWithoutEqualityCheck: true);
-            this.changeCounters.valueChanged += this.HandleCounterChange;
         }
+
+        private void RegisterListeners()
+        {
+            this.isIncreasingToughness.valueChanged += this.ChangeToughness;
+            this.changeCounters.valueChanged += this.HandleCounterChange;
+            this.isIncreasingPower.valueChanged += this.ChangePower;
+            this.isFlipped.valueChanged += this.HandleFlipped;
+            this.isUsingBackSide.valueChanged += this.UpdateAttributes;
+        }
+
+        /// <summary>
+        /// Deregisters all listeners from a card
+        /// </summary>
+        public void DeregisterListeners()
+        {
+            this.isIncreasingToughness.valueChanged -= this.ChangeToughness;
+            this.changeCounters.valueChanged -= this.HandleCounterChange;
+            this.isIncreasingPower.valueChanged -= this.ChangePower;
+            this.isFlipped.valueChanged -= this.HandleFlipped;
+            this.isUsingBackSide.valueChanged -= this.UpdateAttributes;
+        }
+
 
         /// <summary>
         /// Checks if card has backside
@@ -171,6 +181,14 @@ namespace Sanctum_Core
         {
 
             return !int.TryParse(value, out int parsedValue) ? 0 : parsedValue;
+        }
+
+        private void HandleFlipped(NetworkAttribute attribute)
+        {
+            if (!((NetworkAttribute<bool>)attribute).Value)
+            {
+                this.UpdateAttributes(null);
+            }
         }
     }
 }
