@@ -90,13 +90,6 @@ namespace Sanctum_Core
         {
             CardInfo info = uuidToInfoTokenCards[uuid];
             return info.name;
-            if(info.power == string.Empty && info.toughness == string.Empty)
-            {
-                return info.name;
-            }
-            string power = info.power == string.Empty ? "0" : info.power;
-            string toughness = info.toughness == string.Empty ? "0" : info.toughness;
-            return $"{info.name} - ({power}/{toughness})";
         }
 
         public static List<(string, string)> GetTokenUUINamePairs()

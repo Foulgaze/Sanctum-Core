@@ -34,6 +34,7 @@ namespace Sanctum_Core
     {
         public event Action<NetworkAttribute> valueChanged = delegate { };
         public event Action<NetworkAttribute> nonNetworkChange = delegate { };
+        public override Type ValueType => typeof(T);
 
         private T value;
         private string serializedValue;
@@ -82,7 +83,6 @@ namespace Sanctum_Core
         }
 
 
-        public override Type ValueType => typeof(T);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NetworkAttribute{T}"/> class with the specified identifier and value.

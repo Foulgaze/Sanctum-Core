@@ -8,8 +8,8 @@ namespace Sanctum_Core
     {
         public string Name { get; }
         public string Uuid { get; }
-        public NetworkAttribute<string> DeckListRaw { get; }
-        public NetworkAttribute<int> Health { get; }
+        public NetworkAttribute<string> DeckListRaw { get; set; }
+        public NetworkAttribute<int> Health { get; set; }
         public NetworkAttribute<bool> ReadiedUp { get; set; }
         public NetworkAttribute<bool> isIncreasingHealth { get; set; }
         public NetworkAttribute<int> commandTax { get; set; }
@@ -33,19 +33,35 @@ namespace Sanctum_Core
             this.Name = name;
             this.networkAttributeFactory = networkAttributeFactory;
             this.cardFactory = cardFactory;
-            this.Health = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Uuid}-health", startingHealth);
-            this.DeckListRaw = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Uuid}-decklist", "");
-            this.ReadiedUp = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-ready", false);
-            this.isIncreasingHealth = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-healthchange", false, setWithoutEqualityCheck: true, networkChange: isSlave);
-            this.RevealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(CardZone,string,int?)>($"{this.Uuid}-reveal",(0,string.Empty,null), setWithoutEqualityCheck: true);
-            this.commandTax = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-commandtax", 0, outsideSettable: isSlave,networkChange: true);
-            this.isIncreasingCommandTax = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Uuid}-commandtaxchange", false, outsideSettable: true,networkChange: isSlave, setWithoutEqualityCheck:true);
+            this.InitializeAttributes(startingHealth, isSlave);
             if(!isSlave)
             {
                 this.isIncreasingCommandTax.valueChanged += this.ChangeCommandTax;
                 this.isIncreasingHealth.valueChanged += this.ChangeHealth;
             }
             this.InitializeBoards(isSlave);
+        }
+        private void InitializeAttributes(int startingHealth, bool isSlave)
+        {
+            this.Health = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Uuid}-health", startingHealth);
+            this.DeckListRaw = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Uuid}-decklist", "");
+            this.ReadiedUp = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-ready", false);
+            this.isIncreasingHealth = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-healthchange", false, setWithoutEqualityCheck: true, networkChange: isSlave);
+            this.RevealCardZone = this.networkAttributeFactory.AddNetworkAttribute<(CardZone, string, int?)>($"{this.Uuid}-reveal", (0, string.Empty, null), setWithoutEqualityCheck: true);
+            this.commandTax = this.networkAttributeFactory.AddNetworkAttribute($"{this.Uuid}-commandtax", 0, outsideSettable: isSlave, networkChange: true);
+            this.isIncreasingCommandTax = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Uuid}-commandtaxchange", false, outsideSettable: true, networkChange: isSlave, setWithoutEqualityCheck: true);
+        }
+
+        private void InitializeBoards(bool isSlave)
+        {
+            this.zoneToContainer[CardZone.Library] = new CardContainerCollection(CardZone.Library, this.Uuid, 1, null, false, this.networkAttributeFactory, this.cardFactory, isSlave);
+            this.zoneToContainer[CardZone.Graveyard] = new CardContainerCollection(CardZone.Graveyard, this.Uuid, 1, null, true, this.networkAttributeFactory, this.cardFactory, isSlave);
+            this.zoneToContainer[CardZone.Exile] = new CardContainerCollection(CardZone.Exile, this.Uuid, 1, null, true, this.networkAttributeFactory, this.cardFactory, isSlave);
+            this.zoneToContainer[CardZone.CommandZone] = new CardContainerCollection(CardZone.CommandZone, this.Uuid, 1, null, true, this.networkAttributeFactory, this.cardFactory, isSlave);
+            this.zoneToContainer[CardZone.Hand] = new CardContainerCollection(CardZone.Hand, this.Uuid, 1, null, true, this.networkAttributeFactory, this.cardFactory, isSlave);
+            this.zoneToContainer[CardZone.MainField] = new CardContainerCollection(CardZone.MainField, this.Uuid, null, 3, true, this.networkAttributeFactory, this.cardFactory, isSlave);
+            this.zoneToContainer[CardZone.LeftField] = new CardContainerCollection(CardZone.LeftField, this.Uuid, null, 3, true, this.networkAttributeFactory, this.cardFactory, isSlave);
+            this.zoneToContainer[CardZone.RightField] = new CardContainerCollection(CardZone.RightField, this.Uuid, null, 3, true, this.networkAttributeFactory, this.cardFactory, isSlave);
         }
 
         private void ChangeCommandTax(NetworkAttribute attribute)
@@ -58,19 +74,6 @@ namespace Sanctum_Core
             int changeValue = ((NetworkAttribute<bool>)attribute).Value ? 1 : -1;
             this.Health.SetValue(this.Health.Value + changeValue);
         }
-
-        private void InitializeBoards(bool isSlave)
-        {
-            this.zoneToContainer[CardZone.Library] = new CardContainerCollection(CardZone.Library, this.Uuid, 1, null, false,this.networkAttributeFactory, this.cardFactory, isSlave);
-            this.zoneToContainer[CardZone.Graveyard] = new CardContainerCollection(CardZone.Graveyard, this.Uuid, 1, null,true, this.networkAttributeFactory, this.cardFactory, isSlave);
-            this.zoneToContainer[CardZone.Exile] = new CardContainerCollection(CardZone.Exile, this.Uuid, 1, null,true,this.networkAttributeFactory, this.cardFactory, isSlave);
-            this.zoneToContainer[CardZone.CommandZone] = new CardContainerCollection(CardZone.CommandZone, this.Uuid, 1, null,true, this.networkAttributeFactory, this.cardFactory, isSlave);
-            this.zoneToContainer[CardZone.Hand] = new CardContainerCollection(CardZone.Hand, this.Uuid, 1, null,true, this.networkAttributeFactory, this.cardFactory, isSlave);
-            this.zoneToContainer[CardZone.MainField] = new CardContainerCollection(CardZone.MainField, this.Uuid, null, 3, true,this.networkAttributeFactory, this.cardFactory, isSlave);
-            this.zoneToContainer[CardZone.LeftField] = new CardContainerCollection(CardZone.LeftField, this.Uuid, null, 3, true,this.networkAttributeFactory, this.cardFactory, isSlave);
-            this.zoneToContainer[CardZone.RightField] = new CardContainerCollection(CardZone.RightField, this.Uuid, null, 3,true, this.networkAttributeFactory, this.cardFactory, isSlave);
-        }
-
 
         /// <summary>
         /// Gets cardzone from player

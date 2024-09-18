@@ -135,7 +135,5 @@ namespace Sanctum_Core
             }
             return (fullName, backName);
         }
-
-        
     }
 }
