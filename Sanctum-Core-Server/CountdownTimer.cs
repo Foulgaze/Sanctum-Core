@@ -6,12 +6,15 @@ using System.Threading.Tasks;
 
 namespace Sanctum_Core_Server
 {
-    public class TimeChecker
+    /// <summary>
+    /// Class used to time certain aspects of lobby/server maintainence
+    /// </summary>
+    public class CountdownTimer
     {
         private DateTime lastCheckedTime;
         private readonly double timeToWait;
 
-        public TimeChecker(double timeToWait = 0.5)
+        public CountdownTimer(double timeToWait = 0.5)
         {
             this.lastCheckedTime = DateTime.Now;
             this.timeToWait = timeToWait;

@@ -19,19 +19,22 @@ namespace Sanctum_Core_Server
         public const int bufferSize = 4096;
         public const int lobbyCodeLength = 4;
         private readonly LobbyFactory lobbyFactory;
-        private readonly TimeChecker? deadLobbyClock;
+        private readonly CountdownTimer? deadLobbyClock;
         private readonly double allowedLobbyIdleTime;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Server"/> class.
         /// </summary>
         /// <param name="portNumber">The port number on which the server will listen for incoming connections. Default is 51522.</param>
+        /// <param name="lobbyCodeLength">How long a lobby code is, default is 4 i.e. (A3C1)</param>
+        /// <param name="deadLobbyCheckTimer">How often the server checks for and clears inactive lobbies, in minutes</param>
+        /// <param name="allowedLobbyIdleDuration">How often a lobby can sit idle before it is considered dead, in minutes</param>
         public Server(int portNumber = 51522, int lobbyCodeLength = 4, double? deadLobbyCheckTimer = 5, double allowedLobbyIdleDuration = 5)
         {
             this.portNumber = portNumber;
             this.lobbyFactory = new(lobbyCodeLength);
             this._listener = new TcpListener(IPAddress.Any, portNumber);
-            this.deadLobbyClock = deadLobbyCheckTimer == null ? null : new TimeChecker((double)deadLobbyCheckTimer);
+            this.deadLobbyClock = deadLobbyCheckTimer == null ? null : new CountdownTimer((double)deadLobbyCheckTimer);
             this.allowedLobbyIdleTime = allowedLobbyIdleDuration;
         }
 
@@ -52,6 +55,9 @@ namespace Sanctum_Core_Server
             }
         }
 
+        /// <summary>
+        /// A continuous loop that checks for dead lobbies
+        /// </summary>
         public void LobbyCleaning()
         {
             while(true)

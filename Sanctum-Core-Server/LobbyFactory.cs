@@ -44,7 +44,7 @@ namespace Sanctum_Core_Server
         /// </summary>
         /// <param name="lobbyCode">The code of the lobby the connection should be inserted into</param>
         /// <param name="connection">The connection to be inserted</param>
-        /// <returns></returns>
+        /// <returns>If the connection was successfully inserted</returns>
         public bool InsertConnectionIntoLobby(string lobbyCode,string username, string uuid, TcpClient client)
         {
             LobbyConnection connection = new(username, uuid, client);
@@ -71,6 +71,10 @@ namespace Sanctum_Core_Server
             _ = this.lobbies.TryRemove(lobby.code, out Lobby? _);
         }
 
+        /// <summary>
+        /// Checks for any lobbies that have been untouched for longer than their idle time
+        /// </summary>
+        /// <param name="allowedIdleTime"></param>
         public void CheckForDeadLobbies(double allowedIdleTime)
         {
             DateTime currentTime = DateTime.Now;
