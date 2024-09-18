@@ -4,6 +4,7 @@ using Sanctum_Core_Logger;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -209,15 +210,24 @@ namespace Sanctum_Core_Server
             Logger.Log($"Closing lobby {this.code}");
         }
 
+        /// <summary>
+        /// Checks if the lobby has closed
+        /// </summary>
+        /// <param name="connection"> The lobby connection to check</param>
+        /// <remarks>I shamelessly yoinked this from SO - https://stackoverflow.com/questions/1387459/how-to-check-if-tcpclient-connection-is-closed</remarks>
         private void CheckForConnectivity(LobbyConnection connection)
         {
-            try
+            TcpClient client = connection.client;
+            IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+            TcpConnectionInformation[] tcpConnections = ipProperties.GetActiveTcpConnections().Where(x => x.LocalEndPoint.Equals(client.Client.LocalEndPoint) && x.RemoteEndPoint.Equals(client.Client.RemoteEndPoint)).ToArray();
+
+            if (tcpConnections != null && tcpConnections.Length > 0)
             {
-                Server.SendMessage(connection.stream, NetworkInstruction.KeepAlive, string.Empty);
-            }
-            catch
-            {
-                Logger.LogError($"Player {connection.name} has disconnected");
+                TcpState stateOfConnection = tcpConnections.First().State;
+                if (stateOfConnection != TcpState.Established)
+                {
+                    client.Close();
+                }
             }
         }
         private void HandleCommand(NetworkCommand? command)

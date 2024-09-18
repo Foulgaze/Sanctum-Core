@@ -9,7 +9,7 @@ namespace Sanctum_Core_Server
 {
     public enum NetworkInstruction
     {
-        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute, Disconnect, KeepAlive
+        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute
     }
 
     public class Server

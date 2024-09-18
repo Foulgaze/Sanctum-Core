@@ -8,7 +8,7 @@ namespace Sanctum_Core_Server
     {
         public readonly string name;
         public readonly string uuid;
-        private readonly TcpClient client;
+        public readonly TcpClient client;
         private readonly StringBuilder buffer = new();
         public NetworkStream stream => this.client.GetStream();
         public bool Connected => this.client.Connected;
