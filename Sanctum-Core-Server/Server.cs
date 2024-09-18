@@ -9,7 +9,7 @@ namespace Sanctum_Core_Server
 {
     public enum NetworkInstruction
     {
-        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute, Disconnect
+        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute, Disconnect, KeepAlive
     }
 
     public class Server
@@ -152,7 +152,6 @@ namespace Sanctum_Core_Server
             try
             {
                 stream.Write(data, 0, data.Length);
-
             }
             catch (Exception e)
             {

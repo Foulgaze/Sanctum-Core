@@ -3,7 +3,7 @@ internal class Program
 {
     private static void Main()
     {
-        Server server = new();
+        Server server = new(deadLobbyCheckTimer: 0.1, allowedLobbyIdleDuration: 0.1);
         server.StartListening();
     }
 }

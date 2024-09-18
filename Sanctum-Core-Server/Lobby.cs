@@ -3,7 +3,9 @@ using Sanctum_Core;
 using Sanctum_Core_Logger;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Sockets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Sanctum_Core_Server
 {
@@ -18,7 +20,7 @@ namespace Sanctum_Core_Server
         public DateTime timeSinceLastInteracted { get; private set; }
 
         private bool closeLobby = false;
-        private readonly CountdownTimer disconnectedPlayerCheck;
+        private readonly CountdownTimer disconnectedPlayerCheckCountdown;
 
         public bool LobbyStarted { get; set; } = false;
 
@@ -27,6 +29,7 @@ namespace Sanctum_Core_Server
         /// </summary>
         /// <param name="lobbySize">The maximum number of players allowed in the lobby.</param>
         /// <param name="lobbyCode">The unique code identifying the lobby.</param>
+        /// <param name="disconnectedPlayerCheckTime">How often the lobby will check for disconnected players, in seconds</param>
         /// <remarks>
         /// The constructor sets up the playtable for the lobby, loading the card and token data from CSV files located in the designated assets directory.
         /// </remarks>
@@ -37,7 +40,7 @@ namespace Sanctum_Core_Server
             string path = Path.GetFullPath(@"..\..\..\..\Sanctum-Core\Assets\");
             this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
             this.timeSinceLastInteracted = DateTime.Now;
-            this.disconnectedPlayerCheck = new(disconnectedPlayerCheckTime);
+            this.disconnectedPlayerCheckCountdown = new(disconnectedPlayerCheckTime);
         }
 
         /// <summary>
@@ -77,6 +80,7 @@ namespace Sanctum_Core_Server
         {
             this.InitGame();
             this.RunLobbyLoop();
+            Console.WriteLine($"Closing thread of lobby: {this.code}");
         }
 
         /// <summary>
@@ -121,7 +125,7 @@ namespace Sanctum_Core_Server
 
         public bool CheckLobbyTimeout(DateTime currentTime, double allowedIdleTime)
         {
-            this.closeLobby = (currentTime - this.timeSinceLastInteracted).TotalMinutes > allowedIdleTime
+            this.closeLobby = (currentTime - this.timeSinceLastInteracted).TotalMinutes > allowedIdleTime;
             return this.closeLobby;
         }
 
@@ -149,7 +153,7 @@ namespace Sanctum_Core_Server
         {
             while (true)
             {
-                bool checkForDisconnectedPlayers = this.disconnectedPlayerCheck.HasTimerPassed();
+                bool checkForDisconnectedPlayers = this.disconnectedPlayerCheckCountdown.HasTimerPassed();
 
                 this.ProcessConnections(checkForDisconnectedPlayers);
 
@@ -209,7 +213,7 @@ namespace Sanctum_Core_Server
         {
             try
             {
-                connection.stream.Write(new byte[0], 0, 0);
+                Server.SendMessage(connection.stream, NetworkInstruction.KeepAlive, string.Empty);
             }
             catch
             {
