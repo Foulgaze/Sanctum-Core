@@ -8,12 +8,20 @@ namespace Sanctum_Core_Server
     {
         public readonly string name;
         public readonly string uuid;
-        private readonly TcpClient client;
+        public readonly TcpClient client;
         private readonly StringBuilder buffer = new();
         public NetworkStream stream => this.client.GetStream();
         public bool Connected => this.client.Connected;
         private readonly int bufferSize;
         public bool IsNetworkStreamClosed = false;
+
+        /// <summary>
+        /// This class represents the state of a player being in a lobby without the playtable having been created.
+        /// </summary>
+        /// <param name="name"> Name of connection</param>
+        /// <param name="uuid"> UUID of connection</param>
+        /// <param name="client"> TCPClient of connection </param>
+        /// <param name="bufferSize"> Buffersize of client buffer</param>
         public LobbyConnection(string name, string uuid, TcpClient client, int bufferSize = 4096)
         {
             this.name = name;
@@ -22,6 +30,12 @@ namespace Sanctum_Core_Server
             this.bufferSize = bufferSize;
         }
 
+        /// <summary>
+        /// Gets the next network command from the client buffer
+        /// </summary>
+        /// <param name="readUntilData"> Should the connection block until there is data?</param>
+        /// <param name="timeout"> Timeout after reading for no data</param>
+        /// <returns> The next network command from buffer if exists, else null</returns>
         public NetworkCommand? GetNetworkCommand(bool readUntilData = true, int? timeout = null)
         {
             NetworkStream stream = this.client.GetStream();

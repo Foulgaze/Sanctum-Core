@@ -3,7 +3,10 @@ using Sanctum_Core;
 using Sanctum_Core_Logger;
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Sanctum_Core_Server
 {
@@ -16,7 +19,9 @@ namespace Sanctum_Core_Server
         public List<LobbyConnection> connections = new();
         public event Action<Lobby> OnLobbyPlayersChanged = delegate { };
         public DateTime timeSinceLastInteracted { get; private set; }
-        private readonly TimeChecker disconnectedPlayerCheck;
+
+        private bool closeLobby = false;
+        private readonly CountdownTimer disconnectedPlayerCheckCountdown;
 
         public bool LobbyStarted { get; set; } = false;
 
@@ -25,6 +30,7 @@ namespace Sanctum_Core_Server
         /// </summary>
         /// <param name="lobbySize">The maximum number of players allowed in the lobby.</param>
         /// <param name="lobbyCode">The unique code identifying the lobby.</param>
+        /// <param name="disconnectedPlayerCheckTime">How often the lobby will check for disconnected players, in seconds</param>
         /// <remarks>
         /// The constructor sets up the playtable for the lobby, loading the card and token data from CSV files located in the designated assets directory.
         /// </remarks>
@@ -35,7 +41,93 @@ namespace Sanctum_Core_Server
             string path = Path.GetFullPath(@"..\..\..\..\Sanctum-Core\Assets\");
             this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
             this.timeSinceLastInteracted = DateTime.Now;
-            this.disconnectedPlayerCheck = new(disconnectedPlayerCheckTime);
+            this.disconnectedPlayerCheckCountdown = new(disconnectedPlayerCheckTime);
+        }
+
+        /// <summary>
+        /// Sends a message to all players
+        /// </summary>
+        /// <param name="instruction">Network Instruction enum to send</param>
+        /// <param name="payload">Paylod of instruction</param>
+        /// <param name="specificConnection">Only send to specific person</param>
+        public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null)
+        {
+            this.timeSinceLastInteracted = DateTime.Now;
+            bool removedPlayers = false;
+            for (int i = this.connections.Count - 1; i > -1; --i)
+            {
+                LobbyConnection connection = this.connections[i];
+                if (specificConnection != null && connection != specificConnection)
+                {
+                    continue;
+                }
+                Server.SendMessage(connection.stream, instruction, payload);
+                if (!connection.Connected)
+                {
+                    removedPlayers = true;
+                    this.connections.RemoveAt(i);
+                }
+            }
+            if (removedPlayers)
+            {
+                OnLobbyPlayersChanged(this);
+            }
+        }
+
+        /// <summary>
+        /// Starts the lobby by initializing the game and continuously listening for player commands.
+        /// </summary>
+        public void StartLobby()
+        {
+            this.InitGame();
+            this.RunLobbyLoop();
+            Console.WriteLine($"Closing thread of lobby: {this.code}");
+        }
+
+        /// <summary>
+        /// Adds a player to the lobby's connection list
+        /// </summary>
+        /// <param name="connection">The lobby connection that is being added</param>
+        public void AddConnection(LobbyConnection connection)
+        {
+            if (this.LobbyStarted)
+            {
+                return;
+            }
+            this.connections.Add(connection);
+            this.timeSinceLastInteracted = DateTime.Now;
+            if (this.connections.Count == this.size)
+            {
+                this.LobbyStarted = true;
+                Thread thread = new(this.StartLobby) { Name = $"Lobby - {this.code}" };
+                thread.Start();
+            }
+            else
+            {
+                OnLobbyPlayersChanged(this);
+            }
+        }
+
+        /// <summary>
+        /// Gets the players in lobby names in a serialized form
+        /// </summary>
+        /// <returns></returns>
+        public string SerializedLobbyNames()
+        {
+            return JsonConvert.SerializeObject(this.connections.Select(connection => connection.name).ToList());
+        }
+
+        /// <summary>
+        /// Checks how long the lobby has been sitting without being interacted with
+        /// </summary>
+        /// <param name="currentTime"> The current time</param>
+        /// <param name="allowedIdleTime">How long the lobby is allowed to wait</param>
+        /// <returns>a bool representing if the lobby has timed out</returns>
+
+        public bool CheckLobbyTimeout(DateTime currentTime, double allowedIdleTime)
+        {
+            this.closeLobby = (currentTime - this.timeSinceLastInteracted).TotalMinutes > allowedIdleTime;
+            return this.closeLobby;
         }
 
         private void NetworkAttributeChanged(NetworkAttribute attribute)
@@ -55,39 +147,6 @@ namespace Sanctum_Core_Server
             this.playtable.networkAttributeFactory.attributeValueChanged  += this.NetworkAttributeChanged;
         }
 
-        public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null) 
-        {
-            this.timeSinceLastInteracted = DateTime.Now;
-            bool removedPlayers = false;
-            for(int i = this.connections.Count - 1; i > -1; --i)
-            {
-                LobbyConnection connection = this.connections[i];
-                if (specificConnection != null && connection != specificConnection)
-                {
-                    continue;
-                }
-                Server.SendMessage(connection.stream, instruction, payload);
-                if (!connection.Connected)
-                {
-                    removedPlayers = true;
-                    this.connections.RemoveAt(i);
-                }
-            }
-            if(removedPlayers)
-            {
-                OnLobbyPlayersChanged(this);
-            }
-        }
-
-        /// <summary>
-        /// Starts the lobby by initializing the game and continuously listening for player commands.
-        /// </summary>
-        public void StartLobby()
-        {
-            this.InitGame();
-            this.RunLobbyLoop();
-        }
-
         /// <summary>
         /// Continuously listens for player commands and checks for disconnected players.
         /// </summary>
@@ -95,11 +154,11 @@ namespace Sanctum_Core_Server
         {
             while (true)
             {
-                bool checkForDisconnectedPlayers = this.disconnectedPlayerCheck.HasTimerPassed();
+                bool checkForDisconnectedPlayers = this.disconnectedPlayerCheckCountdown.HasTimerPassed();
 
                 this.ProcessConnections(checkForDisconnectedPlayers);
 
-                if (this.connections.Count == 0)
+                if (this.connections.Count == 0 || this.closeLobby)
                 {
                     this.CloseLobby();
                     break;
@@ -152,48 +211,23 @@ namespace Sanctum_Core_Server
         }
 
         /// <summary>
-        /// Adds a player to the lobby's connection list
+        /// Checks if the lobby has closed
         /// </summary>
-        /// <param name="connection">The lobby connection that is being added</param>
-        public void AddConnection(LobbyConnection connection)
-        {
-            if (this.LobbyStarted)
-            {
-                return;
-            }
-            this.connections.Add(connection);
-            this.timeSinceLastInteracted = DateTime.Now;
-            if (this.connections.Count == this.size)
-            {
-                this.LobbyStarted = true;
-                Thread thread = new(this.StartLobby) { Name = $"Lobby - {this.code}" };
-                thread.Start();
-            }
-            else
-            {
-                OnLobbyPlayersChanged(this);
-            }
-        }
-
-        public string SerializedLobbyNames()
-        {
-            return JsonConvert.SerializeObject(this.connections.Select(connection => connection.name).ToList());
-        }
-
-        public bool CheckLobbyTimeout(DateTime currentTime, double allowedIdleTime)
-        {
-            return (currentTime - this.timeSinceLastInteracted).TotalMinutes > allowedIdleTime;
-        }
-
+        /// <param name="connection"> The lobby connection to check</param>
+        /// <remarks>I shamelessly yoinked this from SO - https://stackoverflow.com/questions/1387459/how-to-check-if-tcpclient-connection-is-closed</remarks>
         private void CheckForConnectivity(LobbyConnection connection)
         {
-            try
+            TcpClient client = connection.client;
+            IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+            TcpConnectionInformation[] tcpConnections = ipProperties.GetActiveTcpConnections().Where(x => x.LocalEndPoint.Equals(client.Client.LocalEndPoint) && x.RemoteEndPoint.Equals(client.Client.RemoteEndPoint)).ToArray();
+
+            if (tcpConnections != null && tcpConnections.Length > 0)
             {
-                connection.stream.Write(new byte[0], 0, 0);
-            }
-            catch
-            {
-                Logger.LogError($"Player {connection.name} has disconnected");
+                TcpState stateOfConnection = tcpConnections.First().State;
+                if (stateOfConnection != TcpState.Established)
+                {
+                    client.Close();
+                }
             }
         }
         private void HandleCommand(NetworkCommand? command)
