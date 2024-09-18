@@ -30,21 +30,25 @@ namespace Sanctum_Core_Testing.CardCollectionTests
         }
 
         [Test]
-        public void InsertCardIntoContainer_ShouldAddCard_WhenChangeShouldBeNetworkedIsFalse()
+        public void InsertCardIntoContainerFalseNetworked()
         {
             Card card = this.GenerateCard();
 
             this.cardContainerCollection.InsertCardIntoContainer(null, true, card, null, false);
+
+            bool eventRaised = false;
+            this.cardContainerCollection.boardState.valueChanged += (_) => eventRaised = true;
 
             List<CardContainer> containers = this.GetCardContainers(this.cardContainerCollection);
 
             Assert.That(containers.Count, Is.EqualTo(1));
             Assert.That(containers[0].Cards.Count, Is.EqualTo(1));
             Assert.That(containers[0].Cards[0].Id, Is.EqualTo(card.Id));
+            Assert.IsFalse(eventRaised);
         }
 
         [Test]
-        public void RemoveCardFromContainer_ShouldRaiseBoardChangedEvent_WhenCardIsRemoved()
+        public void RemoveCardFromContainerNetworked()
         {
             bool eventRaised = false;
             this.cardContainerCollection.removeCardIds.valueChanged += (attribute) =>
@@ -61,7 +65,7 @@ namespace Sanctum_Core_Testing.CardCollectionTests
         }
 
         [Test]
-        public void GetTopCard_ShouldReturnTopCard_WhenContainersAreNotEmpty()
+        public void GetTopCard()
         {
             Card card1 = this.GenerateCard();
             Card card2 = this.GenerateCard();
@@ -73,7 +77,7 @@ namespace Sanctum_Core_Testing.CardCollectionTests
         }
 
         [Test]
-        public void GetTopCard_ShouldReturnNull_WhenContainersAreEmpty()
+        public void GetTopCardNull()
         {
             Card? topCard = this.cardContainerCollection.GetTopCard();
 
@@ -128,7 +132,23 @@ namespace Sanctum_Core_Testing.CardCollectionTests
             Assert.That(containers.Count, Is.EqualTo(1));
             Assert.That(containers[0].Cards.Count, Is.EqualTo(1));
             Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(1));
+        }
 
+        [Test]
+        public void StackCards()
+        {
+            List<Card> cards = Enumerable.Range(0, 15).Select(x => this.GenerateCard()).ToList();
+            foreach (Card card in cards)
+            {
+                this.cardContainerCollection.InsertCardIntoContainer(null, false, card, null, true);
+            }
+            Assert.That(this.cardContainerCollection.GetTotalCardCount(), Is.EqualTo(15));
+            List<CardContainer> containers = this.GetCardContainers(this.cardContainerCollection);
+            Assert.That(containers.Count, Is.EqualTo(3));
+            foreach (CardContainer container in containers)
+            {
+                Assert.That(container.GetCardIDs().Count, Is.EqualTo(5));
+            }
         }
 
         private Card GenerateCard()
