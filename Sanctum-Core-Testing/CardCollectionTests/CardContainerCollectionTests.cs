@@ -16,7 +16,7 @@ namespace Sanctum_Core_Testing.CardCollectionTests
         public void Setup()
         {
             this.networkAttributeFactory = new();
-            this.cardFactory = new(this.networkAttributeFactory);
+            this.cardFactory = new(this.networkAttributeFactory, false);
             this.idToCard = this.GetCardFactoryDictionary();
             this.cardContainerCollection = new(
                 CardZone.Library,
@@ -154,7 +154,7 @@ namespace Sanctum_Core_Testing.CardCollectionTests
         private Card GenerateCard()
         {
             int id = this.cardId++;
-            this.idToCard[id] = new Card(id, new CardInfo(), null, this.networkAttributeFactory, false);
+            this.idToCard[id] = new Card(id, new CardInfo(), null, this.networkAttributeFactory, false, false);
             return this.idToCard[id];
         }
 

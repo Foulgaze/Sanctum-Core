@@ -25,16 +25,18 @@ namespace Sanctum_Core
         public readonly NetworkAttribute<int> copyCardCreated;
         private readonly NetworkAttributeFactory networkAttributeFactory;
         public event Action<Card> cardCreated = delegate { };
+        private readonly bool isSlave;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CardFactory"/> class with the specified network attribute factory.
         /// </summary>
         /// <param name="networkAttributeFactory">The factory for creating network attributes.</param>
-        public CardFactory(NetworkAttributeFactory networkAttributeFactory)
+        public CardFactory(NetworkAttributeFactory networkAttributeFactory, bool isSlave)
         {
             this.networkAttributeFactory = networkAttributeFactory;
-            this.tokenCardCreation = networkAttributeFactory.AddNetworkAttribute<string>("factory-token", string.Empty, setWithoutEqualityCheck: true);
-            this.copyCardCreated = networkAttributeFactory.AddNetworkAttribute<int>("factory-copy",0, setWithoutEqualityCheck: true);
+            this.isSlave = isSlave;
+            this.tokenCardCreation = networkAttributeFactory.AddNetworkAttribute<string>("factory-token", string.Empty, outsideSettable : isSlave, networkChange: !isSlave, setWithoutEqualityCheck: true);
+            this.copyCardCreated = networkAttributeFactory.AddNetworkAttribute<int>("factory-copy",0, outsideSettable: isSlave, networkChange : !isSlave, setWithoutEqualityCheck: true);
         }
 
 
@@ -89,7 +91,7 @@ namespace Sanctum_Core
             {
                 return null;
             }
-            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), frontInfo, backInfo, this.networkAttributeFactory, isTokenCard);
+            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), frontInfo, backInfo, this.networkAttributeFactory, isTokenCard, this.isSlave);
             this.idToCard[newCard.Id] = newCard;
             if(changeShouldBeNetworked)
             {
@@ -105,7 +107,7 @@ namespace Sanctum_Core
         /// <returns>The created <see cref="Card"/> object, or null if the card could not be created.</returns>
         public Card? CreateCard(Card cardToCopy)
         {
-            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), this.networkAttributeFactory, cardToCopy);
+            Card newCard = new Card(this.cardIdCounter.GetNextCardId(), this.networkAttributeFactory, cardToCopy, this.isSlave);
             this.idToCard[newCard.Id] = newCard;
             this.copyCardCreated.SetValue(cardToCopy.Id);
             return newCard;

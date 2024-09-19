@@ -19,7 +19,7 @@ namespace Sanctum_Core_Testing.CardTests
             string path = System.IO.Path.GetFullPath(@"..\..\..\..");
             CardData.LoadCardNames($"{path}/Sanctum-Core/Assets/cards.csv");
             this.networkAttributeFactory = new();
-            this.cardFactory = new CardFactory(this.networkAttributeFactory);
+            this.cardFactory = new CardFactory(this.networkAttributeFactory, false);
         }
 
         [Test]
