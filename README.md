@@ -1,167 +1,243 @@
 
+
 # Sanctum-Core
+
+Sanctum-Core is a Trading Card Game (TCG) playtable simulator designed to provide a flexible platform for custom TCG implementations.
+
+## Table of Contents
+- [Overview](#overview)
+- [Project Structure](#project-structure)
+- [Key Features](#key-features)
+- [Getting Started](#getting-started)
+- [Architecture](#architecture)
+- [Network Communication](#network-communication)
+- [Contributing](#contributing)
 
 ## Overview
 
-Sanctum-Core is a Trading Card Game (TCG) playtable simulator structured across four key projects within this repository:
+Sanctum-Core is a comprehensive TCG playtable simulator that enables players to engage in card games across different platforms. It's designed with flexibility in mind, allowing for easy integration with custom frontends through its Network Attribute system.
 
--   **Sanctum Core**
--   **Sanctum Server**
--   **Sanctum Runner**
--   **Sanctum Testing**
+## Project Structure
+
+The repository is structured across four key projects:
+
+1. **Sanctum Core**: The heart of the project, managing core gameplay functionality.
+2. **Sanctum Server**: Oversees multiple Sanctum Core instances and includes a lobby system.
+3. **Sanctum Runner**: Executes the server with configurable settings.
+4. **Sanctum Testing**: Contains unit and integration tests for both Core and Server components.
+
+## Key Features
+
+- Flexible TCG playtable simulator
+- Lobby system for player connections
+- Network Attribute system for seamless communication
+- Multi-threaded lobby management
+- Comprehensive testing suite
+
+## Getting Started
+
+### Setting up Server
+Clone Repository:
+`git clone https://github.com/Foulgaze/Sanctum-Core`
+Change directory into runner:
+`cd Sanctum-Core/Sanctum-Core-Runner`
+Build project:
+`dotnet build`
+Run project;
+`dotnet run`
+
+### Setting up Client Playtable
+Clone Repository:
+`git clone https://github.com/Foulgaze/Sanctum-Core`
+CD into Sanctum-Core directory:
+`cd Sanctum-Core/Sanctum-Core`
+Build project:
+`dotnet build`
+Take DLL and reference in frontend Playtable Project
+```csharp
+Playtable table = new Playtable("pathToCards", "pathToTokens", isSlave : true);
+table.networkAttributeFactory.attributeValueChanged += NetworkAttributeChange();
+```
+Some outside code is needed to connect to Server, that can be seen in [Network Communication](#network-communication)
+
+## Architecture
 
 ### Sanctum Core
 
-Sanctum Core is the heart of the project, managing the core gameplay of the TCG. It enables the functionality to play cards, move them across different zones, and perform other essential game actions.
+#### Playtable Design
 
-### Sanctum Server
+The Playtable is the central component of the Sanctum Core game system, managing the game state and player interactions. Here's an overview of its design:
 
-Sanctum Server oversees the operation of multiple Sanctum Core instances. It features a lobby system where players can connect to various lobbies, each hosting its own instance of Sanctum Core. Lobbies run on separate threads and are closed when players disconnect or after a specified period of inactivity.
+1. **Playtable**: 
+   - Represents the game board or play area
+   - Manages a list of Players
+   - Holds a collection of NetworkAttributes for synchronized game state
 
-### Sanctum Runner
+2. **Player**:
+   - Represents an individual player in the game
+   - Contains a CardCollectionContainer for managing the player's cards
 
-Sanctum Runner is responsible for executing the server with configurations that define lobby idle times and the frequency of idle checks.
+3. **CardCollectionContainer**:
+   - Holds multiple CardContainers
+   - Represents different card zones (e.g., hand, deck, discard pile)
 
-### Sanctum Testing
+4. **CardContainer**:
+   - Contains a list of Cards
+   - Represents a specific collection of cards (e.g., a player's hand)
 
-Sanctum Testing encompasses unit and integration tests for both Sanctum Core and Sanctum Server, ensuring the reliability and functionality of the entire system.
+5. **Card**:
+   - Represents an individual game card
+   - Has properties like name, effect, cost
+   - Created by the CardFactory
 
-# Sanctum Core Architecture
-Sanctum Core is designed to be a flexible TCG playtable that can work with any custom frontend, as long as it integrates with Sanctum Core's Network Attribute system. Once players connect to a lobby and start the game, everything is controlled through this network-based system. This setup ensures smooth and consistent communication between the playtable and any frontend, making it easy to create and manage games across different platforms.
+6. **CardFactory**:
+   - Responsible for creating Card objects
+   - Uses NetworkAttributes to synchronize card data
 
-### Network Attribute
-The `NetworkAttribute` class is the foundation for attributes that can be networked in our system. Think of it as a blueprint for attributes that can hold and manage values, as well as track changes. It includes:
+7. **NetworkAttribute**:
+   - Used throughout the system for state synchronization
+   - Playtable, Player, CardCollectionContainer, CardContainer, and Card all use NetworkAttributes
 
--   **Unique Identifier**: Each `NetworkAttribute` has a unique ID for identification.
--   **Value Management**: It can store a value of a specific type and provides methods to set, clear, and manage that value.
--   **Serialization**: Attributes can be serialized to a string format, useful for network transmission.
--   **Event Handling**: It supports events that trigger when the attribute's value changes, allowing other parts of the system to react to these changes.
+The Playtable is created within a Lobby when a game starts. It initializes the game state, including setting up players and their initial card collections. During gameplay, the Playtable manages turns, facilitates card interactions, and updates the game state using the NetworkAttribute system.
 
-### `NetworkAttribute<T>` Class
+This design allows for a flexible and scalable card game system, where game rules and card effects can be easily implemented and modified. The use of NetworkAttributes throughout the system ensures that all game state changes are properly synchronized between the server and connected clients.
+### Networking
+Sanctum Core uses a Network Attribute system to manage game state and communication. Key components include:
 
-`NetworkAttribute<T>` extends `NetworkAttribute` to support strongly-typed attributes. It adds:
+- **NetworkAttribute**: Base class for networked attributes
+- **NetworkAttribute<T>**: Strongly-typed network attributes
+- **NetworkAttributeFactory**: Manages creation and updates of network attributes
 
--   **Strongly-Typed Value**: It works with a specific type `T`, making type handling safer and more predictable.
--   **Change Notification**: It fires events when the value changes or when it's updated non-networked, helping synchronize state across different parts of the application.
--   **Serialization Efficiency**: It handles serialization of the value efficiently, updating only when necessary.
+#### Sanctum Server
 
-### `NetworkAttributeFactory` Class
+The server listens for TCP connections and supports various commands for lobby management and game initialization. The server can support any number of lobbies with a separate playtable for each. 
 
-The `NetworkAttributeFactory` is the orchestrator of `NetworkAttribute` instances. Its main functions include:
 
--   **Attribute Management**: It creates and stores various network attributes, allowing you to manage them by their IDs.
--   **Handling Network Changes**: It processes incoming network data to update attributes based on serialized data received over the network.
--   **Event Handling**: It connects attribute changes to network events, ensuring that updates are propagated throughout the system.
--   **Cleaning Up**: It provides methods to clear attributes and their associated listeners, maintaining a clean state.
+Below is a outline of how the entire architecture, with some relevant public functions notated:
+```mermaid
+classDiagram
+    SanctumRunner "1" --> "1" Server : creates
+    Server "1" --> "*" Lobby : has
+    LobbyFactory "1" --> "*" Lobby : creates
+    Lobby "1" --> "1" Playtable : has
+    Playtable "1" --> "1...*" Player : has
+    Player "1" --> "8" CardCollectionContainer : has
+    CardCollectionContainer "0..*" --> "*" CardContainer : contains
+    CardContainer "1" --> "*" Card : contains
+    CardFactory "1" --> "*" Card : creates
+    CardFactory "1" --> "*" NetworkAttribute: uses
+    NetworkAttributeFactory "1" --> "*" NetworkAttribute : creates
+    Playtable "1" --> "*" NetworkAttribute : uses
+    Player "1" --> "*" NetworkAttribute : uses
+    CardCollectionContainer "1" --> "*" NetworkAttribute : uses
+    CardContainer "1" --> "*" NetworkAttribute : uses
+    Card "1" --> "*" NetworkAttribute : uses
 
-### How It All Fits Together
+    class SanctumRunner {
+        +createServer()
+    }
+    class Server {
+        -List~Lobby~ lobbies
+        +createLobby()
+        +joinLobby()
+    }
+    class LobbyFactory {
+        +createLobby()
+    }
+    class Lobby {
+        -Playtable playtable
+        +startGame()
+    }
+    class Playtable {
+        -List~Player~ players
+        -List~NetworkAttribute~ attributes
+    }
+    class Player {
+        -CardCollectionContainer collection
+    }
+    class CardCollectionContainer {
+        -List~CardContainer~ containers
+    }
+    class CardContainer {
+        -List~Card~ cards
+    }
+    class Card {
+        -String name
+        -String effect
+    }
+    class CardFactory {
+        +createCard()
+    }
+    class NetworkAttributeFactory {
+		    +deserializeNetworkAttribute()
+        +createNetworkAttribute()
+    }
+    class NetworkAttribute {
+        -String id
+        -Object value
+        +setValue()
+        +getValue()
+    }
+```
 
-In essence, `NetworkAttribute` and its derived class `NetworkAttribute<T>` provide a structured way to handle attributes that can be updated over a network. `NetworkAttributeFactory` ties everything together by managing these attributes, processing network updates, and ensuring that changes are communicated effectively.
+## Network Communication
+The Sanctum Core server uses a simple TCP-based protocol for communication. Here's a brief guide on how to interact with the server:   
+### Message Format   
+Each message sent to the server should follow this format: 
+1. A 4-digit message size (padded with leading zeros if necessary) 
+2. A JSON-serialized `NetworkCommand` object   
 
-When an attribute’s value changes, it can be serialized and sent over the network. The factory handles the deserialization and updates the attribute, triggering events to notify other parts of the system about the change. This approach ensures that your application remains synchronized and responsive to network changes.
-
-To undestand which Network Attributes need to be implemtented, the Sanctum Core Network Attributes should be examined. 
-
-# Sanctum Server
-### Overview
-
-The Sanctum Core Server listens for incoming TCP connections on a specified port (default is 51522). It supports various commands such as creating or joining lobbies and managing player connections. Here’s how you can connect and issue commands to the server.
-### Sending Data with the Server
-
-To communicate with the Sanctum Core Server, you will send data in the form of `NetworkCommand` instances. Each command is identified by an operation code (`opCode`) and carries a specific instruction associated with that command.
-
-#### NetworkCommand Class
-
-The `NetworkCommand` class encapsulates the data needed to send a command to the server. It consists of two primary properties:
-
-- `opCode`: An integer that represents the command type, corresponding to the `NetworkInstruction` enum.
-  - The valid opcodes are as follows `    public enum NetworkInstruction
-    {
-        CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute
-    }`
-- `instruction`: A string that contains the additional data or parameters related to the command.
-
-Here’s a quick look at the `NetworkCommand` class:
-
+### Message Size
 ```csharp
+public static string AddMessageSize(string message)
+{
+    string msgByteSize = message.Length.ToString().PadLeft(4, '0');
+    return msgByteSize + message;
+}
+```
+### NetworkCommand Structure   
+```csharp 
 public class NetworkCommand
 {
-    public readonly int opCode;
-    public readonly string instruction;
-
-    public NetworkCommand(int opCode, string instruction)
-    {
-        this.opCode = opCode;
-        this.instruction = instruction;
-    }
-
-    public override string ToString()
-    {
-        return $"{(NetworkInstruction)this.opCode} - {this.instruction}";
-    }
+	public int opCode; public string instruction; 
 }
 ```
 
-### Connecting to the Server
-1. **Client Setup**:
-   - **Connect to the Server**: Establish a TCP connection using the port number.
-   - **Example**:
-     ```csharp
-     TcpClient client = new TcpClient("127.0.0.1", 51522);
-     NetworkStream stream = client.GetStream();
-     ```
+-   `opCode`: Corresponds to the `NetworkInstruction` enum
+	```csharp
+	public enum NetworkInstruction
+	{
+		CreateLobby, JoinLobby, PlayersInLobby, InvalidCommand, LobbyDescription, StartGame, NetworkAttribute
+	}
+	```
+-   `instruction`: A string payload containing command-specific data
 
-### Joining a Lobby
+### Basic Communication Flow
 
-To join a lobby, follow these steps:
+1.  **Establish Connection**: Connect to the server using a TCP client.
+2.  **Send Commands**: Serialize and send `NetworkCommand` objects. Common operations include:
+    -   Creating a lobby: `opCode = NetworkInstruction.CreateLobby`
+    -   Joining a lobby: `opCode = NetworkInstruction.JoinLobby`
+3.  **Receive Responses**: The server will respond with appropriate `NetworkCommand` objects.
+4.  **Handle Game Updates**: Once in a game, most updates will use `NetworkInstruction.NetworkAttribute` to synchronize game state.
 
-1. **Send a Join Command**:
-   - You need to provide your name and the lobby code to join an existing lobby.
-   - **Example**:
-     ```csharp
-     string joinLobbyPayload = "YourName|ABCD"; // Replace with your name and lobby code
-     Server.SendMessage(stream, NetworkInstruction.JoinLobby, joinLobbyPayload);
-     ```
+### Example: Creating a Lobby
 
-2. **Handle Responses**:
-   - The server will respond with status with the user's assigned UUID and the lobby size in the form 
-   - ```"{uuid}|{lobbySize}"```
-
-### Creating a Lobby
-
-To create a new lobby, follow these steps:
-
-1. **Send a Create Command**:
-   - Provide the number of players and a unique lobby code.
-   - **Example**:
-     ```csharp
-     string createLobbyPayload = "2|ABCD"; // Replace with player count and lobby code
-     Server.SendMessage(stream, NetworkInstruction.CreateLobby, createLobbyPayload);
-     ```
-
-2. **Handle Responses**:
-   - The server will respond with status with the user's assigned UUID and the lobby code in the form 
-   - ```"{uuid}|{lobbyCode}"```
-
-### Error Handling
-
-- **Invalid Commands**: If the server receives an invalid command, it will respond with an `InvalidCommand` message. Check your command format and data.
-- **Connection Issues**: Handle exceptions and errors during data transmission to ensure a stable connection.
-
-### Example Code
-
-Here is an example of creating a lobby:
 
 ```csharp
-// Connect to the server
-TcpClient client = new TcpClient("127.0.0.1", 51522);
-NetworkStream stream = client.GetStream();
-
-// Create a lobby with 2 players and a lobby code "ABCD"
-string createLobbyPayload = "2|ABCD";
-Server.SendMessage(stream, NetworkInstruction.CreateLobby, createLobbyPayload);
-
-// Handle server responses (implement based on your application's logic)
+NetworkCommand createLobbyCmd =  new  NetworkCommand((int)NetworkInstruction.CreateLobby, $"{username}|{playerCount}" ); 
+SendMessage(stream, AddMessageSize(JsonConvert.SerializeObject(createLobbyCmd)));
 ```
 
-After all players have connected to the lobby, the server will create a playtable, and all further networking is done via the Network Attribute system. 
+## Contributing
+We welcome contributions to improve Sanctum Core! If you'd like to contribute, please follow these steps: 
+1. Fork the repository 
+2. Create a new branch for your feature or bug fix
+3. Make your changes and commit them with clear, descriptive messages 
+4. Push your changes to your fork 
+5. Submit a pull request to the main repository 
+
+Please ensure your code adheres to our coding standards and include tests for new features. For major changes, please open an issue first to discuss what you would like to change. Thank you for helping make Sanctum Core better!
+
+
+
