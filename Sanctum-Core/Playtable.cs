@@ -24,7 +24,7 @@ namespace Sanctum_Core
         public Playtable(int playerCount, string cardsPath, string tokensPath, bool isSlave = false)
         {
             this.networkAttributeFactory = new NetworkAttributeFactory(isSlave);
-            this.cardFactory = new CardFactory(this.networkAttributeFactory);
+            this.cardFactory = new CardFactory(this.networkAttributeFactory,isSlave);
             this.readyUpNeeded = playerCount;
             this.isSlave = isSlave;
             CardData.LoadCardNames(cardsPath);

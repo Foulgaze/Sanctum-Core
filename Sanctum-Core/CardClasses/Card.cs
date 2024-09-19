@@ -35,18 +35,18 @@ namespace Sanctum_Core
         /// <param name="BackInfo">The information for the back side of the card (nullable).</param>
         /// <param name="networkAttributeFactory">The factory for creating network attributes.</param>
         /// <param name="isEthereal">Indicates whether the card will be destroyed upon being moved from the field.</param>
-        public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory, bool isEthereal)
+        public Card(int id, CardInfo FrontInfo, CardInfo? BackInfo, NetworkAttributeFactory networkAttributeFactory, bool isEthereal, bool isSlave)
         {
             this.networkAttributeFactory = networkAttributeFactory;
             this.Id = id;
             this.FrontInfo = FrontInfo;
             this.BackInfo = BackInfo;
             this.isEthereal = isEthereal;
-            this.InitializeAttributes();
-            this.RegisterListeners();
+            this.InitializeAttributes(isSlave);
+            this.RegisterListeners(isSlave);
         }
 
-        private void InitializeAttributes()
+        private void InitializeAttributes(bool isSlave)
         {
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", false);
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", false);
@@ -54,12 +54,12 @@ namespace Sanctum_Core
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", this.ParsePT(this.CurrentInfo.toughness));
             this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", false);
             this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", this.CurrentInfo.name);
-            this.isIncreasingPower = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-powerchange", false, setWithoutEqualityCheck: true);
-            this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true);
+            this.isIncreasingPower = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-powerchange", false, setWithoutEqualityCheck: true, networkChange: isSlave, outsideSettable: !isSlave);
+            this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true, networkChange: isSlave, outsideSettable: !isSlave);
             this.redCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-redcounters", 0);
             this.blueCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-bluecounters", 0);
             this.greenCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-greencounters", 0);
-            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0, 0, 0), setWithoutEqualityCheck: true);
+            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0, 0, 0), setWithoutEqualityCheck: true, networkChange: isSlave, outsideSettable: !isSlave);
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace Sanctum_Core
         /// <param name="id">The unique identifier for the new card.</param>
         /// <param name="networkAttributeFactory">The factory for creating network attributes.</param>
         /// <param name="cardToCopy">The card to copy attributes from.</param>
-        public Card(int id, NetworkAttributeFactory networkAttributeFactory, Card cardToCopy)
+        public Card(int id, NetworkAttributeFactory networkAttributeFactory, Card cardToCopy, bool isSlave)
         {
             this.Id = id;
             this.FrontInfo = cardToCopy.FrontInfo;
@@ -76,11 +76,11 @@ namespace Sanctum_Core
             this.isEthereal = true;
             this.networkAttributeFactory = networkAttributeFactory;
 
-            this.InitializeAttributes(cardToCopy);
-            this.RegisterListeners();
+            this.InitializeAttributes(cardToCopy, isSlave);
+            this.RegisterListeners(isSlave);
         }
 
-        private void InitializeAttributes(Card cardToCopy)
+        private void InitializeAttributes(Card cardToCopy, bool isSlave)
         {
             this.isUsingBackSide = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-usingbackside", cardToCopy.isUsingBackSide.Value);
             this.isFlipped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-flipped", cardToCopy.isFlipped.Value);
@@ -88,16 +88,20 @@ namespace Sanctum_Core
             this.toughness = this.networkAttributeFactory.AddNetworkAttribute<int>($"{this.Id}-toughness", cardToCopy.toughness.Value);
             this.isTapped = this.networkAttributeFactory.AddNetworkAttribute<bool>($"{this.Id}-tapped", cardToCopy.isTapped.Value);
             this.name = this.networkAttributeFactory.AddNetworkAttribute<string>($"{this.Id}-name", this.CurrentInfo.name);
-            this.isIncreasingPower = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-powerchange", false, setWithoutEqualityCheck: true);
-            this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true);
+            this.isIncreasingPower = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-powerchange", false, setWithoutEqualityCheck: true, networkChange: isSlave);
+            this.isIncreasingToughness = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-toughnesschange", false, setWithoutEqualityCheck: true, networkChange: isSlave);
             this.redCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-redcounters", cardToCopy.redCounters.Value);
             this.blueCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-bluecounters", cardToCopy.blueCounters.Value);
             this.greenCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-greencounters", cardToCopy.greenCounters.Value);
-            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0, 0, 0), setWithoutEqualityCheck: true);
+            this.changeCounters = this.networkAttributeFactory.AddNetworkAttribute($"{this.Id}-changecounters", (0, 0, 0), setWithoutEqualityCheck: true, networkChange: isSlave);
         }
 
-        private void RegisterListeners()
+        private void RegisterListeners(bool isSlave)
         {
+            if(isSlave)
+            {
+                return;
+            }
             this.isIncreasingToughness.valueChanged += this.ChangeToughness;
             this.changeCounters.valueChanged += this.HandleCounterChange;
             this.isIncreasingPower.valueChanged += this.ChangePower;
