@@ -41,8 +41,6 @@ namespace Sanctum_Core_Server
             this.size = lobbySize;
             this.code = lobbyCode;
             string path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"../../../../Sanctum-Core/Assets/"));
-            Logger.Log($"Path - {path} - Base Directory - [{AppDomain.CurrentDomain.BaseDirectory}] - [{System.Environment.CurrentDirectory}]");
-
             this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
             this.timeSinceLastInteracted = DateTime.Now;
             this.disconnectedPlayerCheckCountdown = new(disconnectedPlayerCheckTime);
