@@ -132,7 +132,7 @@ namespace Sanctum_Core_Server
             return insertedIntoLobby;
         }
 
-        private static string AddMessageSize(string message)
+        public static string AddMessageSize(string message)
         {
             string msgByteSize = message.Length.ToString().PadLeft(4, '0');
             return msgByteSize + message;

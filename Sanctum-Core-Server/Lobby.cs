@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Sanctum_Core_Server
@@ -19,6 +20,7 @@ namespace Sanctum_Core_Server
         public List<LobbyConnection> connections = new();
         public event Action<Lobby> OnLobbyPlayersChanged = delegate { };
         public DateTime timeSinceLastInteracted { get; private set; }
+        private readonly StringBuilder queuedNetworkCommands = new();
 
         private bool closeLobby = false;
         private readonly CountdownTimer disconnectedPlayerCheckCountdown;
@@ -38,7 +40,9 @@ namespace Sanctum_Core_Server
         {
             this.size = lobbySize;
             this.code = lobbyCode;
-            string path = Path.GetFullPath(@"..\..\..\..\Sanctum-Core\Assets\");
+            string path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"../../../../Sanctum-Core/Assets/"));
+            Logger.Log($"Path - {path} - Base Directory - [{AppDomain.CurrentDomain.BaseDirectory}] - [{System.Environment.CurrentDirectory}]");
+
             this.playtable = new Playtable(lobbySize, $"{path}cards.csv", $"{path}tokens.csv");
             this.timeSinceLastInteracted = DateTime.Now;
             this.disconnectedPlayerCheckCountdown = new(disconnectedPlayerCheckTime);
@@ -52,22 +56,54 @@ namespace Sanctum_Core_Server
         /// <param name="specificConnection">Only send to specific person</param>
         public void SendMessageToAllPlayers(NetworkInstruction instruction, string payload, LobbyConnection? specificConnection = null)
         {
+            this.ProcessConnections(connection => Server.SendMessage(connection.stream, instruction, payload), specificConnection);
+        }
+
+        private void FlushQueuedCommands()
+        {
+            if (this.queuedNetworkCommands.Length == 0)
+            {
+                return;
+            }
+            byte[] data = Encoding.UTF8.GetBytes(this.queuedNetworkCommands.ToString());
+            Logger.Log($"Sending {this.queuedNetworkCommands}");
+            this.ProcessConnections(connection =>
+            {
+                try
+                {
+                    connection.stream.Write(data, 0, data.Length);
+                }
+                catch (Exception e)
+                {
+                    Logger.Log($"Problem sending {this.queuedNetworkCommands}\nError - {e}");
+                }
+            });
+            _ = this.queuedNetworkCommands.Clear();
+        }
+
+        private void ProcessConnections(Action<LobbyConnection> networkAction, LobbyConnection? specificConnection = null)
+        {
             this.timeSinceLastInteracted = DateTime.Now;
             bool removedPlayers = false;
+
             for (int i = this.connections.Count - 1; i > -1; --i)
             {
                 LobbyConnection connection = this.connections[i];
+
                 if (specificConnection != null && connection != specificConnection)
                 {
                     continue;
                 }
-                Server.SendMessage(connection.stream, instruction, payload);
+
+                networkAction(connection);
+
                 if (!connection.Connected)
                 {
                     removedPlayers = true;
                     this.connections.RemoveAt(i);
                 }
             }
+
             if (removedPlayers)
             {
                 OnLobbyPlayersChanged(this);
@@ -132,12 +168,12 @@ namespace Sanctum_Core_Server
 
         private void NetworkAttributeChanged(NetworkAttribute attribute)
         {
-            this.SendMessage(NetworkInstruction.NetworkAttribute, $"{attribute.Id}|{attribute.SerializedValue}");
+            string rawMessage = JsonConvert.SerializeObject(new NetworkCommand((int)NetworkInstruction.NetworkAttribute, $"{attribute.Id}|{attribute.SerializedValue}"));
+            string preparedMessage = Server.AddMessageSize(rawMessage);
+            _ = this.queuedNetworkCommands.Append(preparedMessage);
         }
-        private void SendMessage(NetworkInstruction instruction, string payload)
-        {
-            this.SendMessageToAllPlayers(instruction, payload);
-        }
+
+        
 
         private void InitGame()
         {
@@ -188,6 +224,7 @@ namespace Sanctum_Core_Server
                 }
 
                 this.HandleConnectionCommands(connection);
+                this.FlushQueuedCommands();
             }
         }
 
